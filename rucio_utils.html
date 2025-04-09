@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>rucio_utils &#8212; merge-utils 0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
+    <script src="_static/documentation_options.js?v=837179f8"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://hschellman.github.io/merge-utils-test/rucio_utils.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="io_utils" href="io_utils.html" />
+    <link rel="prev" title="metacat_utils" href="metacat_utils.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="io_utils.html" title="io_utils"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="metacat_utils.html" title="metacat_utils"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rucio_utils</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-rucio_utils">
+<span id="rucio-utils"></span><h1>rucio_utils<a class="headerlink" href="#module-rucio_utils" title="Link to this heading">¶</a></h1>
+<p>Utility functions for interacting with the Rucio web API.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="rucio_utils.Site">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rucio_utils.</span></span><span class="sig-name descname"><span class="pre">Site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ping</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">best</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/rucio_utils.html#Site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.Site" title="Link to this definition">¶</a></dt>
+<dd><p>Class to store information about a site</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rucio_utils.Sites">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rucio_utils.</span></span><span class="sig-name descname"><span class="pre">Sites</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefer_site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/rucio_utils.html#Sites"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.Sites" title="Link to this definition">¶</a></dt>
+<dd><p>Class to keep track of a set of sites</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="rucio_utils.Sites.get_paths">
+<span class="sig-name descname"><span class="pre">get_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replicas</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/rucio_utils.html#Sites.get_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.Sites.get_paths" title="Link to this definition">¶</a></dt>
+<dd><p>Get the best paths for a file from a list of replicas</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rucio_utils.Sites.log_counts">
+<span class="sig-name descname"><span class="pre">log_counts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/rucio_utils.html#Sites.log_counts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.Sites.log_counts" title="Link to this definition">¶</a></dt>
+<dd><p>Log the number of files found from each site</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rucio_utils.Sites.ping">
+<span class="sig-name descname"><span class="pre">ping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rse</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pfn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/rucio_utils.html#Sites.ping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.Sites.ping" title="Link to this definition">¶</a></dt>
+<dd><p>Check the ping time to a site in ms, recording the number of times it is used</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rucio_utils.check_consistency">
+<span class="sig-prename descclassname"><span class="pre">rucio_utils.</span></span><span class="sig-name descname"><span class="pre">check_consistency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rucio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/rucio_utils.html#check_consistency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.check_consistency" title="Link to this definition">¶</a></dt>
+<dd><p>Ensure consistency between MetaCat and Rucio</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rucio_utils.find_physial_files">
+<span class="sig-prename descclassname"><span class="pre">rucio_utils.</span></span><span class="sig-name descname"><span class="pre">find_physial_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataSet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefer_site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataSet</span></span></span><a class="reference internal" href="_modules/rucio_utils.html#find_physial_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.find_physial_files" title="Link to this definition">¶</a></dt>
+<dd><p>Get the best physical locations for a list of logical files</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rucio_utils.log_bad_files">
+<span class="sig-prename descclassname"><span class="pre">rucio_utils.</span></span><span class="sig-name descname"><span class="pre">log_bad_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/rucio_utils.html#log_bad_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.log_bad_files" title="Link to this definition">¶</a></dt>
+<dd><p>Log a message for files without valid replicas</p>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">rucio_utils</a><ul>
+<li><a class="reference internal" href="#rucio_utils.Site"><code class="docutils literal notranslate"><span class="pre">Site</span></code></a></li>
+<li><a class="reference internal" href="#rucio_utils.Sites"><code class="docutils literal notranslate"><span class="pre">Sites</span></code></a><ul>
+<li><a class="reference internal" href="#rucio_utils.Sites.get_paths"><code class="docutils literal notranslate"><span class="pre">Sites.get_paths()</span></code></a></li>
+<li><a class="reference internal" href="#rucio_utils.Sites.log_counts"><code class="docutils literal notranslate"><span class="pre">Sites.log_counts()</span></code></a></li>
+<li><a class="reference internal" href="#rucio_utils.Sites.ping"><code class="docutils literal notranslate"><span class="pre">Sites.ping()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rucio_utils.check_consistency"><code class="docutils literal notranslate"><span class="pre">check_consistency()</span></code></a></li>
+<li><a class="reference internal" href="#rucio_utils.find_physial_files"><code class="docutils literal notranslate"><span class="pre">find_physial_files()</span></code></a></li>
+<li><a class="reference internal" href="#rucio_utils.log_bad_files"><code class="docutils literal notranslate"><span class="pre">log_bad_files()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="metacat_utils.html"
+                          title="previous chapter">metacat_utils</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="io_utils.html"
+                          title="next chapter">io_utils</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/rucio_utils.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="io_utils.html" title="io_utils"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="metacat_utils.html" title="metacat_utils"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rucio_utils</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>
