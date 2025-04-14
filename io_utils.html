@@ -25,9 +25,6 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="related.html" title="Related documentation"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -43,37 +40,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="module-io_utils">
-<span id="io-utils"></span><h1>io_utils<a class="headerlink" href="#module-io_utils" title="Link to this heading">¶</a></h1>
-<p>Utilites for reading and writing files and other I/O operations</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="io_utils.get_inputs">
-<span class="sig-prename descclassname"><span class="pre">io_utils.</span></span><span class="sig-name descname"><span class="pre">get_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/io_utils.html#get_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#io_utils.get_inputs" title="Link to this definition">¶</a></dt>
-<dd><p>Get a list of inputs from various sources, including
-1. A file containing a list of entries
-2. entries passed as command line arguments
-3. entries piped in from standard input</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="io_utils.read_config">
-<span class="sig-prename descclassname"><span class="pre">io_utils.</span></span><span class="sig-name descname"><span class="pre">read_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/io_utils.html#read_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#io_utils.read_config" title="Link to this definition">¶</a></dt>
-<dd><p>Read a configuration file in JSON, TOML, or YAML format
-Any missing keys will be filled in with the defaults in DEFAULT_CONFIG</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="io_utils.set_log_level">
-<span class="sig-prename descclassname"><span class="pre">io_utils.</span></span><span class="sig-name descname"><span class="pre">set_log_level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/io_utils.html#set_log_level"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#io_utils.set_log_level" title="Link to this definition">¶</a></dt>
-<dd><p>Override the logging level for the console</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="io_utils.setup_log">
-<span class="sig-prename descclassname"><span class="pre">io_utils.</span></span><span class="sig-name descname"><span class="pre">setup_log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/io_utils.html#setup_log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#io_utils.setup_log" title="Link to this definition">¶</a></dt>
-<dd><p>Configure logging</p>
-</dd></dl>
-
+  <section id="io-utils">
+<h1>io_utils<a class="headerlink" href="#io-utils" title="Link to this heading">¶</a></h1>
 </section>
 
 
@@ -83,19 +51,6 @@ Any missing keys will be filled in with the defaults in DEFAULT_CONFIG</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-  <div>
-    <h3><a href="index.html">Table of Contents</a></h3>
-    <ul>
-<li><a class="reference internal" href="#">io_utils</a><ul>
-<li><a class="reference internal" href="#io_utils.get_inputs"><code class="docutils literal notranslate"><span class="pre">get_inputs()</span></code></a></li>
-<li><a class="reference internal" href="#io_utils.read_config"><code class="docutils literal notranslate"><span class="pre">read_config()</span></code></a></li>
-<li><a class="reference internal" href="#io_utils.set_log_level"><code class="docutils literal notranslate"><span class="pre">set_log_level()</span></code></a></li>
-<li><a class="reference internal" href="#io_utils.setup_log"><code class="docutils literal notranslate"><span class="pre">setup_log()</span></code></a></li>
-</ul>
-</li>
-</ul>
-
-  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="rucio_utils.html"
@@ -133,9 +88,6 @@ Any missing keys will be filled in with the defaults in DEFAULT_CONFIG</p>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="related.html" title="Related documentation"
              >next</a> |</li>

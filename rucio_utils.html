@@ -25,9 +25,6 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="io_utils.html" title="io_utils"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -43,57 +40,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="module-rucio_utils">
-<span id="rucio-utils"></span><h1>rucio_utils<a class="headerlink" href="#module-rucio_utils" title="Link to this heading">¶</a></h1>
-<p>Utility functions for interacting with the Rucio web API.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="rucio_utils.Site">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rucio_utils.</span></span><span class="sig-name descname"><span class="pre">Site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ping</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">best</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/rucio_utils.html#Site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.Site" title="Link to this definition">¶</a></dt>
-<dd><p>Class to store information about a site</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="rucio_utils.Sites">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rucio_utils.</span></span><span class="sig-name descname"><span class="pre">Sites</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefer_site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/rucio_utils.html#Sites"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.Sites" title="Link to this definition">¶</a></dt>
-<dd><p>Class to keep track of a set of sites</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="rucio_utils.Sites.get_paths">
-<span class="sig-name descname"><span class="pre">get_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replicas</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/rucio_utils.html#Sites.get_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.Sites.get_paths" title="Link to this definition">¶</a></dt>
-<dd><p>Get the best paths for a file from a list of replicas</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="rucio_utils.Sites.log_counts">
-<span class="sig-name descname"><span class="pre">log_counts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/rucio_utils.html#Sites.log_counts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.Sites.log_counts" title="Link to this definition">¶</a></dt>
-<dd><p>Log the number of files found from each site</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="rucio_utils.Sites.ping">
-<span class="sig-name descname"><span class="pre">ping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rse</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pfn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/rucio_utils.html#Sites.ping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.Sites.ping" title="Link to this definition">¶</a></dt>
-<dd><p>Check the ping time to a site in ms, recording the number of times it is used</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="rucio_utils.check_consistency">
-<span class="sig-prename descclassname"><span class="pre">rucio_utils.</span></span><span class="sig-name descname"><span class="pre">check_consistency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rucio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/rucio_utils.html#check_consistency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.check_consistency" title="Link to this definition">¶</a></dt>
-<dd><p>Ensure consistency between MetaCat and Rucio</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="rucio_utils.find_physial_files">
-<span class="sig-prename descclassname"><span class="pre">rucio_utils.</span></span><span class="sig-name descname"><span class="pre">find_physial_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataSet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefer_site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataSet</span></span></span><a class="reference internal" href="_modules/rucio_utils.html#find_physial_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.find_physial_files" title="Link to this definition">¶</a></dt>
-<dd><p>Get the best physical locations for a list of logical files</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="rucio_utils.log_bad_files">
-<span class="sig-prename descclassname"><span class="pre">rucio_utils.</span></span><span class="sig-name descname"><span class="pre">log_bad_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/rucio_utils.html#log_bad_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rucio_utils.log_bad_files" title="Link to this definition">¶</a></dt>
-<dd><p>Log a message for files without valid replicas</p>
-</dd></dl>
-
+  <section id="rucio-utils">
+<h1>rucio_utils<a class="headerlink" href="#rucio-utils" title="Link to this heading">¶</a></h1>
 </section>
 
 
@@ -103,25 +51,6 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-  <div>
-    <h3><a href="index.html">Table of Contents</a></h3>
-    <ul>
-<li><a class="reference internal" href="#">rucio_utils</a><ul>
-<li><a class="reference internal" href="#rucio_utils.Site"><code class="docutils literal notranslate"><span class="pre">Site</span></code></a></li>
-<li><a class="reference internal" href="#rucio_utils.Sites"><code class="docutils literal notranslate"><span class="pre">Sites</span></code></a><ul>
-<li><a class="reference internal" href="#rucio_utils.Sites.get_paths"><code class="docutils literal notranslate"><span class="pre">Sites.get_paths()</span></code></a></li>
-<li><a class="reference internal" href="#rucio_utils.Sites.log_counts"><code class="docutils literal notranslate"><span class="pre">Sites.log_counts()</span></code></a></li>
-<li><a class="reference internal" href="#rucio_utils.Sites.ping"><code class="docutils literal notranslate"><span class="pre">Sites.ping()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#rucio_utils.check_consistency"><code class="docutils literal notranslate"><span class="pre">check_consistency()</span></code></a></li>
-<li><a class="reference internal" href="#rucio_utils.find_physial_files"><code class="docutils literal notranslate"><span class="pre">find_physial_files()</span></code></a></li>
-<li><a class="reference internal" href="#rucio_utils.log_bad_files"><code class="docutils literal notranslate"><span class="pre">log_bad_files()</span></code></a></li>
-</ul>
-</li>
-</ul>
-
-  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="metacat_utils.html"
@@ -159,9 +88,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="io_utils.html" title="io_utils"
              >next</a> |</li>

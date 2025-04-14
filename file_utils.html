@@ -25,9 +25,6 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="metacat_utils.html" title="metacat_utils"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -45,90 +42,6 @@
             
   <section id="file-utils">
 <h1>file_utils<a class="headerlink" href="#file-utils" title="Link to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="file_utils.DataSet">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">file_utils.</span></span><span class="sig-name descname"><span class="pre">DataSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#file_utils.DataFile" title="file_utils.DataFile"><span class="pre">DataFile</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_utils.html#DataSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#file_utils.DataSet" title="Link to this definition">¶</a></dt>
-<dd><p>Class to keep track of a set of files</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="file_utils.DataSet.add">
-<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/file_utils.html#DataSet.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#file_utils.DataSet.add" title="Link to this definition">¶</a></dt>
-<dd><p>Add a file to the list if it is not there already</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="file_utils.DataSet.check_consistency">
-<span class="sig-name descname"><span class="pre">check_consistency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/file_utils.html#DataSet.check_consistency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#file_utils.DataSet.check_consistency" title="Link to this definition">¶</a></dt>
-<dd><p>Check that the files have consistent namespaces and selected metadata fields</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="file_utils.DataSet.dupes">
-<span class="sig-name descname"><span class="pre">dupes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/file_utils.html#DataSet.dupes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#file_utils.DataSet.dupes" title="Link to this definition">¶</a></dt>
-<dd><p>Return counts of duplicate file DIDs</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="file_utils.DataSet.files">
-<span class="sig-name descname"><span class="pre">files</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#file_utils.DataFile" title="file_utils.DataFile"><span class="pre">DataFile</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/file_utils.html#DataSet.files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#file_utils.DataSet.files" title="Link to this definition">¶</a></dt>
-<dd><p>Return the list of files</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="file_utils.DataSet.hash">
-<span class="sig-name descname"><span class="pre">hash</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/file_utils.html#DataSet.hash"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#file_utils.DataSet.hash" title="Link to this definition">¶</a></dt>
-<dd><p>Get a hash from the list of files</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="file_utils.DataSet.rucio_list">
-<span class="sig-name descname"><span class="pre">rucio_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/file_utils.html#DataSet.rucio_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#file_utils.DataSet.rucio_list" title="Link to this definition">¶</a></dt>
-<dd><p>Return a list of file DIDs in the format expected by Rucio</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="file_utils.DataFile">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">file_utils.</span></span><span class="sig-name descname"><span class="pre">DataFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_utils.html#DataFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#file_utils.DataFile" title="Link to this definition">¶</a></dt>
-<dd><p>A generic data file with metadata</p>
-<dl class="py property">
-<dt class="sig sig-object py" id="file_utils.DataFile.did">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">did</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#file_utils.DataFile.did" title="Link to this definition">¶</a></dt>
-<dd><p>Return the DID of the file</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="file_utils.DataFile.format">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">format</span></span><a class="headerlink" href="#file_utils.DataFile.format" title="Link to this definition">¶</a></dt>
-<dd><p>Return the file format</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="file_utils.DataFile.get_fields">
-<span class="sig-name descname"><span class="pre">get_fields</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/file_utils.html#DataFile.get_fields"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#file_utils.DataFile.get_fields" title="Link to this definition">¶</a></dt>
-<dd><p>Return a tuple of values for the namespace and specified metadata fields</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="file_utils.DataFile.name">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#file_utils.DataFile.name" title="Link to this definition">¶</a></dt>
-<dd><p>Extract the name from the file DID</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="file_utils.DataFile.namespace">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">namespace</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#file_utils.DataFile.namespace" title="Link to this definition">¶</a></dt>
-<dd><p>Extract the namespace from the file DID</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="file_utils.check_remote_path">
-<span class="sig-prename descclassname"><span class="pre">file_utils.</span></span><span class="sig-name descname"><span class="pre">check_remote_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/file_utils.html#check_remote_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#file_utils.check_remote_path" title="Link to this definition">¶</a></dt>
-<dd><p>Check if a remote path is accessible via xrootd</p>
-</dd></dl>
-
 </section>
 
 
@@ -138,33 +51,6 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-  <div>
-    <h3><a href="index.html">Table of Contents</a></h3>
-    <ul>
-<li><a class="reference internal" href="#">file_utils</a><ul>
-<li><a class="reference internal" href="#file_utils.DataSet"><code class="docutils literal notranslate"><span class="pre">DataSet</span></code></a><ul>
-<li><a class="reference internal" href="#file_utils.DataSet.add"><code class="docutils literal notranslate"><span class="pre">DataSet.add()</span></code></a></li>
-<li><a class="reference internal" href="#file_utils.DataSet.check_consistency"><code class="docutils literal notranslate"><span class="pre">DataSet.check_consistency()</span></code></a></li>
-<li><a class="reference internal" href="#file_utils.DataSet.dupes"><code class="docutils literal notranslate"><span class="pre">DataSet.dupes()</span></code></a></li>
-<li><a class="reference internal" href="#file_utils.DataSet.files"><code class="docutils literal notranslate"><span class="pre">DataSet.files()</span></code></a></li>
-<li><a class="reference internal" href="#file_utils.DataSet.hash"><code class="docutils literal notranslate"><span class="pre">DataSet.hash()</span></code></a></li>
-<li><a class="reference internal" href="#file_utils.DataSet.rucio_list"><code class="docutils literal notranslate"><span class="pre">DataSet.rucio_list()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#file_utils.DataFile"><code class="docutils literal notranslate"><span class="pre">DataFile</span></code></a><ul>
-<li><a class="reference internal" href="#file_utils.DataFile.did"><code class="docutils literal notranslate"><span class="pre">DataFile.did</span></code></a></li>
-<li><a class="reference internal" href="#file_utils.DataFile.format"><code class="docutils literal notranslate"><span class="pre">DataFile.format</span></code></a></li>
-<li><a class="reference internal" href="#file_utils.DataFile.get_fields"><code class="docutils literal notranslate"><span class="pre">DataFile.get_fields()</span></code></a></li>
-<li><a class="reference internal" href="#file_utils.DataFile.name"><code class="docutils literal notranslate"><span class="pre">DataFile.name</span></code></a></li>
-<li><a class="reference internal" href="#file_utils.DataFile.namespace"><code class="docutils literal notranslate"><span class="pre">DataFile.namespace</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#file_utils.check_remote_path"><code class="docutils literal notranslate"><span class="pre">check_remote_path()</span></code></a></li>
-</ul>
-</li>
-</ul>
-
-  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="index.html"
@@ -202,9 +88,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="metacat_utils.html" title="metacat_utils"
              >next</a> |</li>
