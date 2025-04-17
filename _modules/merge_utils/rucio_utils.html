@@ -39,9 +39,12 @@
 <span></span><span class="sd">&quot;&quot;&quot;Utility functions for interacting with the Rucio web API.&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">csv</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="c1">#from dataclasses import dataclass</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">rucio.client.replicaclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReplicaClient</span>
@@ -51,19 +54,54 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
+<span class="n">SITES_STORAGES_URL</span> <span class="o">=</span> <span class="s2">&quot;https://justin-ui-pro.dune.hep.ac.uk/api/info/sites_storages.csv&quot;</span>
 <span class="n">LOCAL_PING_THRESHOLD</span> <span class="o">=</span> <span class="mi">5</span>
 
 <div class="viewcode-block" id="check_status">
 <a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.check_status">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a file is on disk or tape&quot;&quot;&quot;</span>
-    <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gfal-xattr&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="s1">&#39;user.status&#39;</span><span class="p">]</span>
-    <span class="n">ret</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="k">if</span> <span class="s1">&#39;ONLINE&#39;</span> <span class="ow">in</span> <span class="n">ret</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;root://&quot;</span><span class="p">):</span>
+        <span class="c1"># remote site</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gfal-xattr&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="s1">&#39;user.status&#39;</span><span class="p">]</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="c1"># special case for FNAL DCACHE</span>
+        <span class="n">fnal_prefix</span> <span class="o">=</span> <span class="s2">&quot;root://fndca1.fnal.gov:1094/pnfs/fnal.gov/usr&quot;</span>
+        <span class="k">if</span> <span class="n">status</span><span class="o">==</span><span class="s1">&#39;UNKNOWN&#39;</span> <span class="ow">and</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">fnal_prefix</span><span class="p">):</span>
+            <span class="n">local_path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">fnal_prefix</span><span class="p">,</span> <span class="s2">&quot;/pnfs&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local_path</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Got UNKNOWN status for </span><span class="si">%s</span><span class="s2">, assuming NEARLINE&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+                <span class="k">return</span> <span class="s1">&#39;NEARLINE&#39;</span>
+            <span class="n">directory</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">local_path</span><span class="p">)</span>
+            <span class="n">stat_file</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">directory</span><span class="si">}</span><span class="s2">/.(get)(</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">)(locality)&quot;</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">stat_file</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">stats</span><span class="p">:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># local site</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> not found!&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s1">&#39;NONEXISTENT&#39;</span>
+
+        <span class="c1"># special case for FNAL DCACHE</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">directory</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">stat_file</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">directory</span><span class="si">}</span><span class="s2">/.(get)(</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">)(locality)&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">stat_file</span><span class="p">):</span>
+            <span class="c1"># normal file not in DCACHE?</span>
+            <span class="k">return</span> <span class="s1">&#39;ONLINE&#39;</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">stat_file</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">stats</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="c1"># status can be &#39;ONLINE AND NEARLINE&#39;, just return one or the other</span>
+    <span class="k">if</span> <span class="s1">&#39;ONLINE&#39;</span> <span class="ow">in</span> <span class="n">status</span><span class="p">:</span>
         <span class="k">return</span> <span class="s1">&#39;ONLINE&#39;</span>
-    <span class="k">if</span> <span class="s1">&#39;NEARLINE&#39;</span> <span class="ow">in</span> <span class="n">ret</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s1">&#39;NEARLINE&#39;</span> <span class="ow">in</span> <span class="n">status</span><span class="p">:</span>
         <span class="k">return</span> <span class="s1">&#39;NEARLINE&#39;</span>
-    <span class="k">return</span> <span class="s1">&#39;OFFLINE&#39;</span></div>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> has status </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">status</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">status</span></div>
 
 
 <div class="viewcode-block" id="RSE">
@@ -72,17 +110,48 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to store information about an RSE&quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">valid</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="n">valid</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tape</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tape</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distances</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ping</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="RSE.add">
-<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RSE.add">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">did</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a file to the RSE&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;ONLINE&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">disk</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;NEARLINE&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tape</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">did</span><span class="p">)</span></div>
+<div class="viewcode-block" id="RSE.get_ping">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RSE.get_ping">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the ping time to the RSE in ms&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">disk</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">pfn</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">disk</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">pfn</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tape</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">pfn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">:]</span> <span class="c1"># extract host from &#39;protocol://host:port/path&#39;</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ping&#39;</span><span class="p">,</span> <span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">]</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ret</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ping</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span> <span class="c1"># average ping time</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Pinged </span><span class="si">%s</span><span class="s2">, t = </span><span class="si">%d</span><span class="s2"> ms&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ping</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Failed to ping </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ping</span></div>
+
+
+<div class="viewcode-block" id="RSE.distance">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RSE.distance">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the distance to a site&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="RSE.nearest_site">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RSE.nearest_site">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">nearest_site</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the nearest site for this RSE&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="n">site</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+        <span class="n">distance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">site</span><span class="p">,</span> <span class="n">distance</span></div>
 </div>
 
 
@@ -103,50 +172,60 @@
                 <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">RSE</span><span class="p">(</span><span class="n">valid</span><span class="p">)</span>
 
-<div class="viewcode-block" id="RSEs.ping">
-<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RSEs.ping">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pfn</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the ping time to an RSE in ms&quot;&quot;&quot;</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">pfn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">:]</span> <span class="c1"># extract host from &#39;protocol://host:port/path&#39;</span>
-        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ping&#39;</span><span class="p">,</span> <span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">]</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">ret</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">ping</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">ping</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span> <span class="c1"># average ping time</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Pinged </span><span class="si">%s</span><span class="s2">, t = </span><span class="si">%d</span><span class="s2"> ms&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">ping</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ping</span></div>
+<div class="viewcode-block" id="RSEs.add">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RSEs.add">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rse</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">did</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pfn</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a file to the RSE&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;ONLINE&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">disk</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">disk</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="n">pfn</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;NEARLINE&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tape</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">tape</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="n">pfn</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
 
 
-<div class="viewcode-block" id="RSEs.get_paths">
-<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RSEs.get_paths">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">did</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">replicas</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<div class="viewcode-block" id="RSEs.add_replicas">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RSEs.add_replicas">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_replicas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">did</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">replicas</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the physical paths for a file&quot;&quot;&quot;</span>
-        <span class="n">paths</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">added</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="k">for</span> <span class="n">pfn</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">replicas</span><span class="p">[</span><span class="s1">&#39;pfns&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">rse</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">rse</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> not found in Rucio&quot;</span><span class="p">,</span> <span class="n">rse</span><span class="p">)</span>
                 <span class="k">continue</span>
-
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> is not valid&quot;</span><span class="p">,</span> <span class="n">rse</span><span class="p">)</span>
                 <span class="k">continue</span>
-
             <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;DISK&#39;</span><span class="p">:</span>
                 <span class="n">status</span> <span class="o">=</span> <span class="s1">&#39;ONLINE&#39;</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">status</span> <span class="o">=</span> <span class="n">check_status</span><span class="p">(</span><span class="n">pfn</span><span class="p">)</span>
-
-            <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;OFFLINE&#39;</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> is offline&quot;</span><span class="p">,</span> <span class="n">pfn</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rse</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">did</span><span class="p">,</span> <span class="n">pfn</span><span class="p">):</span>
                 <span class="k">continue</span>
+            <span class="n">added</span> <span class="o">=</span> <span class="kc">True</span>
 
-            <span class="n">paths</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span> <span class="o">=</span> <span class="n">pfn</span>
-            <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">did</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">added</span></div>
 
-        <span class="k">return</span> <span class="n">paths</span></div>
+
+<div class="viewcode-block" id="RSEs.get_distances">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RSEs.get_distances">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_distances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the distances between sites and storage elements&quot;&quot;&quot;</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">,</span> <span class="s1">&#39;rse&#39;</span><span class="p">,</span> <span class="s1">&#39;dist&#39;</span><span class="p">,</span> <span class="s1">&#39;site_enabled&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_read&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_write&#39;</span><span class="p">]</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SITES_STORAGES_URL</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">iter_lines</span><span class="p">(</span><span class="n">decode_unicode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">fields</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site_enabled&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse_read&#39;</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sites</span> <span class="ow">or</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="bp">self</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dist&#39;</span><span class="p">])</span></div>
 
 
 <div class="viewcode-block" id="RSEs.cleanup">
@@ -160,8 +239,6 @@
         <span class="c1"># Count how many files we found</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">rse</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">disk</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">|=</span> <span class="n">rse</span><span class="o">.</span><span class="n">disk</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tape</span> <span class="o">|=</span> <span class="n">rse</span><span class="o">.</span><span class="n">tape</span>
             <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">rse</span><span class="o">.</span><span class="n">disk</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">rse</span><span class="o">.</span><span class="n">tape</span><span class="p">)</span><span class="si">}</span><span class="s2">) files&quot;</span><span class="p">)</span>
 
             <span class="n">attr</span> <span class="o">=</span> <span class="n">rse_client</span><span class="o">.</span><span class="n">list_rse_attributes</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
@@ -174,8 +251,78 @@
         <span class="n">s_rses</span> <span class="o">=</span> <span class="s2">&quot;s&quot;</span> <span class="k">if</span> <span class="n">n_rses</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
         <span class="n">msg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="n">n_files</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">n_tape</span><span class="si">}</span><span class="s2">) file</span><span class="si">{</span><span class="n">s_files</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">n_rses</span><span class="si">}</span><span class="s2"> RSE</span><span class="si">{</span><span class="n">s_rses</span><span class="si">}</span><span class="s2">:&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span></div>
-</div>
 
+
+<div class="viewcode-block" id="RSEs.site_pfns">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RSEs.site_pfns">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">site_pfns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">nearline_distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the shortest distance pfns for a given site&quot;&quot;&quot;</span>
+        <span class="n">pfns</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">tape</span><span class="p">:</span>
+            <span class="n">pfns</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">rse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">distance</span> <span class="o">=</span> <span class="n">rse</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">distance</span> <span class="o">&gt;</span> <span class="n">max_distance</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> is too far away from site </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%s</span><span class="s2"> &gt; </span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
+                            <span class="n">name</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">max_distance</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">did</span><span class="p">,</span> <span class="n">pfn</span> <span class="ow">in</span> <span class="n">rse</span><span class="o">.</span><span class="n">disk</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;</span> <span class="n">pfns</span><span class="p">[</span><span class="n">did</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">pfns</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pfn</span><span class="p">,</span> <span class="n">distance</span><span class="p">)</span>
+
+            <span class="n">distance</span> <span class="o">+=</span> <span class="n">nearline_distance</span>
+            <span class="k">if</span> <span class="n">distance</span> <span class="o">&gt;</span> <span class="n">max_distance</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> (tape) is too far away from site </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%s</span><span class="s2"> &gt; </span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
+                            <span class="n">name</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">max_distance</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">did</span><span class="p">,</span> <span class="n">pfn</span> <span class="ow">in</span> <span class="n">rse</span><span class="o">.</span><span class="n">tape</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;</span> <span class="n">pfns</span><span class="p">[</span><span class="n">did</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">pfns</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pfn</span><span class="p">,</span> <span class="n">distance</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pfns</span></div>
+
+
+<div class="viewcode-block" id="RSEs.get_pfns">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RSEs.get_pfns">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pfns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine the best RSE for each file&quot;&quot;&quot;</span>
+        <span class="n">sites</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;allowed_sites&#39;</span><span class="p">]</span>
+        <span class="n">max_distance</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;max_distance&#39;</span><span class="p">]</span>
+        <span class="n">nearline_distance</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;nearline_distance&#39;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_distances</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span>
+
+        <span class="n">site_pfns</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">best_site</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">best_distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">sites</span><span class="p">:</span>
+            <span class="n">site_pfns</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">site_pfns</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="n">max_distance</span><span class="p">,</span> <span class="n">nearline_distance</span><span class="p">)</span>
+            <span class="n">total_distance</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">site_pfns</span><span class="p">[</span><span class="n">site</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">total_distance</span> <span class="o">&lt;</span> <span class="n">best_distance</span><span class="p">:</span>
+                <span class="n">best_distance</span> <span class="o">=</span> <span class="n">total_distance</span>
+                <span class="n">best_site</span> <span class="o">=</span> <span class="n">site</span>
+
+        <span class="k">if</span> <span class="n">best_site</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Site </span><span class="si">%s</span><span class="s2"> has the shortest distance to all files&quot;</span><span class="p">,</span> <span class="n">best_site</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">best_site</span><span class="p">:</span> <span class="n">site_pfns</span><span class="p">[</span><span class="n">best_site</span><span class="p">]}</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No site found with access to all files&quot;</span><span class="p">)</span>
+        <span class="n">site_pfns</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">tape</span><span class="p">:</span>
+            <span class="n">best_site</span><span class="p">,</span> <span class="n">best_distance</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                <span class="p">((</span><span class="n">site</span><span class="p">,</span> <span class="n">pfns</span><span class="p">[</span><span class="n">did</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="n">pfns</span><span class="p">)</span> <span class="ow">in</span> <span class="n">site_pfns</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">best_distance</span> <span class="o">&gt;</span> <span class="n">max_distance</span><span class="p">:</span>
+                <span class="n">best_site</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">site_pfns</span><span class="p">[</span><span class="kc">None</span><span class="p">][</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
+            <span class="c1"># remove all but the best pfn</span>
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">sites</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">site</span> <span class="o">==</span> <span class="n">best_site</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">del</span> <span class="n">site_pfns</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="n">did</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="n">site</span><span class="p">:</span> <span class="n">pfns</span> <span class="k">for</span> <span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="n">pfns</span><span class="p">)</span> <span class="ow">in</span> <span class="n">site_pfns</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pfns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">}</span></div>
+</div>
 
 
 <div class="viewcode-block" id="check_consistency">
@@ -228,15 +375,14 @@
 
 <div class="viewcode-block" id="find_physical_files">
 <a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.find_physical_files">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">find_physical_files</span><span class="p">(</span><span class="n">files</span> <span class="p">:</span> <span class="n">MergeSet</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeSet</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_physical_files</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="n">MergeSet</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeSet</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the best physical locations for a list of logical files&quot;&quot;&quot;</span>
-    <span class="n">found_files</span> <span class="o">=</span> <span class="n">MergeSet</span><span class="p">()</span>
     <span class="n">bad_files</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">inacessible_files</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="n">rses</span> <span class="o">=</span> <span class="n">RSEs</span><span class="p">()</span>
     <span class="n">replica_client</span> <span class="o">=</span> <span class="n">ReplicaClient</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">replicas</span> <span class="ow">in</span> <span class="n">replica_client</span><span class="o">.</span><span class="n">list_replicas</span><span class="p">(</span><span class="n">files</span><span class="o">.</span><span class="n">rucio_list</span><span class="p">(),</span> <span class="n">ignore_availability</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">replicas</span> <span class="ow">in</span> <span class="n">replica_client</span><span class="o">.</span><span class="n">list_replicas</span><span class="p">(</span><span class="n">files</span><span class="o">.</span><span class="n">rucio</span><span class="p">,</span> <span class="n">ignore_availability</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="n">did</span> <span class="o">=</span> <span class="n">replicas</span><span class="p">[</span><span class="s1">&#39;scope&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="n">replicas</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
         <span class="n">file</span> <span class="o">=</span> <span class="n">files</span><span class="p">[</span><span class="n">did</span><span class="p">]</span>
         <span class="n">file</span><span class="o">.</span><span class="n">has_rucio</span> <span class="o">=</span> <span class="kc">True</span>
@@ -245,22 +391,28 @@
             <span class="n">bad_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
             <span class="k">continue</span>
 
-        <span class="n">file</span><span class="o">.</span><span class="n">paths</span> <span class="o">=</span> <span class="n">rses</span><span class="o">.</span><span class="n">get_paths</span><span class="p">(</span><span class="n">did</span><span class="p">,</span> <span class="n">replicas</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">paths</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rses</span><span class="o">.</span><span class="n">add_replicas</span><span class="p">(</span><span class="n">did</span><span class="p">,</span> <span class="n">replicas</span><span class="p">):</span>
             <span class="n">inacessible_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
-            <span class="c1">#logger.error(&quot;No valid replicas found for %s&quot;, did)</span>
             <span class="k">continue</span>
 
-        <span class="n">found_files</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-
-    <span class="n">rses</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+    <span class="n">site_pfns</span> <span class="o">=</span> <span class="n">rses</span><span class="o">.</span><span class="n">get_pfns</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">distant_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">did</span> <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">site_pfns</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
 
     <span class="n">missing_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">did</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">file</span><span class="o">.</span><span class="n">has_rucio</span><span class="p">]</span>
-    <span class="n">log_bad_files</span><span class="p">(</span><span class="n">missing_files</span><span class="p">,</span> <span class="s2">&quot;No Rucio entry for </span><span class="si">{count}</span><span class="s2"> </span><span class="si">{files}</span><span class="s2">:&quot;</span><span class="p">)</span>
-    <span class="n">log_bad_files</span><span class="p">(</span><span class="n">inacessible_files</span><span class="p">,</span> <span class="s2">&quot;No valid replicas for </span><span class="si">{count}</span><span class="s2"> </span><span class="si">{files}</span><span class="s2">:&quot;</span><span class="p">)</span>
-    <span class="n">log_bad_files</span><span class="p">(</span><span class="n">bad_files</span><span class="p">,</span> <span class="s2">&quot;Inconsistent data for </span><span class="si">{count}</span><span class="s2"> </span><span class="si">{files}</span><span class="s2">:&quot;</span><span class="p">)</span>
+    <span class="n">errs</span> <span class="o">=</span> <span class="n">log_bad_files</span><span class="p">(</span><span class="n">missing_files</span><span class="p">,</span> <span class="s2">&quot;No Rucio entry for </span><span class="si">{count}</span><span class="s2"> </span><span class="si">{files}</span><span class="s2">:&quot;</span><span class="p">)</span>
+    <span class="n">errs</span> <span class="o">+=</span> <span class="n">log_bad_files</span><span class="p">(</span><span class="n">inacessible_files</span><span class="p">,</span> <span class="s2">&quot;No valid replicas for </span><span class="si">{count}</span><span class="s2"> </span><span class="si">{files}</span><span class="s2">:&quot;</span><span class="p">)</span>
+    <span class="n">errs</span> <span class="o">+=</span> <span class="n">log_bad_files</span><span class="p">(</span><span class="n">bad_files</span><span class="p">,</span> <span class="s2">&quot;Inconsistent data for </span><span class="si">{count}</span><span class="s2"> </span><span class="si">{files}</span><span class="s2">:&quot;</span><span class="p">)</span>
+    <span class="n">errs</span> <span class="o">+=</span> <span class="n">log_bad_files</span><span class="p">(</span><span class="n">distant_files</span><span class="p">,</span> <span class="s2">&quot;Excessive distance for </span><span class="si">{count}</span><span class="s2"> </span><span class="si">{files}</span><span class="s2">:&quot;</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">found_files</span></div>
+    <span class="k">if</span> <span class="n">errs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="c1"># found all files, add the PFNs to the files</span>
+    <span class="k">for</span> <span class="n">pfns</span> <span class="ow">in</span> <span class="n">site_pfns</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">did</span><span class="p">,</span> <span class="p">(</span><span class="n">pfn</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="n">pfns</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">files</span><span class="p">[</span><span class="n">did</span><span class="p">]</span><span class="o">.</span><span class="n">pfn</span> <span class="o">=</span> <span class="n">pfn</span>
+
+    <span class="k">return</span> <span class="n">site_pfns</span></div>
 
 </pre></div>
 
