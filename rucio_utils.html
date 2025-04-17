@@ -16,7 +16,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="io_utils" href="io_utils.html" />
-    <link rel="prev" title="metacat_utils" href="metacat_utils.html" /> 
+    <link rel="prev" title="Installation and Startup" href="startup.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
@@ -25,10 +25,13 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="io_utils.html" title="io_utils"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="metacat_utils.html" title="metacat_utils"
+          <a href="startup.html" title="Installation and Startup"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">rucio_utils</a></li> 
@@ -40,8 +43,69 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="rucio-utils">
-<h1>rucio_utils<a class="headerlink" href="#rucio-utils" title="Link to this heading">¶</a></h1>
+  <section id="module-merge_utils.rucio_utils">
+<span id="rucio-utils"></span><h1>rucio_utils<a class="headerlink" href="#module-merge_utils.rucio_utils" title="Link to this heading">¶</a></h1>
+<p>Utility functions for interacting with the Rucio web API.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RSE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.rucio_utils.</span></span><span class="sig-name descname"><span class="pre">RSE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">valid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RSE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RSE" title="Link to this definition">¶</a></dt>
+<dd><p>Class to store information about an RSE</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RSE.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">did</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RSE.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RSE.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add a file to the RSE</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RSEs">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.rucio_utils.</span></span><span class="sig-name descname"><span class="pre">RSEs</span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RSEs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RSEs" title="Link to this definition">¶</a></dt>
+<dd><p>Class to keep track of a set of RSEs</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RSEs.cleanup">
+<span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RSEs.cleanup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RSEs.cleanup" title="Link to this definition">¶</a></dt>
+<dd><p>Cleanup the RSE dictionary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RSEs.get_paths">
+<span class="sig-name descname"><span class="pre">get_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">did</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replicas</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RSEs.get_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RSEs.get_paths" title="Link to this definition">¶</a></dt>
+<dd><p>Get the physical paths for a file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RSEs.ping">
+<span class="sig-name descname"><span class="pre">ping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pfn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RSEs.ping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RSEs.ping" title="Link to this definition">¶</a></dt>
+<dd><p>Get the ping time to an RSE in ms</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.check_consistency">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.rucio_utils.</span></span><span class="sig-name descname"><span class="pre">check_consistency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile" title="merge_utils.merge_set.MergeFile"><span class="pre">MergeFile</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rucio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#check_consistency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.check_consistency" title="Link to this definition">¶</a></dt>
+<dd><p>Ensure consistency between MetaCat and Rucio</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.check_status">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.rucio_utils.</span></span><span class="sig-name descname"><span class="pre">check_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#check_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.check_status" title="Link to this definition">¶</a></dt>
+<dd><p>Check whether a file is on disk or tape</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.find_physical_files">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.rucio_utils.</span></span><span class="sig-name descname"><span class="pre">find_physical_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet" title="merge_utils.merge_set.MergeSet"><span class="pre">MergeSet</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet" title="merge_utils.merge_set.MergeSet"><span class="pre">MergeSet</span></a></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#find_physical_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.find_physical_files" title="Link to this definition">¶</a></dt>
+<dd><p>Get the best physical locations for a list of logical files</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.log_bad_files">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.rucio_utils.</span></span><span class="sig-name descname"><span class="pre">log_bad_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#log_bad_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.log_bad_files" title="Link to this definition">¶</a></dt>
+<dd><p>Log a message for files without valid replicas</p>
+</dd></dl>
+
 </section>
 
 
@@ -52,9 +116,32 @@
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
   <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">rucio_utils</a><ul>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RSE"><code class="docutils literal notranslate"><span class="pre">RSE</span></code></a><ul>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RSE.add"><code class="docutils literal notranslate"><span class="pre">RSE.add()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RSEs"><code class="docutils literal notranslate"><span class="pre">RSEs</span></code></a><ul>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RSEs.cleanup"><code class="docutils literal notranslate"><span class="pre">RSEs.cleanup()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RSEs.get_paths"><code class="docutils literal notranslate"><span class="pre">RSEs.get_paths()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RSEs.ping"><code class="docutils literal notranslate"><span class="pre">RSEs.ping()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.check_consistency"><code class="docutils literal notranslate"><span class="pre">check_consistency()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.check_status"><code class="docutils literal notranslate"><span class="pre">check_status()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.find_physical_files"><code class="docutils literal notranslate"><span class="pre">find_physical_files()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.log_bad_files"><code class="docutils literal notranslate"><span class="pre">log_bad_files()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
     <h4>Previous topic</h4>
-    <p class="topless"><a href="metacat_utils.html"
-                          title="previous chapter">metacat_utils</a></p>
+    <p class="topless"><a href="startup.html"
+                          title="previous chapter">Installation and Startup</a></p>
   </div>
   <div>
     <h4>Next topic</h4>
@@ -89,10 +176,13 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="io_utils.html" title="io_utils"
              >next</a> |</li>
         <li class="right" >
-          <a href="metacat_utils.html" title="metacat_utils"
+          <a href="startup.html" title="Installation and Startup"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">rucio_utils</a></li> 

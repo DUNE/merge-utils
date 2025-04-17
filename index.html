@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://hschellman.github.io/merge-utils-test/index.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="file_utils" href="file_utils.html" /> 
+    <link rel="next" title="Installation and Startup" href="startup.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
@@ -24,7 +24,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="file_utils.html" title="file_utils"
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="startup.html" title="Installation and Startup"
              accesskey="N">next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">merge-utils 0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">DUNE merge-utils Documentation</a></li> 
@@ -52,21 +55,72 @@
 <h2>Contents<a class="headerlink" href="#contents" title="Link to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="file_utils.html">file_utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="metacat_utils.html">metacat_utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="rucio_utils.html">rucio_utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="io_utils.html">io_utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="related.html">Related documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="related.html#metacat">metacat</a></li>
-<li class="toctree-l2"><a class="reference internal" href="related.html#data-dispatcher-dd">Data Dispatcher (dd)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="related.html#samweb">samweb</a></li>
-<li class="toctree-l2"><a class="reference internal" href="related.html#justin">JustIn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="startup.html">Installation and Startup</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="startup.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="startup.html#testing">Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="rucio_utils.html">rucio_utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RSE"><code class="docutils literal notranslate"><span class="pre">RSE</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RSE.add"><code class="docutils literal notranslate"><span class="pre">RSE.add()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RSEs"><code class="docutils literal notranslate"><span class="pre">RSEs</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RSEs.cleanup"><code class="docutils literal notranslate"><span class="pre">RSEs.cleanup()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RSEs.get_paths"><code class="docutils literal notranslate"><span class="pre">RSEs.get_paths()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RSEs.ping"><code class="docutils literal notranslate"><span class="pre">RSEs.ping()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.check_consistency"><code class="docutils literal notranslate"><span class="pre">check_consistency()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.check_status"><code class="docutils literal notranslate"><span class="pre">check_status()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.find_physical_files"><code class="docutils literal notranslate"><span class="pre">find_physical_files()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.log_bad_files"><code class="docutils literal notranslate"><span class="pre">log_bad_files()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="io_utils.html">io_utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.get_inputs"><code class="docutils literal notranslate"><span class="pre">get_inputs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.read_config"><code class="docutils literal notranslate"><span class="pre">read_config()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.set_log_level"><code class="docutils literal notranslate"><span class="pre">set_log_level()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.setup_log"><code class="docutils literal notranslate"><span class="pre">setup_log()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="merge_set.html">merge_set</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile"><code class="docutils literal notranslate"><span class="pre">MergeFile</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile.did"><code class="docutils literal notranslate"><span class="pre">MergeFile.did</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile.format"><code class="docutils literal notranslate"><span class="pre">MergeFile.format</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile.get_fields"><code class="docutils literal notranslate"><span class="pre">MergeFile.get_fields()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile.name"><code class="docutils literal notranslate"><span class="pre">MergeFile.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile.namespace"><code class="docutils literal notranslate"><span class="pre">MergeFile.namespace</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet"><code class="docutils literal notranslate"><span class="pre">MergeSet</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet.add"><code class="docutils literal notranslate"><span class="pre">MergeSet.add()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet.check_consistency"><code class="docutils literal notranslate"><span class="pre">MergeSet.check_consistency()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet.dupes"><code class="docutils literal notranslate"><span class="pre">MergeSet.dupes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet.files"><code class="docutils literal notranslate"><span class="pre">MergeSet.files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet.hash"><code class="docutils literal notranslate"><span class="pre">MergeSet.hash()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet.rucio_list"><code class="docutils literal notranslate"><span class="pre">MergeSet.rucio_list()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.check_remote_path"><code class="docutils literal notranslate"><span class="pre">check_remote_path()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="metacat_utils.html">metacat_utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metacat_utils.html#merge_utils.metacat_utils.find_logical_files"><code class="docutils literal notranslate"><span class="pre">find_logical_files()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metacat_utils.html#merge_utils.metacat_utils.log_bad_files"><code class="docutils literal notranslate"><span class="pre">log_bad_files()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Notes.html">Notes on sphinx</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="Notes.html#rst-format">rst format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Notes.html#github-actions">Github actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Notes.html#google-indexing-notes">Google indexing Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="related.html">Related documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="related.html#metacat">metacat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="related.html#data-dispatcher-dd">Data Dispatcher (dd)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="related.html#samweb">samweb</a></li>
+<li class="toctree-l2"><a class="reference internal" href="related.html#justin">JustIn</a></li>
 </ul>
 </li>
 </ul>
@@ -94,8 +148,8 @@
   </div>
   <div>
     <h4>Next topic</h4>
-    <p class="topless"><a href="file_utils.html"
-                          title="next chapter">file_utils</a></p>
+    <p class="topless"><a href="startup.html"
+                          title="next chapter">Installation and Startup</a></p>
   </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
@@ -125,7 +179,10 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="file_utils.html" title="file_utils"
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="startup.html" title="Installation and Startup"
              >next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">merge-utils 0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">DUNE merge-utils Documentation</a></li> 

@@ -24,9 +24,11 @@ Contents
 
 .. toctree::
    
-    file_utils
-    metacat_utils
+    startup 
     rucio_utils
     io_utils
-    related
+    merge_set
+    metacat_utils
     Notes
+    related
+    
