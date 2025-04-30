@@ -48,10 +48,30 @@
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
 <p>To install the official DUNE version (until we add to spack)</p>
+<p>First make a virtual environment and activate it.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.merging
+.<span class="w"> </span><span class="nv">$HOME</span>/.merging/bin/activate
+</pre></div>
+</div>
+<p>Then use spack (or ups) to set up a normal DUNE environment</p>
+<p>(your setup script here)</p>
+<p>Then download and install the merge-utils code in your virtual environment</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/DUNE/merge-utils.git
 <span class="nb">cd</span><span class="w"> </span>merge-utils
 pip<span class="w"> </span>install<span class="w"> </span>.
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Note<span class="w"> </span>that<span class="w"> </span>the<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>gives<span class="w"> </span>error<span class="w"> </span>messages<span class="w"> </span>about<span class="w"> </span>incompatabilities<span class="w"> </span>with<span class="w"> </span>rucio.<span class="w">  </span>It<span class="w"> </span>appears
+
+ERROR:<span class="w"> </span>pips<span class="w"> </span>dependency<span class="w"> </span>resolver<span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>currently<span class="w"> </span>take<span class="w"> </span>into<span class="w"> </span>account<span class="w"> </span>all<span class="w"> </span>the<span class="w"> </span>packages<span class="w"> </span>that<span class="w"> </span>are<span class="w"> </span>installed.<span class="w"> </span>This<span class="w"> </span>behaviour<span class="w"> </span>is<span class="w"> </span>the<span class="w"> </span><span class="nb">source</span><span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>following<span class="w"> </span>dependency<span class="w"> </span>conflicts.
+rucio-clients<span class="w"> </span><span class="m">35</span>.4.1<span class="w"> </span>requires<span class="w"> </span>dogpile-cache&gt;<span class="o">=</span><span class="m">1</span>.2.2,<span class="w"> </span>but<span class="w"> </span>you<span class="w"> </span>have<span class="w"> </span>dogpile-cache<span class="w"> </span><span class="m">1</span>.1.8<span class="w"> </span>which<span class="w"> </span>is<span class="w"> </span>incompatible.
+rucio-clients<span class="w"> </span><span class="m">35</span>.4.1<span class="w"> </span>requires<span class="w"> </span>jsonschema&gt;<span class="o">=</span><span class="m">4</span>.20.0,<span class="w"> </span>but<span class="w"> </span>you<span class="w"> </span>have<span class="w"> </span>jsonschema<span class="w"> </span><span class="m">4</span>.17.3<span class="w"> </span>which<span class="w"> </span>is<span class="w"> </span>incompatible.
+rucio-clients<span class="w"> </span><span class="m">35</span>.4.1<span class="w"> </span>requires<span class="w"> </span>requests&gt;<span class="o">=</span><span class="m">2</span>.32.2,<span class="w"> </span>but<span class="w"> </span>you<span class="w"> </span>have<span class="w"> </span>requests<span class="w"> </span><span class="m">2</span>.31.0<span class="w"> </span>which<span class="w"> </span>is<span class="w"> </span>incompatible.
+rucio-clients<span class="w"> </span><span class="m">35</span>.4.1<span class="w"> </span>requires<span class="w"> </span>tabulate&gt;<span class="o">=</span><span class="m">0</span>.9.0,<span class="w"> </span>but<span class="w"> </span>you<span class="w"> </span>have<span class="w"> </span>tabulate<span class="w"> </span><span class="m">0</span>.8.9<span class="w"> </span>which<span class="w"> </span>is<span class="w"> </span>incompatible.
+</pre></div>
+</div>
 </div>
 </section>
 <section id="testing">
@@ -60,6 +80,20 @@ pip<span class="w"> </span>install<span class="w"> </span>.
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>-m<span class="w"> </span>pytest
 </pre></div>
 </div>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">¶</a></h2>
+<a class="reference internal image-reference" href="_images/merge_utils_io_utils.png"><img alt="_images/merge_utils_io_utils.png" src="_images/merge_utils_io_utils.png" style="width: 400px;" />
+</a>
+<hr class="docutils" />
+<a class="reference internal image-reference" href="_images/merge_utils_merge_set.png"><img alt="_images/merge_utils_merge_set.png" src="_images/merge_utils_merge_set.png" style="width: 400px;" />
+</a>
+<hr class="docutils" />
+<a class="reference internal image-reference" href="_images/merge_utils_rucio_utils.png"><img alt="_images/merge_utils_rucio_utils.png" src="_images/merge_utils_rucio_utils.png" style="width: 400px;" />
+</a>
+<hr class="docutils" />
+<a class="reference internal image-reference" href="_images/merge_utils_justin_utils.png"><img alt="_images/merge_utils_justin_utils.png" src="_images/merge_utils_justin_utils.png" style="width: 400px;" />
+</a>
 </section>
 </section>
 
@@ -76,6 +110,7 @@ pip<span class="w"> </span>install<span class="w"> </span>.
 <li><a class="reference internal" href="#">Installation and Startup</a><ul>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#testing">Testing</a></li>
+<li><a class="reference internal" href="#dependencies">Dependencies</a></li>
 </ul>
 </li>
 </ul>

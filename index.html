@@ -51,15 +51,26 @@
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
+</section>
 <section id="contents">
-<h2>Contents<a class="headerlink" href="#contents" title="Link to this heading">¶</a></h2>
+<h1>Contents<a class="headerlink" href="#contents" title="Link to this heading">¶</a></h1>
+<section id="setup">
+<h2>setup<a class="headerlink" href="#setup" title="Link to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="startup.html">Installation and Startup</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="startup.html#installation">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="startup.html#testing">Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="startup.html#dependencies">Dependencies</a></li>
 </ul>
 </li>
+</ul>
+</div>
+</section>
+<section id="utilities">
+<h2>utilities<a class="headerlink" href="#utilities" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="rucio_utils.html">rucio_utils</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RSE"><code class="docutils literal notranslate"><span class="pre">RSE</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RSE.distance"><code class="docutils literal notranslate"><span class="pre">RSE.distance()</span></code></a></li>
@@ -116,6 +127,56 @@
 <li class="toctree-l2"><a class="reference internal" href="metacat_utils.html#merge_utils.metacat_utils.log_bad_files"><code class="docutils literal notranslate"><span class="pre">log_bad_files()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="justin_utils.html">justin_utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="justin_utils.html#merge_utils.justin_utils.get_distances"><code class="docutils literal notranslate"><span class="pre">get_distances()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts.html">scripts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripts.html#locate_files.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripts.html#validate_metadata.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="references">
+<h2>references<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="design_docs.html">Design docs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="design_docs.html#design-considerations">Design considerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="design_docs.html#motivation">Motivation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="design_docs.html#inputs">Inputs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="design_docs.html#at-the-list-generation-stage-we-need-methods-that">At the list generation stage, we need methods that</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="design_docs.html#move-from-jobsub-to-justin-for-batch-running">Move from Jobsub to Justin for batch running</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="design_docs.html#justin-questions-2025-03-24">Justin questions 2025-03-24</a></li>
+<li class="toctree-l3"><a class="reference internal" href="design_docs.html#how-do-we-get-justin-to-run-over-chunks-of-files-in-a-list">how do we get Justin to run over chunks of files in a list.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="design_docs.html#methods-needed">Methods needed:</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="design_docs.html#delivery-methods">Delivery methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="design_docs.html#merging-methods">Merging methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="design_docs.html#note-on-event-counting-and-tracking">Note on Event counting and tracking</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="design_docs.html#consistency-checks">Consistency checks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="design_docs.html#metadata-merge">Metadata merge:</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="design_docs.html#metadata-fields-added">Metadata fields added:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="design_docs.html#enhancements-to-typechecker-py">enhancements to <code class="docutils literal notranslate"><span class="pre">TypeChecker.py</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="design_docs.html#sam4users">Sam4users</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="design_docs.html#where-this-runs">Where this runs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="design_docs.html#suggestions-for-future-versions">Suggestions for future versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="design_docs.html#design-ideas">Design ideas:</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="Notes.html">Notes on sphinx</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="Notes.html#rst-format">rst format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Notes.html#github-actions">Github actions</a></li>
@@ -145,8 +206,13 @@
     <h3><a href="#">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">DUNE merge-utils Documentation</a></li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a><ul>
-<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+<li><a class="reference internal" href="#contents">Contents</a><ul>
+<li><a class="reference internal" href="#setup">setup</a></li>
+<li><a class="reference internal" href="#utilities">utilities</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">references</a></li>
 </ul>
 </li>
 </ul>

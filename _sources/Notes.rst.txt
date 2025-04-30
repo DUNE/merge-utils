@@ -1,11 +1,11 @@
 Notes on sphinx
 ---------------
 
-This was my first sphinx project.
+This was my second sphinx project.
 
 I started with the https://www.sphinx-doc.org/en/master/tutorial/getting-started.html tutorial so I have a similar structure.
 
-I used the napoleon theme that Igor Mandrichenko used from https://metacat.readthedocs.io/en/latest/
+I used the nature theme that Igor Mandrichenko used from https://metacat.readthedocs.io/en/latest/
 
 rst format
 **********
@@ -29,9 +29,9 @@ The github actions had some issues:
 
   - I had to add a gh-pages branch by hand
 
-  - I adapted `<https://github.com/ammaraskar/sphinx-action>`_ from Ammar Askar
+  - I adapted `<https://github.com/ammaraskar/sphinx-action>`_ from Ammar Askar but it insisted on using python 3.8 which broke the 3.9 features in our code.  So I wrote a much simpler one myself. 
 
-  - The action can be found at `sphinx.yml <https://github.com/hschellman/DataChallengeWork-loginator/blob/develop/.github/workflows/sphinx.yml>`_
+  - The action can be found at `https://github.com/DUNE/merge-utils/blob/main/.github/workflows/sphinx.yml`_
 
   - I was not able to get the programoutput extension to work as adding a pip install for it did not work. So command line syntax is added by hand.
 

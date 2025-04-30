@@ -20,15 +20,37 @@ Indices and tables
 * :ref:`search`
 
 Contents
---------
+========
+
+setup
+-----
 
 .. toctree::
    
-    startup 
+    startup
+
+utilities
+---------
+
+.. toctree::
+       
     rucio_utils
     io_utils
     merge_set
     metacat_utils
+    justin_utils
+
+.. toctree::
+   
+    scripts
+
+
+
+references
+----------
+
+.. toctree::
+    design_docs
     Notes
     related
     
