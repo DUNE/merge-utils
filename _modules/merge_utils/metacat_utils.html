@@ -37,92 +37,149 @@
             
   <h1>Source code for merge_utils.metacat_utils</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Utility functions for interacting with the MetaCat web API.&quot;&quot;&quot;</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">metacat.webapi</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">metacat</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeSet</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeSet</span><span class="p">,</span> <span class="n">FileRetriever</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="log_bad_files">
-<a class="viewcode-back" href="../../metacat_utils.html#merge_utils.metacat_utils.log_bad_files">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">log_bad_files</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log a message for missing or duplicate files&quot;&quot;&quot;</span>
-    <span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">files</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-    <span class="k">if</span> <span class="n">total</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">0</span>
-    <span class="k">if</span> <span class="n">total</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="s2">&quot;file&quot;</span><span class="p">)]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="n">total</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="s2">&quot;files&quot;</span><span class="p">)]</span>
-    <span class="n">msg</span> <span class="o">+=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  (</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">) </span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">file</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">files</span><span class="o">.</span><span class="n">items</span><span class="p">())]</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">total</span></div>
+<div class="viewcode-block" id="MetaCatRetriever">
+<a class="viewcode-back" href="../../metacat_utils.html#merge_utils.metacat_utils.MetaCatRetriever">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MetaCatRetriever</span><span class="p">(</span><span class="n">FileRetriever</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for managing asynchronous queries to the MetaCat web API.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filelist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the MetaCatWrapper with a query or a list of files.</span>
+
+<span class="sd">        :param query: MQL query to find files</span>
+<span class="sd">        :param filelist: list of file DIDs to find</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">=</span> <span class="n">query</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span> <span class="o">=</span> <span class="n">filelist</span>
+        <span class="k">if</span> <span class="n">query</span> <span class="ow">and</span> <span class="n">filelist</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Both query and file list provided, was this intended?&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="MetaCatRetriever.connect">
+<a class="viewcode-back" href="../../metacat_utils.html#merge_utils.metacat_utils.MetaCatRetriever.connect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Connect to the MetaCat web API&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Connecting to MetaCat&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">metacat</span><span class="o">.</span><span class="n">MetaCatClient</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Already connected to MetaCat&quot;</span><span class="p">)</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dids</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously request file data from MetaCat</span>
+<span class="sd">        </span>
+<span class="sd">        :param idx: batch number (for logging)</span>
+<span class="sd">        :param dids: list of DIDs to request</span>
+<span class="sd">        :return: list of results from the request</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dids</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Retrieving files from MetaCat for batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+        <span class="n">dictlist</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;did&#39;</span><span class="p">:</span><span class="n">did</span><span class="p">}</span> <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">dids</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_files</span><span class="p">,</span>
+                                          <span class="n">dictlist</span><span class="p">,</span> <span class="n">with_metadata</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">with_provenance</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">metacat</span><span class="o">.</span><span class="n">webapi</span><span class="o">.</span><span class="n">BadRequestError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously query MetaCat</span>
+<span class="sd">        </span>
+<span class="sd">        :param idx: batch number to query</span>
+<span class="sd">        :return: list of results from the query</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Querying MetaCat for batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+        <span class="n">query_batch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; skip </span><span class="si">{</span><span class="n">idx</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="si">}</span><span class="s2"> limit </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># async_query exists but does not seem to be compatible with asyncIO</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">,</span>
+                                          <span class="n">query_batch</span><span class="p">,</span> <span class="n">with_metadata</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">with_provenance</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">metacat</span><span class="o">.</span><span class="n">webapi</span><span class="o">.</span><span class="n">BadRequestError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Malformed MetaCat query:</span><span class="se">\n</span><span class="s2">  </span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MetaCatRetriever.next_batch">
+<a class="viewcode-back" href="../../metacat_utils.html#merge_utils.metacat_utils.MetaCatRetriever.next_batch">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">next_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve metadata for the next batch of files.</span>
+
+<span class="sd">        :return: dict of MergeFile objects that were added</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># request first batch from filelist</span>
+        <span class="n">dids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">]</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_files</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dids</span><span class="p">))</span>
+        <span class="c1"># loop over batches from filelist</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filelist</span><span class="p">)</span><span class="o">//</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">old_dids</span> <span class="o">=</span> <span class="n">dids</span>
+            <span class="n">dids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span><span class="p">[</span><span class="n">idx</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">:(</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">]</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">task</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_files</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">dids</span><span class="p">))</span>
+            <span class="n">added</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">old_dids</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;yielding file batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">added</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">task</span>
+        <span class="c1"># request first batch from query</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_query</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="c1"># finish processing last batch from filelist</span>
+        <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
+            <span class="n">added</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">dids</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;yielding last file batch&quot;</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">added</span>
+        <span class="c1"># loop over batches from query</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">task</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_query</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+            <span class="n">added</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;yielding query batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">added</span>
+        <span class="c1"># yield last partial batch from query</span>
+        <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
+            <span class="n">added</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;yielding last query batch&quot;</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">added</span></div>
+</div>
 
 
 <div class="viewcode-block" id="find_logical_files">
 <a class="viewcode-back" href="../../metacat_utils.html#merge_utils.metacat_utils.find_logical_files">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">find_logical_files</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filelist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeSet</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_logical_files</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filelist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeSet</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Retrieve logical file information from MetaCat based on an MQL query or a list of DIDs.</span>
-<span class="sd">    Returns a MergeSet of unique files if the metadata is consistent, otherwise an empty MergeSet.</span>
-<span class="sd">    The config dictionary can be used to set the following options:</span>
-<span class="sd">    - allow_missing: allow missing files</span>
-<span class="sd">    - allow_duplicates: allow duplicate files</span>
-<span class="sd">    - checked_fields: list of metadata fields to check for consistency</span>
+
+<span class="sd">    :param query: MQL query to find files</span>
+<span class="sd">    :param filelist: list of file DIDs to find</span>
+<span class="sd">    :return: MergeSet of unique files.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Retrieving logical files from MetaCat&quot;</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">read_config</span><span class="p">()[</span><span class="s1">&#39;validation&#39;</span><span class="p">]</span>
-
-    <span class="k">if</span> <span class="n">query</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">filelist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">filelist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Both query and file list provided, was this intended?&quot;</span><span class="p">)</span>
-
-    <span class="n">mc_client</span> <span class="o">=</span> <span class="n">metacat</span><span class="o">.</span><span class="n">MetaCatClient</span><span class="p">()</span>
-    <span class="n">files</span> <span class="o">=</span> <span class="n">MergeSet</span><span class="p">()</span>
-    <span class="n">missing</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">query</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="n">mc_client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">with_metadata</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">metacat</span><span class="o">.</span><span class="n">webapi</span><span class="o">.</span><span class="n">BadRequestError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Malformed MetaCat query:</span><span class="se">\n</span><span class="s2">  </span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">MergeSet</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
-            <span class="n">files</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">filelist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">filelist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">didlist</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;did&#39;</span><span class="p">:</span><span class="n">did</span><span class="p">}</span> <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">filelist</span><span class="p">]</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="n">mc_client</span><span class="o">.</span><span class="n">get_files</span><span class="p">(</span><span class="n">didlist</span><span class="p">,</span> <span class="n">with_metadata</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">metacat</span><span class="o">.</span><span class="n">webapi</span><span class="o">.</span><span class="n">BadRequestError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">MergeSet</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
-            <span class="n">files</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="p">(</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">filelist</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">files</span><span class="p">):</span>
-            <span class="n">missing</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-
-    <span class="n">n_missing</span> <span class="o">=</span> <span class="n">log_bad_files</span><span class="p">(</span><span class="n">missing</span><span class="p">,</span> <span class="s2">&quot;No MetaCat entry found for </span><span class="si">{count}</span><span class="s2"> </span><span class="si">{files}</span><span class="s2">:&quot;</span><span class="p">)</span>
-    <span class="n">n_dupes</span> <span class="o">=</span> <span class="n">log_bad_files</span><span class="p">(</span><span class="n">files</span><span class="o">.</span><span class="n">dupes</span><span class="p">,</span> <span class="s2">&quot;Found </span><span class="si">{count}</span><span class="s2"> duplicate </span><span class="si">{files}</span><span class="s2">:&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">n_missing</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;allow_missing&#39;</span><span class="p">]:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Validation failed due to missing files&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">MergeSet</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">n_dupes</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;allow_duplicates&#39;</span><span class="p">]:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Validation failed due to duplicate files&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">MergeSet</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">files</span><span class="o">.</span><span class="n">check_consistency</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;checked_fields&#39;</span><span class="p">]):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Validation failed due to inconsistent metadata&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">MergeSet</span><span class="p">()</span>
-
-    <span class="k">return</span> <span class="n">files</span></div>
+    <span class="n">retriever</span> <span class="o">=</span> <span class="n">MetaCatRetriever</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">filelist</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">retriever</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
 
 </pre></div>
 
