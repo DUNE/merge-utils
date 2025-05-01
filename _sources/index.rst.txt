@@ -34,10 +34,11 @@ utilities
 
 .. toctree::
        
-    rucio_utils
     io_utils
     merge_set
     metacat_utils
+    rucio_utils
+    merge_rse
     justin_utils
 
 .. toctree::
