@@ -1,7 +1,4 @@
 scripts
 -------
 
-.. autofunction:: locate_files::main
-
-
-.. autofunction:: validate_metadata::main
+.. automodule:: merge_utils.__main__
