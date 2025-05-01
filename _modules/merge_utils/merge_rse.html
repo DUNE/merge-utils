@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>merge_utils.merge_rse &#8212; merge-utils 0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=fd3f3429" />
+    <script src="../../_static/documentation_options.js?v=837179f8"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://hschellman.github.io/merge-utils-test/_modules/merge_utils/merge_rse.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">merge-utils 0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">merge_utils.merge_rse</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for merge_utils.merge_rse</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Keep track of RSEs where files are stored&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">csv</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">rucio.client.rseclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">RSEClient</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">SITES_STORAGES_URL</span> <span class="o">=</span> <span class="s2">&quot;https://justin-ui-pro.dune.hep.ac.uk/api/info/sites_storages.csv&quot;</span>
+<span class="n">LOCAL_PING_THRESHOLD</span> <span class="o">=</span> <span class="mi">5</span>
+
+<div class="viewcode-block" id="check_path">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.check_path">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check the status of a file path.</span>
+
+<span class="sd">    :param path: file path to check.  Can be a local file or a remote URL.</span>
+<span class="sd">    :return: status of the file (&#39;ONLINE&#39;, &#39;NEARLINE&#39;, &#39;NONEXISTENT&#39;, or &#39;UNKNOWN&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;://&quot;</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+        <span class="c1"># remote site</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gfal-xattr&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="s1">&#39;user.status&#39;</span><span class="p">]</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="c1"># special case for FNAL DCACHE</span>
+        <span class="n">fnal_prefix</span> <span class="o">=</span> <span class="s2">&quot;root://fndca1.fnal.gov:1094/pnfs/fnal.gov/usr&quot;</span>
+        <span class="k">if</span> <span class="n">status</span><span class="o">==</span><span class="s1">&#39;UNKNOWN&#39;</span> <span class="ow">and</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">fnal_prefix</span><span class="p">):</span>
+            <span class="n">local_path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">fnal_prefix</span><span class="p">,</span> <span class="s2">&quot;/pnfs&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local_path</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Got UNKNOWN status for </span><span class="si">%s</span><span class="s2">, assuming NEARLINE&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+                <span class="k">return</span> <span class="s1">&#39;NEARLINE&#39;</span>
+            <span class="n">directory</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">local_path</span><span class="p">)</span>
+            <span class="n">stat_file</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">directory</span><span class="si">}</span><span class="s2">/.(get)(</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">)(locality)&quot;</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">stat_file</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">stats</span><span class="p">:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># local site</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> not found!&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s1">&#39;NONEXISTENT&#39;</span>
+
+        <span class="c1"># special case for FNAL DCACHE</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">directory</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">stat_file</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">directory</span><span class="si">}</span><span class="s2">/.(get)(</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">)(locality)&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">stat_file</span><span class="p">):</span>
+            <span class="c1"># normal file not in DCACHE?</span>
+            <span class="k">return</span> <span class="s1">&#39;ONLINE&#39;</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">stat_file</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">stats</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="c1"># status can be &#39;ONLINE AND NEARLINE&#39;, just return one or the other</span>
+    <span class="k">if</span> <span class="s1">&#39;ONLINE&#39;</span> <span class="ow">in</span> <span class="n">status</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;ONLINE&#39;</span>
+    <span class="k">if</span> <span class="s1">&#39;NEARLINE&#39;</span> <span class="ow">in</span> <span class="n">status</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;NEARLINE&#39;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> status is </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">status</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">status</span></div>
+
+
+<div class="viewcode-block" id="MergeRSE">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSE">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MergeRSE</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to store information about an RSE&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">valid</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">nearline_dist</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="n">valid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tape</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distances</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nearline_dist</span> <span class="o">=</span> <span class="n">nearline_dist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ping</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pfns</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the set of PFNs for this RSE&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">collections</span><span class="o">.</span><span class="n">ChainMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">disk</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tape</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MergeRSE.get_ping">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSE.get_ping">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the ping time to the RSE in ms&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">disk</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">pfn</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">disk</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">pfn</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tape</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">pfn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">:]</span> <span class="c1"># extract host from &#39;protocol://host:port/path&#39;</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ping&#39;</span><span class="p">,</span> <span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">]</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ret</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ping</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span> <span class="c1"># average ping time</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Pinged </span><span class="si">%s</span><span class="s2">, t = </span><span class="si">%d</span><span class="s2"> ms&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ping</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Failed to ping </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ping</span></div>
+
+
+<div class="viewcode-block" id="MergeRSE.distance">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSE.distance">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the distance to a site&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="MergeRSE.nearest_site">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSE.nearest_site">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">nearest_site</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the nearest site for this RSE&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="n">site</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+        <span class="n">distance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">site</span><span class="p">,</span> <span class="n">distance</span></div>
+</div>
+
+
+<div class="viewcode-block" id="MergeRSEs">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSEs">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MergeRSEs</span><span class="p">(</span><span class="n">collections</span><span class="o">.</span><span class="n">UserDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to keep track of a set of RSEs&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sites</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="p">[</span><span class="s1">&#39;allowed_sites&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="p">[</span><span class="s1">&#39;max_distance&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nearline_distances</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="p">[</span><span class="s1">&#39;nearline_distance&#39;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tape</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+<div class="viewcode-block" id="MergeRSEs.connect">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSEs.connect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Download the RSE list from Rucio and determine their distances&quot;&quot;&quot;</span>
+        <span class="c1"># Get the list of RSEs from Rucio</span>
+        <span class="n">rse_client</span> <span class="o">=</span> <span class="n">RSEClient</span><span class="p">()</span>
+        <span class="n">rses</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">rse_client</span><span class="o">.</span><span class="n">list_rses</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">rse</span> <span class="ow">in</span> <span class="n">rses</span><span class="p">:</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">rse</span><span class="p">[</span><span class="s1">&#39;availability_read&#39;</span><span class="p">]</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">rse</span><span class="p">[</span><span class="s1">&#39;staging_area&#39;</span><span class="p">]</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">rse</span><span class="p">[</span><span class="s1">&#39;deleted&#39;</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">rse</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nearline_distances</span><span class="p">:</span>
+                <span class="n">nearline_dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nearline_distances</span><span class="p">[</span><span class="n">rse</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">nearline_dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nearline_distances</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">MergeRSE</span><span class="p">(</span><span class="n">valid</span><span class="p">,</span> <span class="n">nearline_dist</span><span class="p">)</span>
+
+        <span class="c1"># Get site distances from justIN web API</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">,</span> <span class="s1">&#39;rse&#39;</span><span class="p">,</span> <span class="s1">&#39;dist&#39;</span><span class="p">,</span> <span class="s1">&#39;site_enabled&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_read&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_write&#39;</span><span class="p">]</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">SITES_STORAGES_URL</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">iter_lines</span><span class="p">(</span><span class="n">decode_unicode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">fields</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site_enabled&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse_read&#39;</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="n">site</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
+            <span class="n">rse</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">site</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sites</span> <span class="ow">or</span> <span class="n">rse</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dist&#39;</span><span class="p">])</span>
+
+        <span class="n">n_accessible</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">rse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">rse</span><span class="o">.</span><span class="n">valid</span>
+                           <span class="ow">and</span> <span class="n">rse</span><span class="o">.</span><span class="n">nearest_site</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">%d</span><span class="s2"> RSEs accessible from </span><span class="si">%d</span><span class="s2"> sites&quot;</span><span class="p">,</span> <span class="n">n_accessible</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sites</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="MergeRSEs.add_pfn">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSEs.add_pfn">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_pfn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">did</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pfn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a file PFN to the corresponding RSE</span>
+<span class="sd">        </span>
+<span class="sd">        :param did: file DID</span>
+<span class="sd">        :param pfn: physical file name</span>
+<span class="sd">        :param info: dictionary with RSE information</span>
+<span class="sd">        :return: distance from the RSE to the nearest site</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if the RSE is valid</span>
+        <span class="n">rse</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">rse</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> does not exist?&quot;</span><span class="p">,</span> <span class="n">rse</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> is invalid&quot;</span><span class="p">,</span> <span class="n">rse</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">nearest_site</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">dist</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> is too far from merging sites (</span><span class="si">%s</span><span class="s2"> &gt; </span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
+                           <span class="n">rse</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">dist</span>
+
+        <span class="c1"># Check file status</span>
+        <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;DISK&#39;</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="s1">&#39;ONLINE&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">check_path</span><span class="p">,</span> <span class="n">pfn</span><span class="p">)</span>
+
+        <span class="c1"># Actually add the file to the RSE</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;ONLINE&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">disk</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">disk</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="n">pfn</span>
+        <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;NEARLINE&#39;</span><span class="p">:</span>
+            <span class="n">dist</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">nearline_dist</span>
+            <span class="k">if</span> <span class="n">dist</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> (tape) is too far from merging sites (</span><span class="si">%s</span><span class="s2"> &gt; </span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
+                               <span class="n">rse</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tape</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">tape</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="n">pfn</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># File is not accessible</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dist</span></div>
+
+
+<div class="viewcode-block" id="MergeRSEs.add_replicas">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSEs.add_replicas">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_replicas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">did</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">replicas</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a set of file replicas to the RSEs</span>
+<span class="sd">        </span>
+<span class="sd">        :param did: file DID</span>
+<span class="sd">        :param replicas: Rucio replica dictionary</span>
+<span class="sd">        :return: number of PFNs added</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">add_pfn</span><span class="p">(</span><span class="n">did</span><span class="p">,</span> <span class="n">pfn</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="k">for</span> <span class="n">pfn</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">replicas</span><span class="p">[</span><span class="s1">&#39;pfns&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">tasks</span><span class="p">)</span>
+        <span class="n">best_dist</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">best_dist</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">best_dist</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Could not retrieve file </span><span class="si">%s</span><span class="s2"> from Rucio&quot;</span><span class="p">,</span> <span class="n">did</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;File not found&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> is too far from merging sites (</span><span class="si">%s</span><span class="s2"> &gt; </span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
+                         <span class="n">did</span><span class="p">,</span> <span class="n">best_dist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;File exceeds max distance&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">results</span> <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MergeRSEs.cleanup">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSEs.cleanup">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove RSEs with no files&quot;&quot;&quot;</span>
+        <span class="n">rse_client</span> <span class="o">=</span> <span class="n">RSEClient</span><span class="p">()</span>
+        <span class="c1"># Remove RSEs with no files</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">disk</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">tape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">}</span>
+
+        <span class="c1"># Count how many files we found</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">rse</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">disk</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">rse</span><span class="o">.</span><span class="n">disk</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">rse</span><span class="o">.</span><span class="n">tape</span><span class="p">)</span><span class="si">}</span><span class="s2">) files&quot;</span><span class="p">)</span>
+
+            <span class="n">attr</span> <span class="o">=</span> <span class="n">rse_client</span><span class="o">.</span><span class="n">list_rse_attributes</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">rse</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
+
+        <span class="n">n_files</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">disk</span><span class="p">)</span>
+        <span class="n">n_tape</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tape</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">disk</span><span class="p">)</span>
+        <span class="n">n_rses</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="n">s_files</span> <span class="o">=</span> <span class="s2">&quot;s&quot;</span> <span class="k">if</span> <span class="n">n_files</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">s_rses</span> <span class="o">=</span> <span class="s2">&quot;s&quot;</span> <span class="k">if</span> <span class="n">n_rses</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">msg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="n">n_files</span><span class="si">}</span><span class="s2"> ONLINE (</span><span class="si">{</span><span class="n">n_tape</span><span class="si">}</span><span class="s2"> NEARLINE) file</span><span class="si">{</span><span class="n">s_files</span><span class="si">}</span><span class="s2"> &quot;</span>
+                  <span class="sa">f</span><span class="s2">&quot;from </span><span class="si">{</span><span class="n">n_rses</span><span class="si">}</span><span class="s2"> RSE</span><span class="si">{</span><span class="n">s_rses</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="MergeRSEs.site_pfns">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSEs.site_pfns">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">site_pfns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dids</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the shortest distance pfns for a given site&quot;&quot;&quot;</span>
+        <span class="n">pfns</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">dids</span><span class="p">:</span>
+            <span class="n">pfns</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">rse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">distance</span> <span class="o">=</span> <span class="n">rse</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">distance</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> is too far away from site </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%s</span><span class="s2"> &gt; </span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
+                            <span class="n">name</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">did</span><span class="p">,</span> <span class="n">pfn</span> <span class="ow">in</span> <span class="n">rse</span><span class="o">.</span><span class="n">disk</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">did</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dids</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;</span> <span class="n">pfns</span><span class="p">[</span><span class="n">did</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">pfns</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pfn</span><span class="p">,</span> <span class="n">distance</span><span class="p">)</span>
+
+            <span class="n">distance</span> <span class="o">+=</span> <span class="n">rse</span><span class="o">.</span><span class="n">nearline_dist</span>
+            <span class="k">if</span> <span class="n">distance</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> (tape) is too far away from site </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%s</span><span class="s2"> &gt; </span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
+                            <span class="n">name</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">did</span><span class="p">,</span> <span class="n">pfn</span> <span class="ow">in</span> <span class="n">rse</span><span class="o">.</span><span class="n">tape</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">did</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dids</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;</span> <span class="n">pfns</span><span class="p">[</span><span class="n">did</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">pfns</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pfn</span><span class="p">,</span> <span class="n">distance</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pfns</span></div>
+
+
+<div class="viewcode-block" id="MergeRSEs.best_pfns">
+<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSEs.best_pfns">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">best_pfns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dids</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine the best RSE for each file&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">dids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">tape</span>
+
+        <span class="n">site_pfns</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">best_site</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">best_distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sites</span><span class="p">:</span>
+            <span class="n">site_pfns</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">site_pfns</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="n">dids</span><span class="p">)</span>
+            <span class="n">total_distance</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">site_pfns</span><span class="p">[</span><span class="n">site</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">total_distance</span> <span class="o">&lt;</span> <span class="n">best_distance</span><span class="p">:</span>
+                <span class="n">best_distance</span> <span class="o">=</span> <span class="n">total_distance</span>
+                <span class="n">best_site</span> <span class="o">=</span> <span class="n">site</span>
+
+        <span class="k">if</span> <span class="n">best_site</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Site </span><span class="si">%s</span><span class="s2"> has the shortest distance to all files&quot;</span><span class="p">,</span> <span class="n">best_site</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">best_site</span><span class="p">:</span> <span class="n">site_pfns</span><span class="p">[</span><span class="n">best_site</span><span class="p">]}</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No site found with access to all files&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">dids</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">site_pfns</span><span class="p">)</span>
+        <span class="n">site_pfns</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">dids</span><span class="p">:</span>
+            <span class="n">best_site</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">best_distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sites</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">site_pfns</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="n">did</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">best_distance</span><span class="p">:</span>
+                    <span class="n">best_site</span> <span class="o">=</span> <span class="n">site</span>
+                    <span class="n">best_distance</span> <span class="o">=</span> <span class="n">site_pfns</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="n">did</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="c1">#best_site, best_distance = min(</span>
+                <span class="c1">#((site, pfns[did][1]) for (site, pfns) in site_pfns.items()), key=lambda x: x[1])</span>
+            <span class="k">if</span> <span class="n">best_distance</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">:</span>
+                <span class="n">best_site</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">site_pfns</span><span class="p">[</span><span class="kc">None</span><span class="p">][</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
+            <span class="c1"># remove all but the best pfn</span>
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sites</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">site</span> <span class="o">==</span> <span class="n">best_site</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">del</span> <span class="n">site_pfns</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="n">did</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Excessive distance for </span><span class="si">{n}</span><span class="s2"> file</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="n">site_pfns</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Consider adjusting site distance limits!&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{}</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="n">site</span><span class="p">:</span> <span class="n">pfns</span> <span class="k">for</span> <span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="n">pfns</span><span class="p">)</span> <span class="ow">in</span> <span class="n">site_pfns</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pfns</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">}</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">merge-utils 0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">merge_utils.merge_rse</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>

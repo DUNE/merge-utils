@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>merge_rse &#8212; merge-utils 0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
+    <script src="_static/documentation_options.js?v=837179f8"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://hschellman.github.io/merge-utils-test/merge_rse.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="justin_utils" href="justin_utils.html" />
+    <link rel="prev" title="rucio_utils" href="rucio_utils.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="justin_utils.html" title="justin_utils"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="rucio_utils.html" title="rucio_utils"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">merge_rse</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-merge_utils.merge_rse">
+<span id="merge-rse"></span><h1>merge_rse<a class="headerlink" href="#module-merge_utils.merge_rse" title="Link to this heading">¶</a></h1>
+<p>Keep track of RSEs where files are stored</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.merge_rse.</span></span><span class="sig-name descname"><span class="pre">MergeRSE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">valid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nearline_dist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSE" title="Link to this definition">¶</a></dt>
+<dd><p>Class to store information about an RSE</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSE.distance">
+<span class="sig-name descname"><span class="pre">distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSE.distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSE.distance" title="Link to this definition">¶</a></dt>
+<dd><p>Get the distance to a site</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSE.get_ping">
+<span class="sig-name descname"><span class="pre">get_ping</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSE.get_ping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSE.get_ping" title="Link to this definition">¶</a></dt>
+<dd><p>Get the ping time to the RSE in ms</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSE.nearest_site">
+<span class="sig-name descname"><span class="pre">nearest_site</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSE.nearest_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSE.nearest_site" title="Link to this definition">¶</a></dt>
+<dd><p>Get the nearest site for this RSE</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSE.pfns">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pfns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#merge_utils.merge_rse.MergeRSE.pfns" title="Link to this definition">¶</a></dt>
+<dd><p>Get the set of PFNs for this RSE</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.merge_rse.</span></span><span class="sig-name descname"><span class="pre">MergeRSEs</span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs" title="Link to this definition">¶</a></dt>
+<dd><p>Class to keep track of a set of RSEs</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.add_pfn">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_pfn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">did</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pfn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.add_pfn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.add_pfn" title="Link to this definition">¶</a></dt>
+<dd><p>Add a file PFN to the corresponding RSE</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>did</strong> – file DID</p></li>
+<li><p><strong>pfn</strong> – physical file name</p></li>
+<li><p><strong>info</strong> – dictionary with RSE information</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>distance from the RSE to the nearest site</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.add_replicas">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_replicas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">did</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replicas</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.add_replicas"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.add_replicas" title="Link to this definition">¶</a></dt>
+<dd><p>Add a set of file replicas to the RSEs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>did</strong> – file DID</p></li>
+<li><p><strong>replicas</strong> – Rucio replica dictionary</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>number of PFNs added</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.best_pfns">
+<span class="sig-name descname"><span class="pre">best_pfns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.best_pfns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.best_pfns" title="Link to this definition">¶</a></dt>
+<dd><p>Determine the best RSE for each file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.cleanup">
+<span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.cleanup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.cleanup" title="Link to this definition">¶</a></dt>
+<dd><p>Remove RSEs with no files</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Download the RSE list from Rucio and determine their distances</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.site_pfns">
+<span class="sig-name descname"><span class="pre">site_pfns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.site_pfns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.site_pfns" title="Link to this definition">¶</a></dt>
+<dd><p>Get the shortest distance pfns for a given site</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.check_path">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.merge_rse.</span></span><span class="sig-name descname"><span class="pre">check_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#check_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.check_path" title="Link to this definition">¶</a></dt>
+<dd><p>Check the status of a file path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – file path to check.  Can be a local file or a remote URL.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>status of the file (‘ONLINE’, ‘NEARLINE’, ‘NONEXISTENT’, or ‘UNKNOWN’)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">merge_rse</a><ul>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSE"><code class="docutils literal notranslate"><span class="pre">MergeRSE</span></code></a><ul>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSE.distance"><code class="docutils literal notranslate"><span class="pre">MergeRSE.distance()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSE.get_ping"><code class="docutils literal notranslate"><span class="pre">MergeRSE.get_ping()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSE.nearest_site"><code class="docutils literal notranslate"><span class="pre">MergeRSE.nearest_site()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSE.pfns"><code class="docutils literal notranslate"><span class="pre">MergeRSE.pfns</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs"><code class="docutils literal notranslate"><span class="pre">MergeRSEs</span></code></a><ul>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.add_pfn"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.add_pfn()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.add_replicas"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.add_replicas()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.best_pfns"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.best_pfns()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.cleanup"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.cleanup()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.connect"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.connect()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.site_pfns"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.site_pfns()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.check_path"><code class="docutils literal notranslate"><span class="pre">check_path()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="rucio_utils.html"
+                          title="previous chapter">rucio_utils</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="justin_utils.html"
+                          title="next chapter">justin_utils</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/merge_rse.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="justin_utils.html" title="justin_utils"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="rucio_utils.html" title="rucio_utils"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">merge_rse</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>
