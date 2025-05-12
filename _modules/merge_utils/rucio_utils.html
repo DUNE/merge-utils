@@ -40,24 +40,32 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span><span class="p">,</span> <span class="n">Generator</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">rucio.client.replicaclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReplicaClient</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">MergeSet</span><span class="p">,</span> <span class="n">FileRetriever</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">MergeSet</span><span class="p">,</span> <span class="n">MergeChunk</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileRetriever</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_rse</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeRSEs</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">metacat_utils</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <div class="viewcode-block" id="RucioRetriever">
 <a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">RucioRetriever</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RucioRetriever</span> <span class="p">(</span><span class="n">FileRetriever</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for managing asynchronous queries to the Rucio web API.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">FileRetriever</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the RucioRetriever with a source of file metadata.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the RucioRetriever with a source of file metadata.</span>
+<span class="sd">        </span>
+<span class="sd">        :param source: FileRetriever object to use as the source of file metadata</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">checksums</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;checksums&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rses</span> <span class="o">=</span> <span class="n">MergeRSEs</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">source</span>
@@ -98,11 +106,11 @@
 <a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.checksum">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">rucio</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Ensure file sizes and checksums from MetaCat and Rucio agree</span>
+<span class="sd">        Ensure file sizes and checksums from Rucio agree with the input metadata.</span>
 <span class="sd">        </span>
 <span class="sd">        :param file: MergeFile object to check</span>
 <span class="sd">        :param rucio: Rucio replicas dictionary</span>
-<span class="sd">        :return: True if checksums match, False otherwise</span>
+<span class="sd">        :return: True if files match, False otherwise</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Check the file size</span>
         <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">rucio</span><span class="p">[</span><span class="s1">&#39;bytes&#39;</span><span class="p">]:</span>
@@ -164,51 +172,63 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Failed to find all files in Rucio!&quot;</span><span class="p">)</span></div>
 
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Repeatedly process batches from the source until all files are retrieved.&quot;&quot;&quot;</span>
-        <span class="c1"># connect to source</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
-        <span class="c1"># loop over batches</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">files</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">next_batch</span><span class="p">():</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+<div class="viewcode-block" id="RucioRetriever.input_batches">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.input_batches">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_batches</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve metadata for the next batch of files.</span>
+
+<span class="sd">        :return: dict of MergeFile objects that were added</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">input_batches</span><span class="p">():</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">batch</span></div>
+
 
 <div class="viewcode-block" id="RucioRetriever.run">
 <a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.run">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeRSEs</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve metadata for all files.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="RucioRetriever.output_chunks">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.output_chunks">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">output_chunks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">MergeChunk</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Retrieve metadata for all files.</span>
-
-<span class="sd">        :return: MergeSet of all files</span>
+<span class="sd">        Yield chunks of files for merging.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: yeilds a series of MergeChunk objects</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Retrieving physical file paths from Rucio&quot;</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="p">())</span>
-        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">MergeRSEs</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">groups</span><span class="p">():</span>
+            <span class="n">pfns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="o">.</span><span class="n">get_pfns</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">pfns</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">did</span><span class="p">,</span> <span class="n">pfn</span> <span class="ow">in</span> <span class="n">pfns</span><span class="p">[</span><span class="n">site</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">group</span><span class="p">[</span><span class="n">did</span><span class="p">]</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">pfn</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="c1"># log any missing or duplicated files</span>
-        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span><span class="s2">&quot;Missing metadata for </span><span class="si">{n}</span><span class="s2"> file</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">)</span>
-        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> duplicate file</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dupes</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pfns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">site</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">pfns</span><span class="p">))</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pfns</span><span class="p">[</span><span class="n">site</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;chunk_max&#39;</span><span class="p">]:</span>
+                    <span class="n">group</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">site</span>
+                    <span class="k">yield</span> <span class="n">group</span>
+                    <span class="k">continue</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rses</span></div>
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">pfns</span><span class="p">:</span>
+                <span class="n">n_chunks</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">/</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;chunk_max&#39;</span><span class="p">])</span>
+                <span class="n">target_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_chunks</span>
+                <span class="n">chunk</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">chunk</span><span class="p">()</span>
+                <span class="n">chunk</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">site</span>
+                <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">pfns</span><span class="p">[</span><span class="n">site</span><span class="p">]:</span>
+                    <span class="n">chunk</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="n">did</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">target_size</span><span class="p">:</span>
+                        <span class="k">yield</span> <span class="n">chunk</span>
+                        <span class="n">chunk</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">chunk</span><span class="p">()</span>
+                        <span class="n">chunk</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">site</span>
+                <span class="k">if</span> <span class="n">chunk</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="n">chunk</span>
+            <span class="k">yield</span> <span class="n">group</span></div>
 </div>
-
-
-
-
-
-<div class="viewcode-block" id="find_physical_files">
-<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.find_physical_files">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">find_physical_files</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filelist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeRSEs</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the best physical locations for a list of logical files&quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Retrieving physical file paths from Rucio&quot;</span><span class="p">)</span>
-
-    <span class="n">retriever</span> <span class="o">=</span> <span class="n">RucioRetriever</span><span class="p">(</span><span class="n">metacat_utils</span><span class="o">.</span><span class="n">MetaCatRetriever</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">filelist</span><span class="p">))</span>
-
-    <span class="n">rses</span> <span class="o">=</span> <span class="n">retriever</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">rses</span></div>
 
 </pre></div>
 

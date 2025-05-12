@@ -43,117 +43,21 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">AsyncGenerator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Generator</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span><span class="p">,</span> <span class="n">merge_meta</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-
-<div class="viewcode-block" id="FileRetriever">
-<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.FileRetriever">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">FileRetriever</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for retrieving metadata from a source&quot;&quot;&quot;</span>
-    <span class="n">step</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="n">allow_missing</span><span class="p">:</span> <span class="nb">bool</span>
-    <span class="n">missing</span><span class="p">:</span> <span class="nb">dict</span>
-    <span class="n">files</span><span class="p">:</span> <span class="n">MergeSet</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the file retriever&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">allow_missing</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;allow_missing&#39;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">missing</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="n">MergeSet</span><span class="p">()</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">dupes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the set of duplicate files from the source&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">dupes</span>
-
-<div class="viewcode-block" id="FileRetriever.connect">
-<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.FileRetriever.connect">[docs]</a>
-    <span class="nd">@abstractmethod</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Connect to the metadata source&quot;&quot;&quot;</span></div>
-
-        <span class="c1"># connect to source</span>
-
-<div class="viewcode-block" id="FileRetriever.add">
-<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.FileRetriever.add">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">dids</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Add the metadata for a list of files to the set.</span>
-<span class="sd">        </span>
-<span class="sd">        :param files: list of dictionaries with file metadata</span>
-<span class="sd">        :param dids: optional list of DIDs requested, used to check for missing files</span>
-<span class="sd">        :return: dict of MergeFile objects that were added</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># check for missing files</span>
-        <span class="k">if</span> <span class="n">dids</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">dids</span><span class="p">):</span>
-            <span class="n">res_set</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">files</span><span class="p">}</span>
-            <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">dids</span><span class="p">)</span> <span class="o">-</span> <span class="n">res_set</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_missing</span><span class="p">:</span>
-                <span class="n">io_utils</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span><span class="s2">&quot;No metadata found for </span><span class="si">{n}</span><span class="s2"> file</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Missing file metadata&quot;</span><span class="p">)</span>
-
-        <span class="c1"># add files to merge set</span>
-        <span class="n">added</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">add_files</span><span class="p">,</span> <span class="n">files</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">added</span></div>
-
-
-<div class="viewcode-block" id="FileRetriever.next_batch">
-<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.FileRetriever.next_batch">[docs]</a>
-    <span class="nd">@abstractmethod</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">next_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Asynchronously retrieve metadata for the next batch of files.</span>
-
-<span class="sd">        :return: dict of MergeFile objects that were added</span>
-<span class="sd">        &quot;&quot;&quot;</span></div>
-
-        <span class="c1"># yield batch</span>
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Repeatedly call next_batch() until all files are retrieved.&quot;&quot;&quot;</span>
-        <span class="c1"># connect to source</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
-        <span class="c1"># loop over batches</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_batch</span><span class="p">():</span>
-            <span class="k">pass</span> <span class="c1"># do nothing</span>
-
-<div class="viewcode-block" id="FileRetriever.run">
-<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.FileRetriever.run">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeSet</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Retrieve metadata for all files.</span>
-
-<span class="sd">        :return: MergeSet of all files</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Retrieving logical file metadata from MetaCat&quot;</span><span class="p">)</span>
-        <span class="c1"># run the loop</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="p">())</span>
-        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">MergeSet</span><span class="p">()</span>
-
-        <span class="c1"># log any missing or duplicated files</span>
-        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span><span class="s2">&quot;Missing metadata for </span><span class="si">{n}</span><span class="s2"> file</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">)</span>
-        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> duplicate file</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dupes</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span></div>
-</div>
-
 
 <div class="viewcode-block" id="MergeFile">
 <a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeFile">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MergeFile</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A generic data file with metadata&quot;&quot;&quot;</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_did</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fid</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;fid&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">checksums</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;checksums&#39;</span><span class="p">]</span>
@@ -162,7 +66,7 @@
         <span class="k">elif</span> <span class="s1">&#39;adler32&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">checksums</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No adler32 checksum for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parents</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;parents&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parents</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;parents&#39;</span><span class="p">,</span> <span class="p">[])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">did</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -312,12 +216,103 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the total size of the files&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
 
-<div class="viewcode-block" id="MergeSet.batches">
-<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.batches">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">batches</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Split the files into batches for merging&quot;&quot;&quot;</span></div>
+<div class="viewcode-block" id="MergeSet.group_count">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.group_count">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">group_count</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Group input files by count&quot;&quot;&quot;</span>
+        <span class="n">target_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;target_size&#39;</span><span class="p">]</span>
+        <span class="n">total_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">total_size</span> <span class="o">&lt;</span> <span class="n">target_size</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Merging </span><span class="si">%d</span><span class="s2"> inputs into 1 group&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+            <span class="k">return</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;equalize&#39;</span><span class="p">]:</span>
+            <span class="n">n_groups</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">total_size</span> <span class="o">/</span> <span class="n">target_size</span><span class="p">)</span>
+            <span class="n">target_size</span> <span class="o">=</span> <span class="n">total_size</span> <span class="o">/</span> <span class="n">n_groups</span>
+            <span class="n">divs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">target_size</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_groups</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">divs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">target_size</span><span class="p">,</span> <span class="n">total_size</span><span class="p">,</span> <span class="n">target_size</span><span class="p">))</span>
+        <span class="n">divs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Merging </span><span class="si">%d</span><span class="s2"> inputs into </span><span class="si">%d</span><span class="s2"> groups of </span><span class="si">%d</span><span class="s2"> files&quot;</span><span class="p">,</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">divs</span><span class="p">),</span> <span class="n">target_size</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">divs</span></div>
 
 
+<div class="viewcode-block" id="MergeSet.group_size">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.group_size">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">group_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Group input files by size&quot;&quot;&quot;</span>
+        <span class="n">target_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;target_size&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">3</span>
+        <span class="n">total_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span>
+        <span class="k">if</span> <span class="n">total_size</span> <span class="o">&lt;</span> <span class="n">target_size</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Merging </span><span class="si">%d</span><span class="s2"> inputs into 1 group&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+            <span class="k">return</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
+
+        <span class="n">avg_size</span> <span class="o">=</span> <span class="n">total_size</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">avg_size</span> <span class="o">&gt;</span> <span class="n">target_size</span> <span class="o">/</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;chunk_min&#39;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%.2f</span><span class="s2"> GB input files are too large to merge into </span><span class="si">%.2f</span><span class="s2"> GB groups&quot;</span><span class="p">,</span>
+                            <span class="n">avg_size</span><span class="o">/</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">,</span> <span class="n">target_size</span><span class="o">/</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">divs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;equalize&#39;</span><span class="p">]:</span>
+            <span class="n">max_size</span> <span class="o">=</span> <span class="n">target_size</span>
+            <span class="n">n_groups</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">total_size</span> <span class="o">/</span> <span class="n">target_size</span><span class="p">)</span>
+            <span class="n">target_size</span> <span class="o">=</span> <span class="n">total_size</span> <span class="o">/</span> <span class="n">n_groups</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">file</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">):</span>
+                <span class="c1"># Try to get just above target_size without exceeding max_size</span>
+                <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;=</span> <span class="n">target_size</span> <span class="o">-</span> <span class="n">err</span> <span class="ow">or</span> <span class="n">size</span> <span class="o">+</span> <span class="n">file</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="n">max_size</span><span class="p">:</span>
+                    <span class="n">divs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+                    <span class="n">err</span> <span class="o">+=</span> <span class="n">size</span> <span class="o">-</span> <span class="n">target_size</span> <span class="c1"># distribute error across groups</span>
+                    <span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">size</span> <span class="o">+=</span> <span class="n">file</span><span class="o">.</span><span class="n">size</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">file</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">size</span> <span class="o">+</span> <span class="n">file</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="n">target_size</span><span class="p">:</span>
+                    <span class="n">divs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+                    <span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">size</span> <span class="o">+=</span> <span class="n">file</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="n">divs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Merging </span><span class="si">%d</span><span class="s2"> inputs into </span><span class="si">%d</span><span class="s2"> groups of </span><span class="si">%.2f</span><span class="s2"> GB&quot;</span><span class="p">,</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">divs</span><span class="p">),</span> <span class="n">target_size</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">divs</span></div>
+
+
+<div class="viewcode-block" id="MergeSet.groups">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.groups">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">groups</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Split the files into groups for merging&quot;&quot;&quot;</span>
+        <span class="n">new_meta</span> <span class="o">=</span> <span class="n">merge_meta</span><span class="o">.</span><span class="n">merged_keys</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">new_meta</span><span class="p">[</span><span class="s1">&#39;merge.hash&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hash</span>
+        <span class="n">new_name</span> <span class="o">=</span> <span class="n">merge_meta</span><span class="o">.</span><span class="n">make_name</span><span class="p">(</span><span class="n">new_meta</span><span class="p">)</span>
+
+        <span class="c1"># Get the group divisions</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;target_mode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span>
+            <span class="n">divs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_count</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;target_mode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;size&#39;</span><span class="p">:</span>
+            <span class="n">divs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_size</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unknown target mode: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;target_mode&#39;</span><span class="p">])</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">divs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Actually output the groups</span>
+        <span class="n">group_id</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="n">MergeChunk</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">new_name</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">new_meta</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">divs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">group_id</span> <span class="o">=</span> <span class="n">group_id</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">file</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">):</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+            <span class="c1"># Check if we need to yield the group</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span> <span class="o">==</span> <span class="n">divs</span><span class="p">[</span><span class="n">group_id</span><span class="p">]:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Yielding group </span><span class="si">%d</span><span class="s2"> with </span><span class="si">%d</span><span class="s2"> files&quot;</span><span class="p">,</span> <span class="n">group_id</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="p">))</span>
+                <span class="k">yield</span> <span class="n">group</span>
+                <span class="n">group_id</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">group</span> <span class="o">=</span> <span class="n">MergeChunk</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">new_name</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">new_meta</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="n">group_id</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="MergeSet.check_consistency">
@@ -358,6 +353,49 @@
 
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errs</span><span class="p">))</span>
         <span class="k">return</span> <span class="kc">False</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="MergeChunk">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeChunk">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MergeChunk</span><span class="p">(</span><span class="n">collections</span><span class="o">.</span><span class="n">UserDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to keep track of a chunk of files for merging&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group_id</span> <span class="o">=</span> <span class="n">idx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chunk_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chunks</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the chunk&quot;&quot;&quot;</span>
+        <span class="n">the_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">the_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">the_name</span><span class="si">}</span><span class="s2">_f</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">group_id</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunk_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">the_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">the_name</span><span class="si">}</span><span class="s2">_c</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">chunk_id</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">the_name</span>
+
+<div class="viewcode-block" id="MergeChunk.add">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeChunk.add">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">MergeFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a file to the chunk&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="n">file</span></div>
+
+
+<div class="viewcode-block" id="MergeChunk.chunk">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeChunk.chunk">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">chunk</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeChunk</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a subset of the chunk with the same metadata&quot;&quot;&quot;</span>
+        <span class="n">chunk</span> <span class="o">=</span> <span class="n">MergeChunk</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">group_id</span><span class="p">)</span>
+        <span class="n">chunk</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">site</span>
+        <span class="n">chunk</span><span class="o">.</span><span class="n">chunk_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chunks</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">chunk</span></div>
 </div>
 
 

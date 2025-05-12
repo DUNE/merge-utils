@@ -64,8 +64,16 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSE.nearest_site">
-<span class="sig-name descname"><span class="pre">nearest_site</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSE.nearest_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSE.nearest_site" title="Link to this definition">¶</a></dt>
-<dd><p>Get the nearest site for this RSE</p>
+<span class="sig-name descname"><span class="pre">nearest_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sites</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSE.nearest_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSE.nearest_site" title="Link to this definition">¶</a></dt>
+<dd><p>Get the nearest merging site to this RSE</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sites</strong> – list of merging sites to consider (default: all sites)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple of (site, distance)</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
@@ -116,12 +124,6 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.best_pfns">
-<span class="sig-name descname"><span class="pre">best_pfns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.best_pfns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.best_pfns" title="Link to this definition">¶</a></dt>
-<dd><p>Determine the best RSE for each file</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.cleanup">
 <span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.cleanup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.cleanup" title="Link to this definition">¶</a></dt>
 <dd><p>Remove RSEs with no files</p>
@@ -134,9 +136,50 @@
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.get_pfns">
+<span class="sig-name descname"><span class="pre">get_pfns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.get_pfns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.get_pfns" title="Link to this definition">¶</a></dt>
+<dd><p>Determine the best RSE for each file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.optimize_pfns">
+<span class="sig-name descname"><span class="pre">optimize_pfns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pfns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sites</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.optimize_pfns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.optimize_pfns" title="Link to this definition">¶</a></dt>
+<dd><p>Find the best PFNs for a set of sites.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pfns</strong> – dictionary of PFNs for all sites</p></li>
+<li><p><strong>files</strong> – collection of files to process</p></li>
+<li><p><strong>sites</strong> – list of sites to consider</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dictionary of best PFNs for each site</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.set_rse_sites">
+<span class="sig-name descname"><span class="pre">set_rse_sites</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.set_rse_sites"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.set_rse_sites" title="Link to this definition">¶</a></dt>
+<dd><p>Query Rucio for the site associated with each RSE</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="merge_utils.merge_rse.MergeRSEs.site_pfns">
-<span class="sig-name descname"><span class="pre">site_pfns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.site_pfns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.site_pfns" title="Link to this definition">¶</a></dt>
-<dd><p>Get the shortest distance pfns for a given site</p>
+<span class="sig-name descname"><span class="pre">site_pfns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_rse.html#MergeRSEs.site_pfns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_rse.MergeRSEs.site_pfns" title="Link to this definition">¶</a></dt>
+<dd><p>Find the file replicas with the shortest distance to a given merging site.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>site</strong> – merging site name</p></li>
+<li><p><strong>files</strong> – collection of files to process</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dictionary of PFNs for the site</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -178,9 +221,11 @@
 <li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs"><code class="docutils literal notranslate"><span class="pre">MergeRSEs</span></code></a><ul>
 <li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.add_pfn"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.add_pfn()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.add_replicas"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.add_replicas()</span></code></a></li>
-<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.best_pfns"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.best_pfns()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.cleanup"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.cleanup()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.connect"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.connect()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.get_pfns"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.get_pfns()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.optimize_pfns"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.optimize_pfns()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.set_rse_sites"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.set_rse_sites()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_rse.MergeRSEs.site_pfns"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.site_pfns()</span></code></a></li>
 </ul>
 </li>

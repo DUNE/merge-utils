@@ -50,7 +50,7 @@
 <dt class="sig sig-object py" id="merge_utils.metacat_utils.MetaCatRetriever">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.metacat_utils.</span></span><span class="sig-name descname"><span class="pre">MetaCatRetriever</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/metacat_utils.html#MetaCatRetriever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.metacat_utils.MetaCatRetriever" title="Link to this definition">¶</a></dt>
 <dd><p>Class for managing asynchronous queries to the MetaCat web API.</p>
-<p>Initialize the MetaCatWrapper with a query or a list of files.</p>
+<p>Initialize the MetaCatRetriever with a query or a list of files.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -66,8 +66,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="merge_utils.metacat_utils.MetaCatRetriever.next_batch">
-<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">next_batch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AsyncGenerator</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/merge_utils/metacat_utils.html#MetaCatRetriever.next_batch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.metacat_utils.MetaCatRetriever.next_batch" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="merge_utils.metacat_utils.MetaCatRetriever.input_batches">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_batches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AsyncGenerator</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/merge_utils/metacat_utils.html#MetaCatRetriever.input_batches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.metacat_utils.MetaCatRetriever.input_batches" title="Link to this definition">¶</a></dt>
 <dd><p>Asynchronously retrieve metadata for the next batch of files.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -76,23 +76,6 @@
 </dl>
 </dd></dl>
 
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="merge_utils.metacat_utils.find_logical_files">
-<span class="sig-prename descclassname"><span class="pre">merge_utils.metacat_utils.</span></span><span class="sig-name descname"><span class="pre">find_logical_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet" title="merge_utils.merge_set.MergeSet"><span class="pre">MergeSet</span></a></span></span><a class="reference internal" href="_modules/merge_utils/metacat_utils.html#find_logical_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.metacat_utils.find_logical_files" title="Link to this definition">¶</a></dt>
-<dd><p>Retrieve logical file information from MetaCat based on an MQL query or a list of DIDs.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>query</strong> – MQL query to find files</p></li>
-<li><p><strong>filelist</strong> – list of file DIDs to find</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>MergeSet of unique files.</p>
-</dd>
-</dl>
 </dd></dl>
 
 </section>
@@ -110,10 +93,9 @@
 <li><a class="reference internal" href="#">metacat_utils</a><ul>
 <li><a class="reference internal" href="#merge_utils.metacat_utils.MetaCatRetriever"><code class="docutils literal notranslate"><span class="pre">MetaCatRetriever</span></code></a><ul>
 <li><a class="reference internal" href="#merge_utils.metacat_utils.MetaCatRetriever.connect"><code class="docutils literal notranslate"><span class="pre">MetaCatRetriever.connect()</span></code></a></li>
-<li><a class="reference internal" href="#merge_utils.metacat_utils.MetaCatRetriever.next_batch"><code class="docutils literal notranslate"><span class="pre">MetaCatRetriever.next_batch()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.metacat_utils.MetaCatRetriever.input_batches"><code class="docutils literal notranslate"><span class="pre">MetaCatRetriever.input_batches()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#merge_utils.metacat_utils.find_logical_files"><code class="docutils literal notranslate"><span class="pre">find_logical_files()</span></code></a></li>
 </ul>
 </li>
 </ul>

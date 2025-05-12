@@ -45,7 +45,8 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">metacat.webapi</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">metacat</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeSet</span><span class="p">,</span> <span class="n">FileRetriever</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileRetriever</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -56,7 +57,7 @@
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filelist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialize the MetaCatWrapper with a query or a list of files.</span>
+<span class="sd">        Initialize the MetaCatRetriever with a query or a list of files.</span>
 
 <span class="sd">        :param query: MQL query to find files</span>
 <span class="sd">        :param filelist: list of file DIDs to find</span>
@@ -65,6 +66,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">=</span> <span class="n">query</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span> <span class="o">=</span> <span class="n">filelist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parents</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;grandparents&#39;</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">query</span> <span class="ow">and</span> <span class="n">filelist</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Both query and file list provided, was this intended?&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span><span class="p">:</span>
@@ -83,7 +85,7 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Already connected to MetaCat&quot;</span><span class="p">)</span></div>
 
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dids</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dids</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Asynchronously request file data from MetaCat</span>
 <span class="sd">        </span>
@@ -96,14 +98,14 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Retrieving files from MetaCat for batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
         <span class="n">dictlist</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;did&#39;</span><span class="p">:</span><span class="n">did</span><span class="p">}</span> <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">dids</span><span class="p">]</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_files</span><span class="p">,</span>
-                                          <span class="n">dictlist</span><span class="p">,</span> <span class="n">with_metadata</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">with_provenance</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_files</span><span class="p">,</span> <span class="n">dictlist</span><span class="p">,</span>
+                                          <span class="n">with_metadata</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">with_provenance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="p">)</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">metacat</span><span class="o">.</span><span class="n">webapi</span><span class="o">.</span><span class="n">BadRequestError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
             <span class="k">return</span> <span class="p">[]</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_get_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Asynchronously query MetaCat</span>
 <span class="sd">        </span>
@@ -116,16 +118,16 @@
         <span class="n">query_batch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; skip </span><span class="si">{</span><span class="n">idx</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="si">}</span><span class="s2"> limit </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># async_query exists but does not seem to be compatible with asyncIO</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">,</span>
-                                          <span class="n">query_batch</span><span class="p">,</span> <span class="n">with_metadata</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">with_provenance</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="n">query_batch</span><span class="p">,</span>
+                                          <span class="n">with_metadata</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">with_provenance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">metacat</span><span class="o">.</span><span class="n">webapi</span><span class="o">.</span><span class="n">BadRequestError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Malformed MetaCat query:</span><span class="se">\n</span><span class="s2">  </span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
             <span class="k">return</span> <span class="p">[]</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
 
-<div class="viewcode-block" id="MetaCatRetriever.next_batch">
-<a class="viewcode-back" href="../../metacat_utils.html#merge_utils.metacat_utils.MetaCatRetriever.next_batch">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">next_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<div class="viewcode-block" id="MetaCatRetriever.input_batches">
+<a class="viewcode-back" href="../../metacat_utils.html#merge_utils.metacat_utils.MetaCatRetriever.input_batches">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_batches</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Asynchronously retrieve metadata for the next batch of files.</span>
 
@@ -133,19 +135,19 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># request first batch from filelist</span>
         <span class="n">dids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">]</span>
-        <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_files</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dids</span><span class="p">))</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_files</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dids</span><span class="p">))</span>
         <span class="c1"># loop over batches from filelist</span>
         <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filelist</span><span class="p">)</span><span class="o">//</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
             <span class="n">old_dids</span> <span class="o">=</span> <span class="n">dids</span>
             <span class="n">dids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span><span class="p">[</span><span class="n">idx</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">:(</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">]</span>
             <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">task</span>
-            <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_files</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">dids</span><span class="p">))</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_files</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">dids</span><span class="p">))</span>
             <span class="n">added</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">old_dids</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;yielding file batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">yield</span> <span class="n">added</span>
         <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">task</span>
         <span class="c1"># request first batch from query</span>
-        <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_query</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_query</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
         <span class="c1"># finish processing last batch from filelist</span>
         <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
             <span class="n">added</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">dids</span><span class="p">)</span>
@@ -156,7 +158,7 @@
             <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">task</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">:</span>
                 <span class="k">break</span>
-            <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_query</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_query</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
             <span class="n">added</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;yielding query batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">yield</span> <span class="n">added</span>
@@ -166,20 +168,6 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;yielding last query batch&quot;</span><span class="p">)</span>
             <span class="k">yield</span> <span class="n">added</span></div>
 </div>
-
-
-<div class="viewcode-block" id="find_logical_files">
-<a class="viewcode-back" href="../../metacat_utils.html#merge_utils.metacat_utils.find_logical_files">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">find_logical_files</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filelist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeSet</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Retrieve logical file information from MetaCat based on an MQL query or a list of DIDs.</span>
-
-<span class="sd">    :param query: MQL query to find files</span>
-<span class="sd">    :param filelist: list of file DIDs to find</span>
-<span class="sd">    :return: MergeSet of unique files.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">retriever</span> <span class="o">=</span> <span class="n">MetaCatRetriever</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">filelist</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">retriever</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
 
 </pre></div>
 
