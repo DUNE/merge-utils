@@ -29,8 +29,8 @@ setup
    
     startup
 
-utilities
----------
+python API
+----------
 
 .. toctree::
        
@@ -40,6 +40,9 @@ utilities
     rucio_utils
     merge_rse
     justin_utils
+
+command line API
+----------------
 
 .. toctree::
    
@@ -55,3 +58,5 @@ references
     Notes
     related
     
+.. toctree::
+    Ack
