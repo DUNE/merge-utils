@@ -2,7 +2,7 @@
 # Please create your own config files instead of modifying this one directly!
 
 validation:
-    batch_size: 2 # Number of files to query metacat about at once
+    batch_size: 100 # Number of files to query metacat about at once
     allow_missing: false
     allow_duplicates: false
     checksums:
@@ -188,7 +188,7 @@ sites:
 merging:
     method: auto        # Can be auto or a specific method from the list below
     target_mode: size   # Options: size, count
-    target_size: 20     # Target size (in GB) or number of files
+    target_size: 10     # Target size (in GB) or number of files
     equalize: true      # Try to equalize the size of the merged files
     chunk_min: 5        # Minimum number of files to merge at once
     chunk_max: 100      # Maxiumum number of files to merge at once

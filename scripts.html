@@ -70,21 +70,14 @@
 <dd><p>List the PFNs of files from Rucio</p>
 </dd></dl>
 
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: merge [-h] [-c CONFIG] [-v] FUNCTION ...
-
-Command line interface for merge_utils
-
-positional arguments:
-  FUNCTION              function to execute
-    dids                list the DIDs of files from MetaCat
-    pfns                list the PFNs of files from Rucio
-    merge               actualy merge files
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -c CONFIG, --config CONFIG
-                        a configuration file
-  -v, --verbose         print more verbose output
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
+  File &quot;/home/runner/work/merge-utils/merge-utils/docs/source/merge&quot;, line 4, in &lt;module&gt;
+    from merge_utils.__main__ import main
+  File &quot;/opt/hostedtoolcache/Python/3.9.22/x64/lib/python3.9/site-packages/merge_utils/__main__.py&quot;, line 6, in &lt;module&gt;
+    from merge_utils import io_utils, config, metacat_utils, rucio_utils, scheduler
+  File &quot;/opt/hostedtoolcache/Python/3.9.22/x64/lib/python3.9/site-packages/merge_utils/metacat_utils.py&quot;, line 9, in &lt;module&gt;
+    import metacat.webapi as metacat
+ModuleNotFoundError: No module named &#39;metacat&#39;
 </pre></div>
 </div>
 </section>

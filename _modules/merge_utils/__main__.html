@@ -41,6 +41,8 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">metacat_utils</span><span class="p">,</span> <span class="n">rucio_utils</span><span class="p">,</span> <span class="n">scheduler</span>
+
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <div class="viewcode-block" id="main">
@@ -78,8 +80,6 @@
     <span class="nb">print</span> <span class="p">(</span><span class="n">args</span><span class="p">)</span>
 
     <span class="c1"># move this here so that one can get the help output without loading code.</span>
-
-    <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">metacat_utils</span><span class="p">,</span> <span class="n">rucio_utils</span>
 
     <span class="n">io_utils</span><span class="o">.</span><span class="n">setup_log</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">function</span><span class="p">)</span>
     <span class="n">config</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
