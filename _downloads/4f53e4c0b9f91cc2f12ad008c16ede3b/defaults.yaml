@@ -74,8 +74,8 @@ validation:
           - "311"                   # old script
           - "311_dp_light"          # old script
         # Other keys from metacat
-          - "ehn1-beam-np04"
           - "physics"
+          - "ehn1-beam-np04"
         # - "justin-tutorial"
         "core.file_type":
           - "mc"
@@ -137,6 +137,7 @@ validation:
           - "rootntuple"
           - "hdf5"
           - "tar"
+        # - "unknown"
     optional:
         "all":  # These keys are optional for all files
             - "core.events"
