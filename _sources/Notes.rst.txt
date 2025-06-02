@@ -21,7 +21,7 @@ Not my favorite -
 Github actions
 **************
 
-I set up github actions to build on my github page hschellman/DataChallengeWork-loginator which is based on Jake Calcutt's data dispatcher test system
+I set up github actions to build on my github page hschellman/merge-utils-test
 
 The github actions had some issues:
 
@@ -31,15 +31,21 @@ The github actions had some issues:
 
   - I adapted `<https://github.com/ammaraskar/sphinx-action>`_ from Ammar Askar but it insisted on using python 3.8 which broke the 3.9 features in our code.  So I wrote a much simpler one myself. 
 
-  - The action can be found at `https://github.com/DUNE/merge-utils/blob/main/.github/workflows/sphinx.yml`_
+  - The action can be found in the sphinx.yml file 
 
-  - I was not able to get the programoutput extension to work as adding a pip install for it did not work. So command line syntax is added by hand.
+  - I was not able to get the programoutput extension to work as adding a pip install for it did not work. 
+  
+  - 2025-05-22 I managed to get the programoutput to work by copying the python code for the merge command line from my venv into docs/source and making the command  '.. program-output:: python merge -h'
+
+  - merge contains
+
+    .. literalinclude:: merge
 
   - I had to add a
 
     .. code-block:: python
 
-      autodoc_mock_imports = ["metacat","samweb_client","data_dispatcher"]
+      autodoc_mock_imports = ["metacat","rucio"]
 
     to the `conf.py`  to avoid errors due to imports of external code.  I just got blanks otherwise.
 

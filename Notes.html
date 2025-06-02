@@ -61,17 +61,29 @@
 </section>
 <section id="github-actions">
 <h2>Github actions<a class="headerlink" href="#github-actions" title="Link to this heading">¶</a></h2>
-<p>I set up github actions to build on my github page hschellman/DataChallengeWork-loginator which is based on Jake Calcutt’s data dispatcher test system</p>
+<p>I set up github actions to build on my github page hschellman/merge-utils-test</p>
 <p>The github actions had some issues:</p>
 <blockquote>
 <div><ul>
 <li><p>It assumed the code was in main - I had to move to develop</p></li>
 <li><p>I had to add a gh-pages branch by hand</p></li>
 <li><p>I adapted <a class="reference external" href="https://github.com/ammaraskar/sphinx-action">https://github.com/ammaraskar/sphinx-action</a> from Ammar Askar but it insisted on using python 3.8 which broke the 3.9 features in our code.  So I wrote a much simpler one myself.</p></li>
-<li><p>The action can be found at <a href="#id1"><span class="problematic" id="id2">`https://github.com/DUNE/merge-utils/blob/main/.github/workflows/sphinx.yml`_</span></a></p></li>
-<li><p>I was not able to get the programoutput extension to work as adding a pip install for it did not work. So command line syntax is added by hand.</p></li>
+<li><p>The action can be found in the sphinx.yml file</p></li>
+<li><p>I was not able to get the programoutput extension to work as adding a pip install for it did not work.</p></li>
+<li><p>2025-05-22 I managed to get the programoutput to work by copying the python code for the merge command line from my venv into docs/source and making the command  ‘.. program-output:: python merge -h’</p></li>
+<li><p>merge contains</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># hacked from the binary area so it can be called in a github workflow</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.__main__</span><span class="w"> </span><span class="kn">import</span> <span class="n">main</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(-script\.pyw|\.exe)?$&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+</div>
+</li>
 <li><p>I had to add a</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">autodoc_mock_imports</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;metacat&quot;</span><span class="p">,</span><span class="s2">&quot;samweb_client&quot;</span><span class="p">,</span><span class="s2">&quot;data_dispatcher&quot;</span><span class="p">]</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">autodoc_mock_imports</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;metacat&quot;</span><span class="p">,</span><span class="s2">&quot;rucio&quot;</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>to the <cite>conf.py</cite>  to avoid errors due to imports of external code.  I just got blanks otherwise.</p>

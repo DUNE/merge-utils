@@ -70,10 +70,23 @@
 <dd><p>List the PFNs of files from Rucio</p>
 </dd></dl>
 
-<aside class="system-message">
-<p class="system-message-title">System Message: ERROR/6 (<span class="docutils literal">/home/runner/work/merge-utils/merge-utils/docs/source/scripts.rst</span>, line 7)</p>
-<p>Command ['merge', '--help'] failed: [Errno 2] No such file or directory: 'merge'</p>
-</aside>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: merge [-h] [-c CONFIG] [-v] FUNCTION ...
+
+Command line interface for merge_utils
+
+positional arguments:
+  FUNCTION              function to execute
+    dids                list the DIDs of files from MetaCat
+    pfns                list the PFNs of files from Rucio
+    merge               actualy merge files
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CONFIG, --config CONFIG
+                        a configuration file
+  -v, --verbose         print more verbose output
+</pre></div>
+</div>
 </section>
 
 
