@@ -43,8 +43,202 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="merge-set">
-<h1>merge_set<a class="headerlink" href="#merge-set" title="Link to this heading">¶</a></h1>
+  <section id="module-merge_utils.merge_set">
+<span id="merge-set"></span><h1>merge_set<a class="headerlink" href="#module-merge_utils.merge_set" title="Link to this heading">¶</a></h1>
+<p>Container for a set of files to be merged</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.merge_set.</span></span><span class="sig-name descname"><span class="pre">MergeChunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeChunk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeChunk" title="Link to this definition">¶</a></dt>
+<dd><p>Class to keep track of a chunk of files for merging</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#merge_utils.merge_set.MergeFile" title="merge_utils.merge_set.MergeFile"><span class="pre">MergeFile</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeChunk.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add a file to the chunk</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.chunk">
+<span class="sig-name descname"><span class="pre">chunk</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#merge_utils.merge_set.MergeChunk" title="merge_utils.merge_set.MergeChunk"><span class="pre">MergeChunk</span></a></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeChunk.chunk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.chunk" title="Link to this definition">¶</a></dt>
+<dd><p>Create a subset of the chunk with the same metadata</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.inputs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inputs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.inputs" title="Link to this definition">¶</a></dt>
+<dd><p>Get the list of input files</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.json">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">json</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.json" title="Link to this definition">¶</a></dt>
+<dd><p>Get the chunk metadata as a JSON-compatible dictionary</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.metadata">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">metadata</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Get the metadata for the chunk</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.name" title="Link to this definition">¶</a></dt>
+<dd><p>The name of the chunk</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.parents">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parents</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.parents" title="Link to this definition">¶</a></dt>
+<dd><p>Get the list of parent dids</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeFile">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.merge_set.</span></span><span class="sig-name descname"><span class="pre">MergeFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeFile" title="Link to this definition">¶</a></dt>
+<dd><p>A generic data file with metadata</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeFile.did">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">did</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeFile.did" title="Link to this definition">¶</a></dt>
+<dd><p>name)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The file DID (namespace</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeFile.format">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">format</span></span><a class="headerlink" href="#merge_utils.merge_set.MergeFile.format" title="Link to this definition">¶</a></dt>
+<dd><p>The file format (core.file_format)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeFile.get_fields">
+<span class="sig-name descname"><span class="pre">get_fields</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeFile.get_fields"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeFile.get_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Get the namespace and specified metadata values from the file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fields</strong> – list of metadata fields to extract</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple of values for each field</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeFile.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeFile.name" title="Link to this definition">¶</a></dt>
+<dd><p>The file name</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeFile.namespace">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">namespace</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeFile.namespace" title="Link to this definition">¶</a></dt>
+<dd><p>The file namespace</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.merge_set.</span></span><span class="sig-name descname"><span class="pre">MergeSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#merge_utils.merge_set.MergeFile" title="merge_utils.merge_set.MergeFile"><span class="pre">MergeFile</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet" title="Link to this definition">¶</a></dt>
+<dd><p>Class to keep track of a set of files for merging</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.add_file">
+<span class="sig-name descname"><span class="pre">add_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#merge_utils.merge_set.MergeFile" title="merge_utils.merge_set.MergeFile"><span class="pre">MergeFile</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#merge_utils.merge_set.MergeFile" title="merge_utils.merge_set.MergeFile"><span class="pre">MergeFile</span></a></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.add_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.add_file" title="Link to this definition">¶</a></dt>
+<dd><p>Add a file to the set</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file</strong> – A MergeFile object or a dictionary with file metadata</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the file was added, False if it was a duplicate</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.add_files">
+<span class="sig-name descname"><span class="pre">add_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.add_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.add_files" title="Link to this definition">¶</a></dt>
+<dd><p>Add a collection of files to the set</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>files</strong> – collection of MergeFile objects or dictionaries with file metadata</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict of MergeFile objects that were added</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.check_consistency">
+<span class="sig-name descname"><span class="pre">check_consistency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.check_consistency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.check_consistency" title="Link to this definition">¶</a></dt>
+<dd><p>Check that the files have consistent namespaces and selected metadata fields</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fields</strong> – list of metadata fields to check</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if all files have matching metadata, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.dupes">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dupes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeSet.dupes" title="Link to this definition">¶</a></dt>
+<dd><p>Return counts of duplicate file DIDs</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.files">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">files</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#merge_utils.merge_set.MergeFile" title="merge_utils.merge_set.MergeFile"><span class="pre">MergeFile</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#merge_utils.merge_set.MergeSet.files" title="Link to this definition">¶</a></dt>
+<dd><p>Return the list of files</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.group_count">
+<span class="sig-name descname"><span class="pre">group_count</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.group_count"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.group_count" title="Link to this definition">¶</a></dt>
+<dd><p>Group input files by count</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.group_size">
+<span class="sig-name descname"><span class="pre">group_size</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.group_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.group_size" title="Link to this definition">¶</a></dt>
+<dd><p>Group input files by size</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.groups">
+<span class="sig-name descname"><span class="pre">groups</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Generator</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.groups"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.groups" title="Link to this definition">¶</a></dt>
+<dd><p>Split the files into groups for merging</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.hash">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">hash</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeSet.hash" title="Link to this definition">¶</a></dt>
+<dd><p>Get a hash from the list of files</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.size">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeSet.size" title="Link to this definition">¶</a></dt>
+<dd><p>Get the total size of the files</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.merge_set.check_remote_path">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.merge_set.</span></span><span class="sig-name descname"><span class="pre">check_remote_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#check_remote_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.check_remote_path" title="Link to this definition">¶</a></dt>
+<dd><p>Check if a remote path is accessible via xrootd</p>
+</dd></dl>
+
 </section>
 
 
@@ -54,6 +248,47 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">merge_set</a><ul>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk"><code class="docutils literal notranslate"><span class="pre">MergeChunk</span></code></a><ul>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.add"><code class="docutils literal notranslate"><span class="pre">MergeChunk.add()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.chunk"><code class="docutils literal notranslate"><span class="pre">MergeChunk.chunk()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.inputs"><code class="docutils literal notranslate"><span class="pre">MergeChunk.inputs</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.json"><code class="docutils literal notranslate"><span class="pre">MergeChunk.json</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.metadata"><code class="docutils literal notranslate"><span class="pre">MergeChunk.metadata</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.name"><code class="docutils literal notranslate"><span class="pre">MergeChunk.name</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.parents"><code class="docutils literal notranslate"><span class="pre">MergeChunk.parents</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeFile"><code class="docutils literal notranslate"><span class="pre">MergeFile</span></code></a><ul>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeFile.did"><code class="docutils literal notranslate"><span class="pre">MergeFile.did</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeFile.format"><code class="docutils literal notranslate"><span class="pre">MergeFile.format</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeFile.get_fields"><code class="docutils literal notranslate"><span class="pre">MergeFile.get_fields()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeFile.name"><code class="docutils literal notranslate"><span class="pre">MergeFile.name</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeFile.namespace"><code class="docutils literal notranslate"><span class="pre">MergeFile.namespace</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet"><code class="docutils literal notranslate"><span class="pre">MergeSet</span></code></a><ul>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.add_file"><code class="docutils literal notranslate"><span class="pre">MergeSet.add_file()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.add_files"><code class="docutils literal notranslate"><span class="pre">MergeSet.add_files()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.check_consistency"><code class="docutils literal notranslate"><span class="pre">MergeSet.check_consistency()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.dupes"><code class="docutils literal notranslate"><span class="pre">MergeSet.dupes</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.files"><code class="docutils literal notranslate"><span class="pre">MergeSet.files</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.group_count"><code class="docutils literal notranslate"><span class="pre">MergeSet.group_count()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.group_size"><code class="docutils literal notranslate"><span class="pre">MergeSet.group_size()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.groups"><code class="docutils literal notranslate"><span class="pre">MergeSet.groups()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.hash"><code class="docutils literal notranslate"><span class="pre">MergeSet.hash</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.size"><code class="docutils literal notranslate"><span class="pre">MergeSet.size</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#merge_utils.merge_set.check_remote_path"><code class="docutils literal notranslate"><span class="pre">check_remote_path()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="io_utils.html"

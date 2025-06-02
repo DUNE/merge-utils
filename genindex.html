@@ -41,7 +41,11 @@
  <a href="#A"><strong>A</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
+ | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#J"><strong>J</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
@@ -54,10 +58,16 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.add_pfn">add_pfn() (merge_utils.merge_rse.MergeRSEs method)</a>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeChunk.add">add() (merge_utils.merge_set.MergeChunk method)</a>
+</li>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.add_file">add_file() (merge_utils.merge_set.MergeSet method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.add_files">add_files() (merge_utils.merge_set.MergeSet method)</a>
+</li>
+      <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.add_pfn">add_pfn() (merge_utils.merge_rse.MergeRSEs method)</a>
+</li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.add_replicas">add_replicas() (merge_utils.merge_rse.MergeRSEs method)</a>
 </li>
   </ul></td>
@@ -66,21 +76,61 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.check_consistency">check_consistency() (merge_utils.merge_set.MergeSet method)</a>
+</li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.check_path">check_path() (in module merge_utils.merge_rse)</a>
+</li>
+      <li><a href="merge_set.html#merge_utils.merge_set.check_remote_path">check_remote_path() (in module merge_utils.merge_set)</a>
+</li>
+      <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.checksum">checksum() (merge_utils.rucio_utils.RucioRetriever method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeChunk.chunk">chunk() (merge_utils.merge_set.MergeChunk method)</a>
+</li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.cleanup">cleanup() (merge_utils.merge_rse.MergeRSEs method)</a>
 </li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.connect">connect() (merge_utils.merge_rse.MergeRSEs method)</a>
+
+      <ul>
+        <li><a href="metacat_utils.html#merge_utils.metacat_utils.MetaCatRetriever.connect">(merge_utils.metacat_utils.MetaCatRetriever method)</a>
 </li>
+        <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.connect">(merge_utils.rucio_utils.RucioRetriever method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeFile.did">did (merge_utils.merge_set.MergeFile property)</a>
+</li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSE.distance">distance() (merge_utils.merge_rse.MergeRSE method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.dupes">dupes (merge_utils.merge_set.MergeSet property)</a>
+
+      <ul>
+        <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.dupes">(merge_utils.rucio_utils.RucioRetriever property)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.files">files (merge_utils.merge_set.MergeSet property)</a>
+
+      <ul>
+        <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.files">(merge_utils.rucio_utils.RucioRetriever property)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeFile.format">format (merge_utils.merge_set.MergeFile property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -90,15 +140,55 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="justin_utils.html#merge_utils.justin_utils.get_distances">get_distances() (in module merge_utils.justin_utils)</a>
 </li>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeFile.get_fields">get_fields() (merge_utils.merge_set.MergeFile method)</a>
+</li>
       <li><a href="io_utils.html#merge_utils.io_utils.get_inputs">get_inputs() (in module merge_utils.io_utils)</a>
+</li>
+      <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.get_pfns">get_pfns() (merge_utils.merge_rse.MergeRSEs method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.get_pfns">get_pfns() (merge_utils.merge_rse.MergeRSEs method)</a>
-</li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSE.get_ping">get_ping() (merge_utils.merge_rse.MergeRSE method)</a>
 </li>
       <li><a href="io_utils.html#merge_utils.io_utils.get_timestamp">get_timestamp() (in module merge_utils.io_utils)</a>
+</li>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.group_count">group_count() (merge_utils.merge_set.MergeSet method)</a>
+</li>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.group_size">group_size() (merge_utils.merge_set.MergeSet method)</a>
+</li>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.groups">groups() (merge_utils.merge_set.MergeSet method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.hash">hash (merge_utils.merge_set.MergeSet property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="metacat_utils.html#merge_utils.metacat_utils.MetaCatRetriever.input_batches">input_batches() (merge_utils.metacat_utils.MetaCatRetriever method)</a>
+
+      <ul>
+        <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.input_batches">(merge_utils.rucio_utils.RucioRetriever method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeChunk.inputs">inputs (merge_utils.merge_set.MergeChunk property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="J">J</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeChunk.json">json (merge_utils.merge_set.MergeChunk property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -106,10 +196,18 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="io_utils.html#merge_utils.io_utils.log_dict">log_dict() (in module merge_utils.io_utils)</a>
+      <li><a href="scripts.html#merge_utils.__main__.list_dids">list_dids() (in module merge_utils.__main__)</a>
+</li>
+      <li><a href="metacat_utils.html#merge_utils.metacat_utils.list_extensions">list_extensions() (in module merge_utils.metacat_utils)</a>
+</li>
+      <li><a href="metacat_utils.html#merge_utils.metacat_utils.list_field_values">list_field_values() (in module merge_utils.metacat_utils)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="scripts.html#merge_utils.__main__.list_pfns">list_pfns() (in module merge_utils.__main__)</a>
+</li>
+      <li><a href="io_utils.html#merge_utils.io_utils.log_dict">log_dict() (in module merge_utils.io_utils)</a>
+</li>
       <li><a href="io_utils.html#merge_utils.io_utils.log_list">log_list() (in module merge_utils.io_utils)</a>
 </li>
   </ul></td>
@@ -118,6 +216,17 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="scripts.html#merge_utils.__main__.main">main() (in module merge_utils.__main__)</a>
+</li>
+      <li><a href="scripts.html#merge_utils.__main__.merge">merge() (in module merge_utils.__main__)</a>
+</li>
+      <li>
+    merge_utils.__main__
+
+      <ul>
+        <li><a href="scripts.html#module-merge_utils.__main__">module</a>
+</li>
+      </ul></li>
       <li>
     merge_utils.io_utils
 
@@ -139,21 +248,62 @@
         <li><a href="merge_rse.html#module-merge_utils.merge_rse">module</a>
 </li>
       </ul></li>
+      <li>
+    merge_utils.merge_set
+
+      <ul>
+        <li><a href="merge_set.html#module-merge_utils.merge_set">module</a>
+</li>
+      </ul></li>
+      <li>
+    merge_utils.metacat_utils
+
+      <ul>
+        <li><a href="metacat_utils.html#module-merge_utils.metacat_utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    merge_utils.rucio_utils
+
+      <ul>
+        <li><a href="rucio_utils.html#module-merge_utils.rucio_utils">module</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeChunk">MergeChunk (class in merge_utils.merge_set)</a>
+</li>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeFile">MergeFile (class in merge_utils.merge_set)</a>
+</li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSE">MergeRSE (class in merge_utils.merge_rse)</a>
 </li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs">MergeRSEs (class in merge_utils.merge_rse)</a>
+</li>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeSet">MergeSet (class in merge_utils.merge_set)</a>
+</li>
+      <li><a href="metacat_utils.html#merge_utils.metacat_utils.MetaCatRetriever">MetaCatRetriever (class in merge_utils.metacat_utils)</a>
+</li>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeChunk.metadata">metadata (merge_utils.merge_set.MergeChunk property)</a>
+</li>
+      <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.missing">missing (merge_utils.rucio_utils.RucioRetriever property)</a>
 </li>
       <li>
     module
 
       <ul>
+        <li><a href="scripts.html#module-merge_utils.__main__">merge_utils.__main__</a>
+</li>
         <li><a href="io_utils.html#module-merge_utils.io_utils">merge_utils.io_utils</a>
 </li>
         <li><a href="justin_utils.html#module-merge_utils.justin_utils">merge_utils.justin_utils</a>
 </li>
         <li><a href="merge_rse.html#module-merge_utils.merge_rse">merge_utils.merge_rse</a>
+</li>
+        <li><a href="merge_set.html#module-merge_utils.merge_set">merge_utils.merge_set</a>
+</li>
+        <li><a href="metacat_utils.html#module-merge_utils.metacat_utils">merge_utils.metacat_utils</a>
+</li>
+        <li><a href="rucio_utils.html#module-merge_utils.rucio_utils">merge_utils.rucio_utils</a>
 </li>
       </ul></li>
   </ul></td>
@@ -162,6 +312,16 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeChunk.name">name (merge_utils.merge_set.MergeChunk property)</a>
+
+      <ul>
+        <li><a href="merge_set.html#merge_utils.merge_set.MergeFile.name">(merge_utils.merge_set.MergeFile property)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeFile.namespace">namespace (merge_utils.merge_set.MergeFile property)</a>
+</li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSE.nearest_site">nearest_site() (merge_utils.merge_rse.MergeRSE method)</a>
 </li>
   </ul></td>
@@ -173,16 +333,24 @@
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.optimize_pfns">optimize_pfns() (merge_utils.merge_rse.MergeRSEs method)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.output_chunks">output_chunks() (merge_utils.rucio_utils.RucioRetriever method)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeChunk.parents">parents (merge_utils.merge_set.MergeChunk property)</a>
+</li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSE.pfns">pfns (merge_utils.merge_rse.MergeRSE property)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="io_utils.html#merge_utils.io_utils.pkg_dir">pkg_dir() (in module merge_utils.io_utils)</a>
+</li>
+      <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.process">process() (merge_utils.rucio_utils.RucioRetriever method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -191,6 +359,12 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="io_utils.html#merge_utils.io_utils.read_config_file">read_config_file() (in module merge_utils.io_utils)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever">RucioRetriever (class in merge_utils.rucio_utils)</a>
+</li>
+      <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.run">run() (merge_utils.rucio_utils.RucioRetriever method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -202,11 +376,15 @@
 </li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.set_rse_sites">set_rse_sites() (merge_utils.merge_rse.MergeRSEs method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="io_utils.html#merge_utils.io_utils.setup_log">setup_log() (in module merge_utils.io_utils)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.site_pfns">site_pfns() (merge_utils.merge_rse.MergeRSEs method)</a>
+</li>
+      <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.size">size (merge_utils.merge_set.MergeSet property)</a>
+</li>
+      <li><a href="io_utils.html#merge_utils.io_utils.src_dir">src_dir() (in module merge_utils.io_utils)</a>
 </li>
   </ul></td>
 </tr></table>
