@@ -47,6 +47,23 @@
 <span id="io-utils"></span><h1>io_utils<a class="headerlink" href="#module-merge_utils.io_utils" title="Link to this heading">¶</a></h1>
 <p>Utilites for reading and writing files and other I/O operations</p>
 <dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.io_utils.find_fcl">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.io_utils.</span></span><span class="sig-name descname"><span class="pre">find_fcl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/merge_utils/io_utils.html#find_fcl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.io_utils.find_fcl" title="Link to this definition">¶</a></dt>
+<dd><p>Find the full path to a FCL file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> – Name of the FCL file</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Full path to the FCL file</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>FileNotFoundError</strong> – If the file does not exist</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="merge_utils.io_utils.get_inputs">
 <span class="sig-prename descclassname"><span class="pre">merge_utils.io_utils.</span></span><span class="sig-name descname"><span class="pre">get_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/merge_utils/io_utils.html#get_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.io_utils.get_inputs" title="Link to this definition">¶</a></dt>
 <dd><p>Get a list of inputs from various sources, including
@@ -141,6 +158,7 @@
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">io_utils</a><ul>
+<li><a class="reference internal" href="#merge_utils.io_utils.find_fcl"><code class="docutils literal notranslate"><span class="pre">find_fcl()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.io_utils.get_inputs"><code class="docutils literal notranslate"><span class="pre">get_inputs()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.io_utils.get_timestamp"><code class="docutils literal notranslate"><span class="pre">get_timestamp()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.io_utils.log_dict"><code class="docutils literal notranslate"><span class="pre">log_dict()</span></code></a></li>

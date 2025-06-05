@@ -148,6 +148,36 @@
     <span class="k">return</span> <span class="n">cfg</span></div>
 
 
+<div class="viewcode-block" id="find_fcl">
+<a class="viewcode-back" href="../../io_utils.html#merge_utils.io_utils.find_fcl">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_fcl</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find the full path to a FCL file</span>
+
+<span class="sd">    :param name: Name of the FCL file</span>
+<span class="sd">    :return: Full path to the FCL file</span>
+<span class="sd">    :raises FileNotFoundError: If the file does not exist</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If the name is already a complete path, return it</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="c1"># Otherwise, look for the file in the config directory</span>
+    <span class="n">fcl_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pkg_dir</span><span class="p">(),</span> <span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fcl_path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fcl_path</span>
+    <span class="c1"># Otherwise, look in the standard locations</span>
+    <span class="n">fcl_dirs</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;FHICL_FILE_PATH&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fcl_dirs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;FHICL_FILE_PATH environment variable is not set&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">fcl_dir</span> <span class="ow">in</span> <span class="n">fcl_dirs</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">):</span>
+            <span class="n">fcl_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fcl_dir</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fcl_path</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">fcl_path</span>
+    <span class="c1"># Failed to find the file</span>
+    <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not find FCL file </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="setup_log">
 <a class="viewcode-back" href="../../io_utils.html#merge_utils.io_utils.setup_log">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">setup_log</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>

@@ -224,6 +224,7 @@ merging:
             file_format:
               - "artroot"
             ext: ".root"
+            fcl: "artcat.fcl"
         "hdf5":
             file_format:
               - "hdf5"
