@@ -53,11 +53,14 @@
 
 <span class="n">validation</span><span class="p">:</span>
     <span class="n">batch_size</span><span class="p">:</span> <span class="mi">100</span> <span class="c1"># Number of files to query metacat about at once</span>
-    <span class="n">allow_missing</span><span class="p">:</span> <span class="n">false</span>
-    <span class="n">allow_duplicates</span><span class="p">:</span> <span class="n">false</span>
+    <span class="n">skip</span><span class="p">:</span>           <span class="c1"># Continue processing files even if some fail validation</span>
+        <span class="n">missing</span><span class="p">:</span>      <span class="n">false</span> <span class="c1"># Skip files with missing metadata</span>
+        <span class="n">duplicate</span><span class="p">:</span>    <span class="n">false</span> <span class="c1"># Skip duplicated files</span>
+        <span class="n">inaccessible</span><span class="p">:</span> <span class="n">false</span> <span class="c1"># Skip files that are not accessible</span>
+        <span class="n">invalid</span><span class="p">:</span>      <span class="n">false</span> <span class="c1"># Skip files with invalid metadata</span>
     <span class="n">checksums</span><span class="p">:</span>
       <span class="o">-</span> <span class="s2">&quot;adler32&quot;</span>   <span class="c1"># Adler32 should be the default checksum</span>
-    <span class="n">consistency</span><span class="p">:</span>   <span class="c1"># These keys must be the same for all files</span>
+    <span class="n">consistent</span><span class="p">:</span>     <span class="c1"># These metadata keys must be the same for all input files</span>
       <span class="o">-</span> <span class="s2">&quot;core.run_type&quot;</span>
       <span class="o">-</span> <span class="s2">&quot;core.file_type&quot;</span>
       <span class="o">-</span> <span class="s2">&quot;core.file_format&quot;</span>
@@ -68,163 +71,9 @@
       <span class="o">-</span> <span class="s2">&quot;dune.requestid&quot;</span>
       <span class="o">-</span> <span class="s2">&quot;dune.config_file&quot;</span>          <span class="c1"># Not checked in old merging</span>
       <span class="o">-</span> <span class="s2">&quot;core.application.version&quot;</span>  <span class="c1"># Not checked in old merging</span>
-    <span class="n">types</span><span class="p">:</span>   <span class="c1"># These keys must have the correct types</span>
-        <span class="s2">&quot;core.application.family&quot;</span><span class="p">:</span>  <span class="s1">&#39;str&#39;</span>
-        <span class="s2">&quot;core.application.name&quot;</span><span class="p">:</span>    <span class="s1">&#39;str&#39;</span>
-        <span class="s2">&quot;core.application.version&quot;</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span>
-        <span class="s2">&quot;core.data_stream&quot;</span><span class="p">:</span>         <span class="s1">&#39;str&#39;</span>
-        <span class="s2">&quot;core.data_tier&quot;</span><span class="p">:</span>           <span class="s1">&#39;str&#39;</span>
-        <span class="c1">#&quot;core.end_time&quot;:            &#39;float&#39;</span>
-        <span class="s2">&quot;core.event_count&quot;</span><span class="p">:</span>         <span class="s1">&#39;int&#39;</span>
-        <span class="s2">&quot;core.events&quot;</span><span class="p">:</span>              <span class="s1">&#39;list&#39;</span>
-        <span class="s2">&quot;core.file_content_status&quot;</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span>
-        <span class="s2">&quot;core.file_format&quot;</span><span class="p">:</span>         <span class="s1">&#39;str&#39;</span>
-        <span class="s2">&quot;core.file_type&quot;</span><span class="p">:</span>           <span class="s1">&#39;str&#39;</span>
-        <span class="s2">&quot;core.first_event_number&quot;</span><span class="p">:</span>  <span class="s1">&#39;int&#39;</span>
-        <span class="s2">&quot;core.last_event_number&quot;</span><span class="p">:</span>   <span class="s1">&#39;int&#39;</span>
-        <span class="s2">&quot;core.run_type&quot;</span><span class="p">:</span>            <span class="s1">&#39;str&#39;</span>
-        <span class="s2">&quot;core.runs&quot;</span><span class="p">:</span>                <span class="s1">&#39;list&#39;</span>
-        <span class="s2">&quot;core.runs_subruns&quot;</span><span class="p">:</span>        <span class="s1">&#39;list&#39;</span>
-        <span class="c1">#&quot;core.start_time&quot;:          &#39;float&#39;</span>
-        <span class="s2">&quot;dune.daq_test&quot;</span><span class="p">:</span>            <span class="s1">&#39;str&#39;</span>
-        <span class="c1">#&quot;dune.config_file&quot;:         &#39;str&#39;</span>
-        <span class="s2">&quot;dune_mc.gen_fcl_filename&quot;</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span>
-        <span class="s2">&quot;dune_mc.geometry_version&quot;</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span>
-        <span class="s2">&quot;retention.status&quot;</span><span class="p">:</span>         <span class="s1">&#39;str&#39;</span>
-        <span class="s2">&quot;retention.class&quot;</span><span class="p">:</span>          <span class="s1">&#39;str&#39;</span>
-    <span class="n">required</span><span class="p">:</span>   <span class="c1"># These keys must have a valid value</span>
-        <span class="s2">&quot;core.run_type&quot;</span><span class="p">:</span>
-          <span class="o">-</span> <span class="s2">&quot;test&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;protodune-sp&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;protodune-dp&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;iceberg&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;np04_vst&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;hd-coldbox&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;vd-coldbox&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;vd-coldbox-bottom&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;vd-coldbox-top&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;protodune-hd&quot;</span>          <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;hd-protodune&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;vd-protodune&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;vd-protodune-pds&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;dc4-vd-coldbox-bottom&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;dc4-vd-coldbox-top&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;dc4-hd-protodune&quot;</span>      <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;neardet&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;neardet-lar&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;neardet-2x2&quot;</span>           <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;neardet-2x2-lar&quot;</span>       <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;neardet-2x2-lar-charge&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;neardet-2x2-lar-light&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;neardet-2x2-minerva&quot;</span>   <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;fardet&quot;</span>                <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;fardet-sp&quot;</span>             <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;fardet-hd&quot;</span>             <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;fardet-vd&quot;</span>             <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;311&quot;</span>                   <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;311_dp_light&quot;</span>          <span class="c1"># old script</span>
-        <span class="c1"># Other keys from metacat</span>
-          <span class="o">-</span> <span class="s2">&quot;physics&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;ehn1-beam-np04&quot;</span>
-        <span class="c1"># - &quot;justin-tutorial&quot;</span>
-        <span class="s2">&quot;core.file_type&quot;</span><span class="p">:</span>
-          <span class="o">-</span> <span class="s2">&quot;mc&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;detector&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;importedDetector&quot;</span>      <span class="c1"># old script, minerva</span>
-        <span class="c1"># Other keys from metacat</span>
-        <span class="c1"># - &quot;unknown&quot;</span>
-        <span class="c1"># - &quot;test-data&quot;</span>
-        <span class="c1"># - &quot;binary&quot;</span>
-        <span class="c1"># - &quot;photon_detector&quot;</span>
-        <span class="c1"># - &quot;test&quot;</span>
-        <span class="c1"># - &quot;dc1simdaq&quot;</span>
-        <span class="c1"># - &quot;data&quot;</span>
-        <span class="s2">&quot;core.data_stream&quot;</span><span class="p">:</span>
-          <span class="o">-</span> <span class="s2">&quot;test&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;out1&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;out2&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;noise&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;cosmics&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;calibration&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;physics&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;commissioning&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;pedestal&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;study&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;trigprim&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;pdstl&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;linjc&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;numib&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;numip&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;numil&quot;</span>
-        <span class="c1"># Other keys from metacat</span>
-          <span class="o">-</span> <span class="s2">&quot;g4beamline&quot;</span>
-        <span class="s2">&quot;core.data_tier&quot;</span><span class="p">:</span>
-          <span class="o">-</span> <span class="s2">&quot;simulated&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;raw&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;hit-reconstructed&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;full-reconstructed&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;generated&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;detector-simulated&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;root-tuple&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;root-hist&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;decoded-raw&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;pandora-info&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;reco-recalibrated&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;root-tuple-virtual&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;trigprim&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;sliced&quot;</span>              <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;dc1input&quot;</span>            <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;binary-raw&quot;</span>          <span class="c1"># old script</span>
-          <span class="o">-</span> <span class="s2">&quot;sam-user&quot;</span>            <span class="c1"># old script</span>
-        <span class="c1"># Other keys from metacat</span>
-        <span class="c1"># - &quot;test&quot;</span>
-        <span class="c1"># - &quot;stage1&quot;</span>
-        <span class="c1"># - &quot;stage2&quot;</span>
-        <span class="s2">&quot;core.file_format&quot;</span><span class="p">:</span>
-          <span class="o">-</span> <span class="s2">&quot;root&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;artroot&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;binary&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;rootntuple&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;hdf5&quot;</span>
-          <span class="o">-</span> <span class="s2">&quot;tar&quot;</span>
-        <span class="c1"># - &quot;unknown&quot;</span>
-    <span class="n">optional</span><span class="p">:</span>
-        <span class="s2">&quot;all&quot;</span><span class="p">:</span>  <span class="c1"># These keys are optional for all files</span>
-            <span class="o">-</span> <span class="s2">&quot;core.events&quot;</span>
-            <span class="o">-</span> <span class="s2">&quot;dune.daq_test&quot;</span>
-        <span class="s2">&quot;mc&quot;</span><span class="p">:</span>  <span class="c1"># These keys are specific to MC files</span>
-            <span class="o">-</span> <span class="s2">&quot;dune_mc.gen_fcl_filename&quot;</span>
-            <span class="o">-</span> <span class="s2">&quot;dune_mc.geometry_version&quot;</span>
-        <span class="s2">&quot;root-tuple&quot;</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">tuple_optionals</span>
-            <span class="o">-</span> <span class="s2">&quot;core.event_count&quot;</span>
-            <span class="o">-</span> <span class="s2">&quot;core.first_event_number&quot;</span>
-            <span class="o">-</span> <span class="s2">&quot;core.last_event_number&quot;</span>
-        <span class="s2">&quot;root-tuple-virtual&quot;</span><span class="p">:</span> <span class="o">*</span><span class="n">tuple_optionals</span>
-        <span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">raw_optionals</span>
-            <span class="o">-</span> <span class="s2">&quot;dune.config_file&quot;</span>
-            <span class="o">-</span> <span class="s2">&quot;dune_mc.gen_fcl_filename&quot;</span>
-            <span class="o">-</span> <span class="s2">&quot;dune_mc.geometry_version&quot;</span>
-            <span class="o">-</span> <span class="s2">&quot;core.application.family&quot;</span>
-            <span class="o">-</span> <span class="s2">&quot;core.application.name&quot;</span>
-            <span class="o">-</span> <span class="s2">&quot;core.application.version&quot;</span>
-        <span class="s2">&quot;binary-raw&quot;</span><span class="p">:</span> <span class="o">*</span><span class="n">raw_optionals</span>
-        <span class="s2">&quot;trigprim&quot;</span><span class="p">:</span> <span class="o">*</span><span class="n">raw_optionals</span>
-    <span class="n">fixes</span><span class="p">:</span>  <span class="c1"># Fix common issues with the metadata</span>
-        <span class="n">keys</span><span class="p">:</span>       <span class="c1"># Misspelled keys</span>
-            <span class="s2">&quot;DUNE.requestid&quot;</span><span class="p">:</span> <span class="s2">&quot;dune.requestid&quot;</span>
-        <span class="n">missing</span><span class="p">:</span>    <span class="c1"># Default values for missing keys</span>
-            <span class="s2">&quot;core.file_content_status&quot;</span><span class="p">:</span> <span class="s2">&quot;good&quot;</span>
-            <span class="s2">&quot;retention.status&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span>
-            <span class="s2">&quot;retention.class&quot;</span><span class="p">:</span> <span class="s2">&quot;unknown&quot;</span>
-        <span class="c1"># Misspelled values</span>
-        <span class="s2">&quot;core.data_tier&quot;</span><span class="p">:</span>
-            <span class="s2">&quot;pandora_info&quot;</span><span class="p">:</span> <span class="s2">&quot;pandora-info&quot;</span>
-        <span class="s2">&quot;core.data_stream&quot;</span><span class="p">:</span>
-            <span class="s2">&quot;Test&quot;</span><span class="p">:</span> <span class="s2">&quot;test&quot;</span>
-            <span class="s2">&quot;Cosmics&quot;</span><span class="p">:</span> <span class="s2">&quot;cosmics&quot;</span>
-            <span class="s2">&quot;pdstl&quot;</span><span class="p">:</span> <span class="s2">&quot;pedestal&quot;</span> <span class="c1"># Not completely sure about this one</span>
-        <span class="s2">&quot;core.file_format&quot;</span><span class="p">:</span>
-            <span class="s2">&quot;tfile&quot;</span><span class="p">:</span> <span class="s2">&quot;root&quot;</span>     <span class="c1"># </span>
+    <span class="n">required</span><span class="p">:</span>       <span class="c1"># These metadata keys must be present in all input files</span>
+    <span class="n">optional</span><span class="p">:</span>       <span class="c1"># These metadata keys are optional (overrides required and conditional keys)</span>
+      <span class="o">-</span> <span class="s2">&quot;dune_mc.geometry_version&quot;</span>
 
 <span class="n">sites</span><span class="p">:</span>
     <span class="n">max_distance</span><span class="p">:</span> <span class="mi">1000</span>        <span class="c1"># Distances range from 0 to 101</span>
@@ -249,7 +98,7 @@
         <span class="c1"># max      save the maximum value</span>
         <span class="c1"># sum      save the sum of all values</span>
         <span class="c1"># union    save the union of all values</span>
-        <span class="c1"># ~        ignore the key</span>
+        <span class="c1"># skip     ignore the key</span>
         <span class="n">default</span><span class="p">:</span>                    <span class="n">unique</span>
         <span class="s2">&quot;core.first_event_number&quot;</span><span class="p">:</span>  <span class="nb">min</span>
         <span class="s2">&quot;core.last_event_number&quot;</span><span class="p">:</span>   <span class="nb">max</span>
@@ -257,10 +106,11 @@
         <span class="s2">&quot;core.events&quot;</span><span class="p">:</span>              <span class="n">union</span>
         <span class="s2">&quot;core.runs&quot;</span><span class="p">:</span>                <span class="n">union</span>
         <span class="s2">&quot;core.runs_subruns&quot;</span><span class="p">:</span>        <span class="n">union</span>
-        <span class="s2">&quot;core.start_time&quot;</span><span class="p">:</span>          <span class="o">~</span>
-        <span class="s2">&quot;core.end_time&quot;</span><span class="p">:</span>            <span class="o">~</span>
-        <span class="s2">&quot;Offline.options&quot;</span><span class="p">:</span>          <span class="o">~</span>
-        <span class="s2">&quot;Offline.machine&quot;</span><span class="p">:</span>          <span class="o">~</span>
+        <span class="c1"># Skip values that don&#39;t make sense to merge</span>
+        <span class="s2">&quot;core.start_time&quot;</span><span class="p">:</span>          <span class="n">skip</span>
+        <span class="s2">&quot;core.end_time&quot;</span><span class="p">:</span>            <span class="n">skip</span>
+        <span class="s2">&quot;Offline.options&quot;</span><span class="p">:</span>          <span class="n">skip</span>
+        <span class="s2">&quot;Offline.machine&quot;</span><span class="p">:</span>          <span class="n">skip</span>
         <span class="n">overrides</span><span class="p">:</span> <span class="c1"># Set keys to specific values</span>
             <span class="s2">&quot;retention.status&quot;</span><span class="p">:</span>     <span class="s2">&quot;active&quot;</span>
     <span class="n">methods</span><span class="p">:</span>
@@ -288,8 +138,9 @@
             <span class="n">ext</span><span class="p">:</span> <span class="s2">&quot;.tar&quot;</span>
 
 <span class="n">output</span><span class="p">:</span>
-    <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{core.run_type}</span><span class="s2">_</span><span class="si">{dune.campaign}</span><span class="s2">_</span><span class="si">{dune.config_file}</span><span class="s2">_</span><span class="si">{core.application.name}</span><span class="s2">_merged_</span><span class="si">{timestamp}</span><span class="s2">&quot;</span>
-    <span class="c1">#name: &quot;{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}_merged_{timestamp}&quot;</span>
+    <span class="nb">dir</span><span class="p">:</span> <span class="s2">&quot;~/scratch/merge_test&quot;</span> <span class="c1"># Directory to save local merged files</span>
+    <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{core.run_type}</span><span class="s2">_</span><span class="si">{dune.campaign}</span><span class="s2">_</span><span class="si">{dune.config_file}</span><span class="s2">_</span><span class="si">{core.application.name}</span><span class="s2">&quot;</span>
+    <span class="c1">#name: &quot;{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}&quot;</span>
     <span class="n">grandparents</span><span class="p">:</span> <span class="n">false</span> <span class="c1"># List the parents of the input files as the parents of the merged file</span>
     <span class="n">abbreviations</span><span class="p">:</span>
         <span class="s2">&quot;core.run_type&quot;</span><span class="p">:</span>

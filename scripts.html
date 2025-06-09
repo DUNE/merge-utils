@@ -47,34 +47,16 @@
 <span id="merge"></span><h1>merge<a class="headerlink" href="#module-merge_utils.__main__" title="Link to this heading">¶</a></h1>
 <p>Command line interface for merge_utils.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="merge_utils.__main__.list_dids">
-<span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">list_dids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/__main__.html#list_dids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.list_dids" title="Link to this definition">¶</a></dt>
-<dd><p>List the DIDs of files from MetaCat</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="merge_utils.__main__.list_pfns">
-<span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">list_pfns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/__main__.html#list_pfns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.list_pfns" title="Link to this definition">¶</a></dt>
-<dd><p>List the PFNs of files from Rucio</p>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="merge_utils.__main__.main">
 <span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/__main__.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.main" title="Link to this definition">¶</a></dt>
 <dd><p>Test the command line interface for merge_utils.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="merge_utils.__main__.merge">
-<span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/__main__.html#merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.merge" title="Link to this definition">¶</a></dt>
-<dd><p>List the PFNs of files from Rucio</p>
 </dd></dl>
 
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
   File &quot;/home/runner/work/merge-utils/merge-utils/docs/source/merge&quot;, line 4, in &lt;module&gt;
     from merge_utils.__main__ import main
   File &quot;/opt/hostedtoolcache/Python/3.9.22/x64/lib/python3.9/site-packages/merge_utils/__main__.py&quot;, line 6, in &lt;module&gt;
-    from merge_utils import io_utils, config, metacat_utils, rucio_utils, scheduler
+    from merge_utils import io_utils, config, metacat_utils, rucio_utils, scheduler, retriever
   File &quot;/opt/hostedtoolcache/Python/3.9.22/x64/lib/python3.9/site-packages/merge_utils/metacat_utils.py&quot;, line 9, in &lt;module&gt;
     import metacat.webapi as metacat
 ModuleNotFoundError: No module named &#39;metacat&#39;
@@ -93,10 +75,7 @@ ModuleNotFoundError: No module named &#39;metacat&#39;
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">merge</a><ul>
-<li><a class="reference internal" href="#merge_utils.__main__.list_dids"><code class="docutils literal notranslate"><span class="pre">list_dids()</span></code></a></li>
-<li><a class="reference internal" href="#merge_utils.__main__.list_pfns"><code class="docutils literal notranslate"><span class="pre">list_pfns()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.__main__.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
-<li><a class="reference internal" href="#merge_utils.__main__.merge"><code class="docutils literal notranslate"><span class="pre">merge()</span></code></a></li>
 </ul>
 </li>
 </ul>

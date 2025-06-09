@@ -3,11 +3,14 @@
 
 validation:
     batch_size: 100 # Number of files to query metacat about at once
-    allow_missing: false
-    allow_duplicates: false
+    skip:           # Continue processing files even if some fail validation
+        missing:      false # Skip files with missing metadata
+        duplicate:    false # Skip duplicated files
+        inaccessible: false # Skip files that are not accessible
+        invalid:      false # Skip files with invalid metadata
     checksums:
       - "adler32"   # Adler32 should be the default checksum
-    consistency:   # These keys must be the same for all files
+    consistent:     # These metadata keys must be the same for all input files
       - "core.run_type"
       - "core.file_type"
       - "core.file_format"
@@ -18,163 +21,9 @@ validation:
       - "dune.requestid"
       - "dune.config_file"          # Not checked in old merging
       - "core.application.version"  # Not checked in old merging
-    types:   # These keys must have the correct types
-        "core.application.family":  'str'
-        "core.application.name":    'str'
-        "core.application.version": 'str'
-        "core.data_stream":         'str'
-        "core.data_tier":           'str'
-        #"core.end_time":            'float'
-        "core.event_count":         'int'
-        "core.events":              'list'
-        "core.file_content_status": 'str'
-        "core.file_format":         'str'
-        "core.file_type":           'str'
-        "core.first_event_number":  'int'
-        "core.last_event_number":   'int'
-        "core.run_type":            'str'
-        "core.runs":                'list'
-        "core.runs_subruns":        'list'
-        #"core.start_time":          'float'
-        "dune.daq_test":            'str'
-        #"dune.config_file":         'str'
-        "dune_mc.gen_fcl_filename": 'str'
-        "dune_mc.geometry_version": 'str'
-        "retention.status":         'str'
-        "retention.class":          'str'
-    required:   # These keys must have a valid value
-        "core.run_type":
-          - "test"
-          - "protodune-sp"
-          - "protodune-dp"
-          - "iceberg"
-          - "np04_vst"
-          - "hd-coldbox"
-          - "vd-coldbox"
-          - "vd-coldbox-bottom"
-          - "vd-coldbox-top"
-          - "protodune-hd"          # old script
-          - "hd-protodune"
-          - "vd-protodune"
-          - "vd-protodune-pds"
-          - "dc4-vd-coldbox-bottom"
-          - "dc4-vd-coldbox-top"
-          - "dc4-hd-protodune"      # old script
-          - "neardet"
-          - "neardet-lar"
-          - "neardet-2x2"           # old script
-          - "neardet-2x2-lar"       # old script
-          - "neardet-2x2-lar-charge"
-          - "neardet-2x2-lar-light"
-          - "neardet-2x2-minerva"   # old script
-          - "fardet"                # old script
-          - "fardet-sp"             # old script
-          - "fardet-hd"             # old script
-          - "fardet-vd"             # old script
-          - "311"                   # old script
-          - "311_dp_light"          # old script
-        # Other keys from metacat
-          - "physics"
-          - "ehn1-beam-np04"
-        # - "justin-tutorial"
-        "core.file_type":
-          - "mc"
-          - "detector"
-          - "importedDetector"      # old script, minerva
-        # Other keys from metacat
-        # - "unknown"
-        # - "test-data"
-        # - "binary"
-        # - "photon_detector"
-        # - "test"
-        # - "dc1simdaq"
-        # - "data"
-        "core.data_stream":
-          - "test"
-          - "out1"
-          - "out2"
-          - "noise"
-          - "cosmics"
-          - "calibration"
-          - "physics"
-          - "commissioning"
-          - "pedestal"
-          - "study"
-          - "trigprim"
-          - "pdstl"
-          - "linjc"
-          - "numib"
-          - "numip"
-          - "numil"
-        # Other keys from metacat
-          - "g4beamline"
-        "core.data_tier":
-          - "simulated"
-          - "raw"
-          - "hit-reconstructed"
-          - "full-reconstructed"
-          - "generated"
-          - "detector-simulated"
-          - "root-tuple"
-          - "root-hist"
-          - "decoded-raw"
-          - "pandora-info"
-          - "reco-recalibrated"
-          - "root-tuple-virtual"
-          - "trigprim"
-          - "sliced"              # old script
-          - "dc1input"            # old script
-          - "binary-raw"          # old script
-          - "sam-user"            # old script
-        # Other keys from metacat
-        # - "test"
-        # - "stage1"
-        # - "stage2"
-        "core.file_format":
-          - "root"
-          - "artroot"
-          - "binary"
-          - "rootntuple"
-          - "hdf5"
-          - "tar"
-        # - "unknown"
-    optional:
-        "all":  # These keys are optional for all files
-            - "core.events"
-            - "dune.daq_test"
-        "mc":  # These keys are specific to MC files
-            - "dune_mc.gen_fcl_filename"
-            - "dune_mc.geometry_version"
-        "root-tuple": &tuple_optionals
-            - "core.event_count"
-            - "core.first_event_number"
-            - "core.last_event_number"
-        "root-tuple-virtual": *tuple_optionals
-        "raw": &raw_optionals
-            - "dune.config_file"
-            - "dune_mc.gen_fcl_filename"
-            - "dune_mc.geometry_version"
-            - "core.application.family"
-            - "core.application.name"
-            - "core.application.version"
-        "binary-raw": *raw_optionals
-        "trigprim": *raw_optionals
-    fixes:  # Fix common issues with the metadata
-        keys:       # Misspelled keys
-            "DUNE.requestid": "dune.requestid"
-        missing:    # Default values for missing keys
-            "core.file_content_status": "good"
-            "retention.status": "active"
-            "retention.class": "unknown"
-        # Misspelled values
-        "core.data_tier":
-            "pandora_info": "pandora-info"
-        "core.data_stream":
-            "Test": "test"
-            "Cosmics": "cosmics"
-            "pdstl": "pedestal" # Not completely sure about this one
-        "core.file_format":
-            "tfile": "root"     # 
+    required:       # These metadata keys must be present in all input files
+    optional:       # These metadata keys are optional (overrides required and conditional keys)
+      - "dune_mc.geometry_version"
 
 sites:
     max_distance: 1000        # Distances range from 0 to 101
@@ -199,7 +48,7 @@ merging:
         # max      save the maximum value
         # sum      save the sum of all values
         # union    save the union of all values
-        # ~        ignore the key
+        # skip     ignore the key
         default:                    unique
         "core.first_event_number":  min
         "core.last_event_number":   max
@@ -207,10 +56,11 @@ merging:
         "core.events":              union
         "core.runs":                union
         "core.runs_subruns":        union
-        "core.start_time":          ~
-        "core.end_time":            ~
-        "Offline.options":          ~
-        "Offline.machine":          ~
+        # Skip values that don't make sense to merge
+        "core.start_time":          skip
+        "core.end_time":            skip
+        "Offline.options":          skip
+        "Offline.machine":          skip
         overrides: # Set keys to specific values
             "retention.status":     "active"
     methods:
@@ -238,8 +88,9 @@ merging:
             ext: ".tar"
 
 output:
-    name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}_merged_{timestamp}"
-    #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}_merged_{timestamp}"
+    dir: "~/scratch/merge_test" # Directory to save local merged files
+    name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
+    #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"
     grandparents: false # List the parents of the input files as the parents of the merged file
     abbreviations:
         "core.run_type":
