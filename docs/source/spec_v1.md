@@ -1,4 +1,4 @@
-## Design considerations ##
+# Design considerations #
 
 H. Schellman and E. Muldoon
 January 7 2025 - updated January 21, 2025, March 24, 2025

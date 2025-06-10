@@ -54,7 +54,17 @@ Dependencies
 
 ----
 
+.. image:: merge_utils_metacat_utils.png
+    :width: 400
+
+----
+
 .. image:: merge_utils_merge_set.png
+    :width: 400
+
+----
+
+.. image:: merge_utils_merge_rse.png
     :width: 400
 
 ----

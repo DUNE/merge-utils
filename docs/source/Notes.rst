@@ -18,6 +18,25 @@ Not my favorite -
 
   - indentation differences when adding comments to code others wrote can be interesting
 
+But good parts -
+
+  - ability to autoload most code and provide links to sources
+
+
+conda install 
+*************
+
+Right now this doesn't seem to work with very recent python versions
+
+So set up an oldpython environment and then
+
+.. code-block:: bash
+
+    conda install python=3.9.15
+    conda install sphinx -c conda-forge
+    conda install myst-parser -c conda-forge
+    conda install pydeps -c conda-forge
+
 Github actions
 **************
 
