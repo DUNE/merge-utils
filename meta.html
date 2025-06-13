@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>meta &#8212; merge-utils 0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
+    <script src="_static/documentation_options.js?v=837179f8"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://hschellman.github.io/merge-utils-test/meta.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="rucio_utils" href="rucio_utils.html" />
+    <link rel="prev" title="metacat_utils" href="metacat_utils.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="rucio_utils.html" title="rucio_utils"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="metacat_utils.html" title="metacat_utils"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">meta</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-meta">
+<span id="meta"></span><h1>meta<a class="headerlink" href="#module-meta" title="Link to this heading">¶</a></h1>
+<p>Utility functions for merging metadata for multiple files.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MergeMetaAll">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MergeMetaAll</span></span><a class="reference internal" href="_modules/meta.html#MergeMetaAll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaAll" title="Link to this definition">¶</a></dt>
+<dd><p>Merge metadata by taking the set of values.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MergeMetaAll.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaAll.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaAll.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add a new value to the metadata.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MergeMetaAll.valid">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">valid</span></span><a class="headerlink" href="#meta.MergeMetaAll.valid" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the value is valid.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MergeMetaAll.value">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#meta.MergeMetaAll.value" title="Link to this definition">¶</a></dt>
+<dd><p>Get the merged value.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MergeMetaMax">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MergeMetaMax</span></span><a class="reference internal" href="_modules/meta.html#MergeMetaMax"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaMax" title="Link to this definition">¶</a></dt>
+<dd><p>Merge metadata by taking the maximum value.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MergeMetaMax.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaMax.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaMax.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add a new value to the metadata.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MergeMetaMax.valid">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">valid</span></span><a class="headerlink" href="#meta.MergeMetaMax.valid" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the value is valid.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MergeMetaMin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MergeMetaMin</span></span><a class="reference internal" href="_modules/meta.html#MergeMetaMin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaMin" title="Link to this definition">¶</a></dt>
+<dd><p>Merge metadata by taking the minimum value.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MergeMetaMin.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaMin.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaMin.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add a new value to the metadata.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MergeMetaMin.valid">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">valid</span></span><a class="headerlink" href="#meta.MergeMetaMin.valid" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the value is valid.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MergeMetaNameDict">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MergeMetaNameDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaNameDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaNameDict" title="Link to this definition">¶</a></dt>
+<dd><p>Class to inject metadata into a name template.</p>
+<p>Initialize the NameMetaFormatter with a value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> – value to insert</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MergeMetaOverride">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MergeMetaOverride</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaOverride"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaOverride" title="Link to this definition">¶</a></dt>
+<dd><p>Merge metadata by overriding the value.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MergeMetaOverride.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaOverride.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaOverride.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add a new value to the metadata.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MergeMetaOverride.valid">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">valid</span></span><a class="headerlink" href="#meta.MergeMetaOverride.valid" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the value is valid.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MergeMetaSum">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MergeMetaSum</span></span><a class="reference internal" href="_modules/meta.html#MergeMetaSum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaSum" title="Link to this definition">¶</a></dt>
+<dd><p>Merge metadata by adding the values.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MergeMetaSum.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaSum.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaSum.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add a new value to the metadata.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MergeMetaSum.valid">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">valid</span></span><a class="headerlink" href="#meta.MergeMetaSum.valid" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the value is valid.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MergeMetaUnion">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MergeMetaUnion</span></span><a class="reference internal" href="_modules/meta.html#MergeMetaUnion"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaUnion" title="Link to this definition">¶</a></dt>
+<dd><p>Merge metadata by taking the union.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MergeMetaUnion.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaUnion.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaUnion.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add a new value to the metadata.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MergeMetaUnion.valid">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">valid</span></span><a class="headerlink" href="#meta.MergeMetaUnion.valid" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the value is valid.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MergeMetaUnion.value">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#meta.MergeMetaUnion.value" title="Link to this definition">¶</a></dt>
+<dd><p>Get the merged value.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MergeMetaUnique">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MergeMetaUnique</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaUnique"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaUnique" title="Link to this definition">¶</a></dt>
+<dd><p>Merge metadata by taking the unique values.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MergeMetaUnique.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaUnique.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaUnique.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add a new value to the metadata.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MergeMetaUnique.valid">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">valid</span></span><a class="headerlink" href="#meta.MergeMetaUnique.valid" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the value is valid.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="meta.fix">
+<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">fix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/meta.html#fix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.fix" title="Link to this definition">¶</a></dt>
+<dd><p>Fix the metadata dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – name of the file (for logging)</p></li>
+<li><p><strong>metadata</strong> – metadata dictionary</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>fixed metadata dictionary</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="meta.make_name">
+<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">make_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/meta.html#make_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.make_name" title="Link to this definition">¶</a></dt>
+<dd><p>Create a name for the merged file based on the metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>metadata</strong> – metadata dictionary</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>merged file name</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="meta.merged_keys">
+<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">merged_keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/meta.html#merged_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.merged_keys" title="Link to this definition">¶</a></dt>
+<dd><p>Merge metadata from multiple files into a single dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>files</strong> – set of files to merge</p></li>
+<li><p><strong>warn</strong> – whether to warn about inconsistent metadata</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>merged metadata</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="meta.parents">
+<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">parents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/meta.html#parents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.parents" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve all the parents from a set of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>files</strong> – set of files to merge</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>set of parents</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="meta.validate">
+<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/meta.html#validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.validate" title="Link to this definition">¶</a></dt>
+<dd><p>Validate the metadata dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – name of the file (for logging)</p></li>
+<li><p><strong>metadata</strong> – metadata dictionary</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – if the metadata is invalid</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">meta</a><ul>
+<li><a class="reference internal" href="#meta.MergeMetaAll"><code class="docutils literal notranslate"><span class="pre">MergeMetaAll</span></code></a><ul>
+<li><a class="reference internal" href="#meta.MergeMetaAll.add"><code class="docutils literal notranslate"><span class="pre">MergeMetaAll.add()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaAll.valid"><code class="docutils literal notranslate"><span class="pre">MergeMetaAll.valid</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaAll.value"><code class="docutils literal notranslate"><span class="pre">MergeMetaAll.value</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#meta.MergeMetaMax"><code class="docutils literal notranslate"><span class="pre">MergeMetaMax</span></code></a><ul>
+<li><a class="reference internal" href="#meta.MergeMetaMax.add"><code class="docutils literal notranslate"><span class="pre">MergeMetaMax.add()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaMax.valid"><code class="docutils literal notranslate"><span class="pre">MergeMetaMax.valid</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#meta.MergeMetaMin"><code class="docutils literal notranslate"><span class="pre">MergeMetaMin</span></code></a><ul>
+<li><a class="reference internal" href="#meta.MergeMetaMin.add"><code class="docutils literal notranslate"><span class="pre">MergeMetaMin.add()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaMin.valid"><code class="docutils literal notranslate"><span class="pre">MergeMetaMin.valid</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#meta.MergeMetaNameDict"><code class="docutils literal notranslate"><span class="pre">MergeMetaNameDict</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaOverride"><code class="docutils literal notranslate"><span class="pre">MergeMetaOverride</span></code></a><ul>
+<li><a class="reference internal" href="#meta.MergeMetaOverride.add"><code class="docutils literal notranslate"><span class="pre">MergeMetaOverride.add()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaOverride.valid"><code class="docutils literal notranslate"><span class="pre">MergeMetaOverride.valid</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#meta.MergeMetaSum"><code class="docutils literal notranslate"><span class="pre">MergeMetaSum</span></code></a><ul>
+<li><a class="reference internal" href="#meta.MergeMetaSum.add"><code class="docutils literal notranslate"><span class="pre">MergeMetaSum.add()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaSum.valid"><code class="docutils literal notranslate"><span class="pre">MergeMetaSum.valid</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#meta.MergeMetaUnion"><code class="docutils literal notranslate"><span class="pre">MergeMetaUnion</span></code></a><ul>
+<li><a class="reference internal" href="#meta.MergeMetaUnion.add"><code class="docutils literal notranslate"><span class="pre">MergeMetaUnion.add()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaUnion.valid"><code class="docutils literal notranslate"><span class="pre">MergeMetaUnion.valid</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaUnion.value"><code class="docutils literal notranslate"><span class="pre">MergeMetaUnion.value</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#meta.MergeMetaUnique"><code class="docutils literal notranslate"><span class="pre">MergeMetaUnique</span></code></a><ul>
+<li><a class="reference internal" href="#meta.MergeMetaUnique.add"><code class="docutils literal notranslate"><span class="pre">MergeMetaUnique.add()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaUnique.valid"><code class="docutils literal notranslate"><span class="pre">MergeMetaUnique.valid</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#meta.fix"><code class="docutils literal notranslate"><span class="pre">fix()</span></code></a></li>
+<li><a class="reference internal" href="#meta.make_name"><code class="docutils literal notranslate"><span class="pre">make_name()</span></code></a></li>
+<li><a class="reference internal" href="#meta.merged_keys"><code class="docutils literal notranslate"><span class="pre">merged_keys()</span></code></a></li>
+<li><a class="reference internal" href="#meta.parents"><code class="docutils literal notranslate"><span class="pre">parents()</span></code></a></li>
+<li><a class="reference internal" href="#meta.validate"><code class="docutils literal notranslate"><span class="pre">validate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="metacat_utils.html"
+                          title="previous chapter">metacat_utils</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="rucio_utils.html"
+                          title="next chapter">rucio_utils</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/meta.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="rucio_utils.html" title="rucio_utils"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="metacat_utils.html" title="metacat_utils"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">meta</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>

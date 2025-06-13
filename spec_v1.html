@@ -69,13 +69,12 @@ January 7 2025 - updated January 21, 2025, March 24, 2025</p>
 </div>
 </li>
 </ol>
-</section>
 <section id="motivation">
-<h1>Motivation<a class="headerlink" href="#motivation" title="Link to this heading">¶</a></h1>
+<h2>Motivation<a class="headerlink" href="#motivation" title="Link to this heading">¶</a></h2>
 <p>Dune data operates on multiple scales, from 1 MB to 10 PB.  We need all of those data to be backed up to tape and catalogued which works optimally for files of size 1-10 GB.  This requires the ability to merge files and merge their metadata.  This document is about merging procedures for files below the size threshold for tape storage.</p>
 </section>
 <section id="inputs">
-<h1>Inputs<a class="headerlink" href="#inputs" title="Link to this heading">¶</a></h1>
+<h2>Inputs<a class="headerlink" href="#inputs" title="Link to this heading">¶</a></h2>
 <p>We  know of 4 different input formats:</p>
 <ol class="arabic">
 <li><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>   HDF5 
@@ -121,7 +120,7 @@ scripts that perform the merge of data and generate a checksum for the output.</
 </li>
 </ol>
 <section id="at-the-list-generation-stage-we-need-methods-that">
-<h2>At the list generation stage, we need methods that<a class="headerlink" href="#at-the-list-generation-stage-we-need-methods-that" title="Link to this heading">¶</a></h2>
+<h3>At the list generation stage, we need methods that<a class="headerlink" href="#at-the-list-generation-stage-we-need-methods-that" title="Link to this heading">¶</a></h3>
 <ul>
 <li><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>    Can take a metacat query or list of input files
 </pre></div>
@@ -143,13 +142,13 @@ scripts that perform the merge of data and generate a checksum for the output.</
 </section>
 </section>
 <section id="move-from-jobsub-to-justin-for-batch-running">
-<h1>Move from Jobsub to Justin for batch running<a class="headerlink" href="#move-from-jobsub-to-justin-for-batch-running" title="Link to this heading">¶</a></h1>
+<h2>Move from Jobsub to Justin for batch running<a class="headerlink" href="#move-from-jobsub-to-justin-for-batch-running" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>the first iteration both ran interactively from a gpvm and via a jobsub script</p></li>
 <li><p>The suggestion is that future runs be done via justin and/or interactively</p></li>
 </ul>
 <section id="justin-questions-2025-03-24">
-<h2>Justin questions 2025-03-24<a class="headerlink" href="#justin-questions-2025-03-24" title="Link to this heading">¶</a></h2>
+<h3>Justin questions 2025-03-24<a class="headerlink" href="#justin-questions-2025-03-24" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>needs to be able to take a list of file locations (if the inputs are not declated to metacat yet) or</p></li>
 <li><p>needs to be able to run over a dataset at a particular site that has the data available and enough capacity to run IO intensive activities</p></li>
@@ -157,14 +156,14 @@ scripts that perform the merge of data and generate a checksum for the output.</
 </ul>
 </section>
 <section id="how-do-we-get-justin-to-run-over-chunks-of-files-in-a-list">
-<h2>how do we get Justin to run over chunks of files in a list.<a class="headerlink" href="#how-do-we-get-justin-to-run-over-chunks-of-files-in-a-list" title="Link to this heading">¶</a></h2>
+<h3>how do we get Justin to run over chunks of files in a list.<a class="headerlink" href="#how-do-we-get-justin-to-run-over-chunks-of-files-in-a-list" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>possibly - submit a job for each chunk.</p></li>
 <li><p>possibly - submit N parallel jobs which are smart enough to use jobid to choose a chunk. What is jobid.</p></li>
 </ul>
 </section>
 <section id="methods-needed">
-<h2>Methods needed:<a class="headerlink" href="#methods-needed" title="Link to this heading">¶</a></h2>
+<h3>Methods needed:<a class="headerlink" href="#methods-needed" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>justin jobscript that can take a list of files and loop over them</p></li>
 <li><p>justin jobscript that can take a dataset and loop over them</p></li>
@@ -172,7 +171,7 @@ scripts that perform the merge of data and generate a checksum for the output.</
 </section>
 </section>
 <section id="delivery-methods">
-<h1>Delivery methods<a class="headerlink" href="#delivery-methods" title="Link to this heading">¶</a></h1>
+<h2>Delivery methods<a class="headerlink" href="#delivery-methods" title="Link to this heading">¶</a></h2>
 <ol class="arabic">
 <li><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>   A rucio or metacat dataset with files declared to metacat
 </pre></div>
@@ -221,7 +220,7 @@ c)         using xroot to move files from remote RSE’s to a local cache area a
 </ul>
 </section>
 <section id="merging-methods">
-<h1>Merging methods<a class="headerlink" href="#merging-methods" title="Link to this heading">¶</a></h1>
+<h2>Merging methods<a class="headerlink" href="#merging-methods" title="Link to this heading">¶</a></h2>
 <p>The prototype system supports:</p>
 <ol class="arabic">
 <li><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>   Merging small art files into larger ones without modification
@@ -247,7 +246,7 @@ Metadata requirements</p>
 <p>The program <code class="docutils literal notranslate"><span class="pre">mergeMetaCat.py</span></code> takes a list of metadata files that were used to make a merged data file, checks for consistency and then merges the metadata.</p>
 <p>The output merged metadata is placed in <code class="docutils literal notranslate"><span class="pre">&lt;merged</span> <span class="pre">data</span> <span class="pre">file&gt;.json</span></code> in the same directory.</p>
 <section id="note-on-event-counting-and-tracking">
-<h2>Note on Event counting and tracking<a class="headerlink" href="#note-on-event-counting-and-tracking" title="Link to this heading">¶</a></h2>
+<h3>Note on Event counting and tracking<a class="headerlink" href="#note-on-event-counting-and-tracking" title="Link to this heading">¶</a></h3>
 <p>Some processes drop events and do not fill the event list.</p>
 <p>The event list is not useful for multi-run files because it doesn’t link event <code class="docutils literal notranslate"><span class="pre">#</span></code> and run <code class="docutils literal notranslate"><span class="pre">#</span></code>.  But it is useful for raw data - do we need to do something about this - like mod the event list for derived data to be run.event?
 Do we want to read the root file to count the records in it so at least nevents is meaningful.</p>
@@ -256,7 +255,7 @@ Do we want to read the root file to count the records in it so at least nevents 
 </section>
 </section>
 <section id="consistency-checks">
-<h1>Consistency checks<a class="headerlink" href="#consistency-checks" title="Link to this heading">¶</a></h1>
+<h2>Consistency checks<a class="headerlink" href="#consistency-checks" title="Link to this heading">¶</a></h2>
 <p>Before a merge is done, one needs to check that the data being merged is consistent. This is currently done after the data merge as a final check but should probably be done before data are merged.</p>
 <p><code class="docutils literal notranslate"><span class="pre">[&quot;</span> <span class="pre">“core.run_type&quot;,</span> <span class="pre">“core.file_type&quot;,</span> <span class="pre">&quot;namespace&quot;,</span> <span class="pre">&quot;core.file_format&quot;,</span> <span class="pre">&quot;core.data_tier&quot;,</span> <span class="pre">&quot;core.data_stream&quot;,</span> <span class="pre">'core.application.name',</span> <span class="pre">'dune.campaign',</span> <span class="pre">'DUNE.requestid',</span> <span class="pre">'dune.requestid']</span></code></p>
 <p>Currently we do not require that <code class="docutils literal notranslate"><span class="pre">dune.config_file</span></code> or <code class="docutils literal notranslate"><span class="pre">core.application.version</span></code> be exactly consistent to allow patches, likely strict consistency for these fiels should be an option.</p>
@@ -264,7 +263,7 @@ Do we want to read the root file to count the records in it so at least nevents 
 ·      script that can take a list of files or metadata files and check for consistency.  This exists as part of mergeMetaCar.py but should be pulled out for use before merging starts.</p>
 </section>
 <section id="metadata-merge">
-<h1>Metadata merge:<a class="headerlink" href="#metadata-merge" title="Link to this heading">¶</a></h1>
+<h2>Metadata merge:<a class="headerlink" href="#metadata-merge" title="Link to this heading">¶</a></h2>
 <p>What gets combined:</p>
 <p>The  metadata merging program takes a list of input metadata and data files.</p>
 <ul>
@@ -290,7 +289,7 @@ Do we want to read the root file to count the records in it so at least nevents 
 </li>
 </ul>
 <section id="metadata-fields-added">
-<h2>Metadata fields added:<a class="headerlink" href="#metadata-fields-added" title="Link to this heading">¶</a></h2>
+<h3>Metadata fields added:<a class="headerlink" href="#metadata-fields-added" title="Link to this heading">¶</a></h3>
 <p>The output file <code class="docutils literal notranslate"><span class="pre">name</span></code> needs to be generated either at the data merging or metadata merging phase. This is currently generated from the generic fields from the metadata of the first file in the list during the initial data merge and passed into the merger.</p>
 <ul>
 <li><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>    `dune.dataset_name` is an output dataset name that needs to be generated to give rucio/metacat a place to put the * ou tput files. This is currently generated from the merged metadata if not supplied on the command line
@@ -328,24 +327,24 @@ Do we want to read the root file to count the records in it so at least nevents 
 <p>The output metadata is then checked with <code class="docutils literal notranslate"><span class="pre">TypeChecker.py</span></code> – it currently flags but does not patch incorrect or missing input metadata</p>
 </section>
 <section id="enhancements-to-typechecker-py">
-<h2>enhancements to <code class="docutils literal notranslate"><span class="pre">TypeChecker.py</span></code><a class="headerlink" href="#enhancements-to-typechecker-py" title="Link to this heading">¶</a></h2>
+<h3>enhancements to <code class="docutils literal notranslate"><span class="pre">TypeChecker.py</span></code><a class="headerlink" href="#enhancements-to-typechecker-py" title="Link to this heading">¶</a></h3>
 <p>Possibly add a database of valid values for core metadata (data_tier, run_type …) and refuse to pass data that uses novel values until cleared by an admin) and abbreviations for important values to make auto-generated dataset and filenames shorter.</p>
 <p>Example: full-reconstructed → FReco, vd-protodune → PDVD … store them in the valid fields config file.</p>
 </section>
 <section id="sam4users">
-<h2>Sam4users<a class="headerlink" href="#sam4users" title="Link to this heading">¶</a></h2>
+<h3>Sam4users<a class="headerlink" href="#sam4users" title="Link to this heading">¶</a></h3>
 <p>If we use this system to replace <code class="docutils literal notranslate"><span class="pre">sam4users</span></code>, what metadata should be stored for the tar file generated? Should it contain a directory listing for the tar file so that it is searchable? What files should be included? Which not?</p>
 </section>
 </section>
 <section id="where-this-runs">
-<h1>Where this runs<a class="headerlink" href="#where-this-runs" title="Link to this heading">¶</a></h1>
+<h2>Where this runs<a class="headerlink" href="#where-this-runs" title="Link to this heading">¶</a></h2>
 <p>The current setup is designed to run on Fermilab systems in either batch or interactive mode.   Rucio inputs work in batch, otherwise one needs to run interactively.</p>
 <p>Iterative merging needs to be done interactively as the intermediate files are not declared to metacat.</p>
 <p>Methods needed:<br />
 ·      Neet do be able to specify merging sites more broadly.</p>
 </section>
 <section id="suggestions-for-future-versions">
-<h1>Suggestions for future versions<a class="headerlink" href="#suggestions-for-future-versions" title="Link to this heading">¶</a></h1>
+<h2>Suggestions for future versions<a class="headerlink" href="#suggestions-for-future-versions" title="Link to this heading">¶</a></h2>
 <p>Consistency and quality checks for metadata likely should be moved earlier in the sequence. In principle these can be done before the task is even submitted to batch.</p>
 <p>The current version throws an error and refuses to merge if any file is not available in an input chunk (normally 1-4 GB of data).  Do we want to add the option of culling bad files from a chunk before sending it to the merge process?</p>
 <p>We don’t have a final check yet that can pick up files missed on the first round, except by checking by hand and resubmitting merges chunk by chunk.</p>
@@ -359,7 +358,7 @@ Do we want to read the root file to count the records in it so at least nevents 
 </ul>
 </section>
 <section id="design-ideas">
-<h1>Design ideas:<a class="headerlink" href="#design-ideas" title="Link to this heading">¶</a></h1>
+<h2>Design ideas:<a class="headerlink" href="#design-ideas" title="Link to this heading">¶</a></h2>
 <p>How do we specify parameters for a merge?</p>
 <p>·      Command line
 ·      YAML/json</p>
@@ -448,6 +447,7 @@ Do we want to read the root file to count the records in it so at least nevents 
 </div>
 <p>When making file/dataset names - abbreviations for common fields. (example full-reconstructed→ freco)</p>
 </section>
+</section>
 
 
             <div class="clearer"></div>
@@ -459,7 +459,7 @@ Do we want to read the root file to count the records in it so at least nevents 
   <div>
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
-<li><a class="reference internal" href="#">Design considerations</a></li>
+<li><a class="reference internal" href="#">Design considerations</a><ul>
 <li><a class="reference internal" href="#motivation">Motivation</a></li>
 <li><a class="reference internal" href="#inputs">Inputs</a><ul>
 <li><a class="reference internal" href="#at-the-list-generation-stage-we-need-methods-that">At the list generation stage, we need methods that</a></li>
@@ -486,6 +486,8 @@ Do we want to read the root file to count the records in it so at least nevents 
 <li><a class="reference internal" href="#where-this-runs">Where this runs</a></li>
 <li><a class="reference internal" href="#suggestions-for-future-versions">Suggestions for future versions</a></li>
 <li><a class="reference internal" href="#design-ideas">Design ideas:</a></li>
+</ul>
+</li>
 </ul>
 
   </div>

@@ -58,6 +58,23 @@
 <li><p>indentation differences when adding comments to code others wrote can be interesting</p></li>
 </ul>
 </div></blockquote>
+<p>But good parts -</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>ability to autoload most code and provide links to sources</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="conda-install">
+<h2>conda install<a class="headerlink" href="#conda-install" title="Link to this heading">¶</a></h2>
+<p>Right now this doesn’t seem to work with very recent python versions</p>
+<p>So set up an oldpython environment and then</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.9.15
+conda<span class="w"> </span>install<span class="w"> </span>sphinx<span class="w"> </span>-c<span class="w"> </span>conda-forge
+conda<span class="w"> </span>install<span class="w"> </span>myst-parser<span class="w"> </span>-c<span class="w"> </span>conda-forge
+conda<span class="w"> </span>install<span class="w"> </span>pydeps<span class="w"> </span>-c<span class="w"> </span>conda-forge
+</pre></div>
+</div>
 </section>
 <section id="github-actions">
 <h2>Github actions<a class="headerlink" href="#github-actions" title="Link to this heading">¶</a></h2>
@@ -113,6 +130,7 @@
     <ul>
 <li><a class="reference internal" href="#">Notes on sphinx</a><ul>
 <li><a class="reference internal" href="#rst-format">rst format</a></li>
+<li><a class="reference internal" href="#conda-install">conda install</a></li>
 <li><a class="reference internal" href="#github-actions">Github actions</a></li>
 <li><a class="reference internal" href="#google-indexing-notes">Google indexing Notes</a></li>
 </ul>

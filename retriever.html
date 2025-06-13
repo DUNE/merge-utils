@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>retriever &#8212; merge-utils 0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
+    <script src="_static/documentation_options.js?v=837179f8"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://hschellman.github.io/merge-utils-test/retriever.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="scheduler" href="scheduler.html" />
+    <link rel="prev" title="merge_set" href="merge_set.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scheduler.html" title="scheduler"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="merge_set.html" title="merge_set"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">retriever</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-retriever">
+<span id="retriever"></span><h1>retriever<a class="headerlink" href="#module-retriever" title="Link to this heading">¶</a></h1>
+<p>FileRetriever classes</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="retriever.FileRetriever">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">retriever.</span></span><span class="sig-name descname"><span class="pre">FileRetriever</span></span><a class="reference internal" href="_modules/retriever.html#FileRetriever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.FileRetriever" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for retrieving metadata from a source</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.FileRetriever.add">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/retriever.html#FileRetriever.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.FileRetriever.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add the metadata for a list of files to the set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>files</strong> – list of dictionaries with file metadata</p></li>
+<li><p><strong>dids</strong> – optional list of DIDs requested, used to check for missing files</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict of MergeFile objects that were added</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.FileRetriever.connect">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/retriever.html#FileRetriever.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.FileRetriever.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Connect to the metadata source</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="retriever.FileRetriever.dupes">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dupes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#retriever.FileRetriever.dupes" title="Link to this definition">¶</a></dt>
+<dd><p>Return the set of duplicate files from the source</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="retriever.FileRetriever.files">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">files</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet" title="merge_utils.merge_set.MergeSet"><span class="pre">MergeSet</span></a></em><a class="headerlink" href="#retriever.FileRetriever.files" title="Link to this definition">¶</a></dt>
+<dd><p>Return the set of files from the source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.FileRetriever.input_batches">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_batches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AsyncGenerator</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/retriever.html#FileRetriever.input_batches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.FileRetriever.input_batches" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve metadata for the next batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict of MergeFile objects that were added</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="retriever.FileRetriever.missing">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">missing</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#retriever.FileRetriever.missing" title="Link to this definition">¶</a></dt>
+<dd><p>Return the set of missing files from the source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.FileRetriever.output_chunks">
+<span class="sig-name descname"><span class="pre">output_chunks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Generator</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk" title="merge_utils.merge_set.MergeChunk"><span class="pre">MergeChunk</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/retriever.html#FileRetriever.output_chunks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.FileRetriever.output_chunks" title="Link to this definition">¶</a></dt>
+<dd><p>Yield chunks of files for merging.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>yields a series of MergeChunk objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.FileRetriever.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/retriever.html#FileRetriever.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.FileRetriever.run" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve metadata for all files.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="retriever.LocalRetriever">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">retriever.</span></span><span class="sig-name descname"><span class="pre">LocalRetriever</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta_dirs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/retriever.html#LocalRetriever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.LocalRetriever" title="Link to this definition">¶</a></dt>
+<dd><p>FileRetriever for local files</p>
+<p>Initialize the LocalRetriever with a list of files and optional metadata directories.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filelist</strong> – list of input data files</p></li>
+<li><p><strong>meta_dirs</strong> – optional list of directories to search for metadata files</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.LocalRetriever.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/retriever.html#LocalRetriever.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.LocalRetriever.connect" title="Link to this definition">¶</a></dt>
+<dd><p>No need to connect to the local filesystem, but we can do some preprocessing.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.LocalRetriever.get_metadata">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/retriever.html#LocalRetriever.get_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.LocalRetriever.get_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve metadata for a single file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.LocalRetriever.input_batches">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_batches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AsyncGenerator</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/retriever.html#LocalRetriever.input_batches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.LocalRetriever.input_batches" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve metadata for local files in batches</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">retriever</a><ul>
+<li><a class="reference internal" href="#retriever.FileRetriever"><code class="docutils literal notranslate"><span class="pre">FileRetriever</span></code></a><ul>
+<li><a class="reference internal" href="#retriever.FileRetriever.add"><code class="docutils literal notranslate"><span class="pre">FileRetriever.add()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.FileRetriever.connect"><code class="docutils literal notranslate"><span class="pre">FileRetriever.connect()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.FileRetriever.dupes"><code class="docutils literal notranslate"><span class="pre">FileRetriever.dupes</span></code></a></li>
+<li><a class="reference internal" href="#retriever.FileRetriever.files"><code class="docutils literal notranslate"><span class="pre">FileRetriever.files</span></code></a></li>
+<li><a class="reference internal" href="#retriever.FileRetriever.input_batches"><code class="docutils literal notranslate"><span class="pre">FileRetriever.input_batches()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.FileRetriever.missing"><code class="docutils literal notranslate"><span class="pre">FileRetriever.missing</span></code></a></li>
+<li><a class="reference internal" href="#retriever.FileRetriever.output_chunks"><code class="docutils literal notranslate"><span class="pre">FileRetriever.output_chunks()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.FileRetriever.run"><code class="docutils literal notranslate"><span class="pre">FileRetriever.run()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#retriever.LocalRetriever"><code class="docutils literal notranslate"><span class="pre">LocalRetriever</span></code></a><ul>
+<li><a class="reference internal" href="#retriever.LocalRetriever.connect"><code class="docutils literal notranslate"><span class="pre">LocalRetriever.connect()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.LocalRetriever.get_metadata"><code class="docutils literal notranslate"><span class="pre">LocalRetriever.get_metadata()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.LocalRetriever.input_batches"><code class="docutils literal notranslate"><span class="pre">LocalRetriever.input_batches()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="merge_set.html"
+                          title="previous chapter">merge_set</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="scheduler.html"
+                          title="next chapter">scheduler</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/retriever.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scheduler.html" title="scheduler"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="merge_set.html" title="merge_set"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">retriever</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>

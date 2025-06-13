@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MetaValidator &#8212; merge-utils 0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
+    <script src="../_static/documentation_options.js?v=837179f8"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://hschellman.github.io/merge-utils-test/_modules/MetaValidator.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">MetaValidator</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for MetaValidator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Check metadata against a template&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="nn">sys</span><span class="o">,</span><span class="nn">json</span>
+
+<span class="c1">#from CheckConfiguration import known_fields</span>
+ 
+
+<div class="viewcode-block" id="MetaValidator">
+<a class="viewcode-back" href="../MetaValidator.html#MetaValidator.MetaValidator">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">MetaValidator</span><span class="p">(</span><span class="n">filemd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">errfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="s2">&quot; check for type and missing required fields in metadata&quot;</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;../../config/valid_values.json&quot;</span><span class="p">)</span>
+    <span class="n">known_fields</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">DEBUG</span><span class="o">=</span><span class="kc">False</span>
+    <span class="c1"># define types</span>
+    <span class="n">STRING</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">FLOAT</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">INT</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">LIST</span> <span class="o">=</span> <span class="nb">type</span><span class="p">([])</span>
+    <span class="n">DICT</span> <span class="o">=</span> <span class="nb">type</span><span class="p">({})</span>
+
+    <span class="c1"># list defaults for metadata fields</span>
+    <span class="n">basetypes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+        <span class="s2">&quot;namespace&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+        <span class="s2">&quot;checksums&quot;</span><span class="p">:</span> <span class="n">DICT</span><span class="p">,</span>
+        <span class="s2">&quot;size&quot;</span><span class="p">:</span><span class="n">INT</span><span class="p">,</span>
+        <span class="s2">&quot;metadata&quot;</span><span class="p">:{</span>
+            <span class="s2">&quot;core.application.family&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;core.application.name&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;core.application.version&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;core.data_stream&quot;</span><span class="p">:</span><span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;core.data_tier&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;core.end_time&quot;</span><span class="p">:</span> <span class="n">FLOAT</span><span class="p">,</span>
+            <span class="s2">&quot;core.event_count&quot;</span><span class="p">:</span> <span class="n">INT</span><span class="p">,</span>
+            <span class="s2">&quot;core.events&quot;</span><span class="p">:</span> <span class="n">LIST</span><span class="p">,</span>
+            <span class="s2">&quot;core.file_content_status&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;core.file_format&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;core.file_type&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;core.first_event_number&quot;</span><span class="p">:</span> <span class="n">INT</span><span class="p">,</span>
+            <span class="s2">&quot;core.last_event_number&quot;</span><span class="p">:</span> <span class="n">INT</span><span class="p">,</span>
+            <span class="s2">&quot;core.run_type&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;core.runs&quot;</span><span class="p">:</span> <span class="n">LIST</span><span class="p">,</span>
+            <span class="s2">&quot;core.runs_subruns&quot;</span><span class="p">:</span> <span class="n">LIST</span><span class="p">,</span>
+            <span class="s2">&quot;core.start_time&quot;</span><span class="p">:</span> <span class="n">FLOAT</span><span class="p">,</span>
+            <span class="s2">&quot;dune.daq_test&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;dune.config_file&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;dune_mc.gen_fcl_filename&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;dune_mc.geometry_version&quot;</span><span class="p">:</span><span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;retention.status&quot;</span><span class="p">:</span> <span class="n">STRING</span><span class="p">,</span>
+            <span class="s2">&quot;retention.class&quot;</span><span class="p">:</span> <span class="n">STRING</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1"># set default values for fields that are often missing but needed</span>
+    <span class="n">fixDefaults</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;core.file_content_status&quot;</span><span class="p">:</span><span class="s2">&quot;good&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;retention.status&quot;</span><span class="p">:</span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;retention.class&quot;</span><span class="p">:</span><span class="s2">&quot;unknown&quot;</span>
+    <span class="p">}</span>
+    
+    <span class="c1"># place to put optional fields: all is optional for all, otherwise you need to tell it data_tier</span>
+
+    <span class="n">optional</span> <span class="o">=</span> <span class="p">{</span> 
+        <span class="s2">&quot;all&quot;</span><span class="p">:[</span><span class="s2">&quot;core.events&quot;</span><span class="p">,</span><span class="s2">&quot;dune.daq_test&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;root-tuple&quot;</span><span class="p">:[</span><span class="s2">&quot;core.event_count&quot;</span><span class="p">,</span><span class="s2">&quot;core.first_event_number&quot;</span><span class="p">,</span><span class="s2">&quot;core.last_event_number&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;raw&quot;</span><span class="p">:[</span><span class="s2">&quot;dune.config_file&quot;</span><span class="p">,</span> <span class="s2">&quot;dune_mc.gen_fcl_filename&quot;</span><span class="p">,</span><span class="s2">&quot;dune_mc.geometry_version&quot;</span><span class="p">,</span><span class="s2">&quot;core.application.family&quot;</span><span class="p">,</span><span class="s2">&quot;core.application.name&quot;</span><span class="p">,</span><span class="s2">&quot;core.application.version&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;binary-raw&quot;</span><span class="p">:[</span><span class="s2">&quot;dune.config_file&quot;</span><span class="p">,</span> <span class="s2">&quot;dune_mc.gen_fcl_filename&quot;</span><span class="p">,</span><span class="s2">&quot;dune_mc.geometry_version&quot;</span><span class="p">,</span><span class="s2">&quot;core.application.family&quot;</span><span class="p">,</span><span class="s2">&quot;core.application.name&quot;</span><span class="p">,</span><span class="s2">&quot;core.application.version&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;trigprim&quot;</span><span class="p">:[</span><span class="s2">&quot;dune.config_file&quot;</span><span class="p">,</span> <span class="s2">&quot;dune_mc.gen_fcl_filename&quot;</span><span class="p">,</span><span class="s2">&quot;dune_mc.geometry_version&quot;</span><span class="p">,</span><span class="s2">&quot;core.application.family&quot;</span><span class="p">,</span><span class="s2">&quot;core.application.name&quot;</span><span class="p">,</span><span class="s2">&quot;core.application.version&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;root-tuple-virtual&quot;</span><span class="p">:[</span><span class="s2">&quot;core.event_count&quot;</span><span class="p">,</span><span class="s2">&quot;core.first_event_number&quot;</span><span class="p">,</span><span class="s2">&quot;core.last_event_number&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;root-tuple-virtual-tar&quot;</span><span class="p">:[</span><span class="s2">&quot;core.event_count&quot;</span><span class="p">,</span><span class="s2">&quot;core.first_event_number&quot;</span><span class="p">,</span><span class="s2">&quot;core.last_event_number&quot;</span><span class="p">]</span>
+        <span class="p">}</span>
+
+    <span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">fixes</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">filemd</span><span class="p">:</span>
+        <span class="n">did</span> <span class="o">=</span> <span class="n">filemd</span><span class="p">[</span><span class="s2">&quot;namespace&quot;</span><span class="p">]</span><span class="o">+</span><span class="s2">&quot;:&quot;</span><span class="o">+</span><span class="n">filemd</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;ERROR: name not in metadata, continuing but this is invalid and I cannot fix it from metadata only&quot;</span><span class="p">)</span>
+        <span class="n">tempname</span> <span class="o">=</span> <span class="s2">&quot;UNKNOWN&quot;</span>
+        <span class="n">did</span> <span class="o">=</span> <span class="s2">&quot;UNKNOWN:UNKNOWN&quot;</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># do this as file may not have an fid yet, but fid makes shorter error messages. </span>
+    <span class="k">if</span> <span class="s2">&quot;fid&quot;</span> <span class="ow">in</span> <span class="n">filemd</span><span class="p">:</span>
+        <span class="n">fid</span> <span class="o">=</span> <span class="n">filemd</span><span class="p">[</span><span class="s2">&quot;fid&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fid</span> <span class="o">=</span> <span class="n">did</span>
+
+    <span class="c1"># start out with valid and no fixes needed    </span>
+    
+
+    <span class="c1"># loop over default md keys</span>
+
+    <span class="k">for</span> <span class="n">xkey</span><span class="p">,</span> <span class="n">xtype</span> <span class="ow">in</span> <span class="n">basetypes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">print</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">xtype</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="s2">&quot;core.&quot;</span><span class="o">+</span><span class="n">xkey</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">optional</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]:</span> <span class="k">continue</span>
+        <span class="c1"># check required</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">filemd</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="n">x</span><span class="o">+</span><span class="s2">&quot; is missing from &quot;</span><span class="o">+</span> <span class="n">fid</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">errfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">errfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">valid</span> <span class="o">*=</span> <span class="kc">False</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="n">filemd</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">continue</span>
+            
+                
+        <span class="c1"># check type</span>
+        <span class="k">if</span> <span class="n">xtype</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="n">filemd</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">!=</span> <span class="s2">&quot;metadata&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">xtype</span> <span class="o">==</span> <span class="n">FLOAT</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">filemd</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="o">==</span> <span class="n">INT</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> has wrong type in </span><span class="si">%s</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">fid</span><span class="p">)</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">errfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">errfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">valid</span> <span class="o">*=</span> <span class="kc">False</span>
+
+    <span class="c1"># now do the metadata</span>
+    <span class="n">md</span> <span class="o">=</span> <span class="n">filemd</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">xtype</span> <span class="ow">in</span> <span class="n">basetypes</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">print</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">xtype</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">optional</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">]:</span> <span class="k">continue</span> <span class="c1"># skip optional items</span>
+        <span class="k">if</span> <span class="s2">&quot;core.run_type&quot;</span> <span class="ow">in</span> <span class="n">md</span> <span class="ow">and</span> <span class="n">md</span><span class="p">[</span><span class="s2">&quot;core.run_type&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;mc&quot;</span> <span class="ow">and</span> <span class="s2">&quot;mc&quot;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="n">DEBUG</span><span class="p">:</span> <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;skipping mc only&quot;</span><span class="p">,</span><span class="n">x</span><span class="p">)</span>
+            <span class="k">continue</span>
+         
+        
+        <span class="c1"># check required keys</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">md</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="s2">&quot;core.data_tier&quot;</span> <span class="ow">in</span> <span class="n">md</span> <span class="ow">and</span> <span class="n">md</span><span class="p">[</span><span class="s2">&quot;core.data_tier&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">optional</span> <span class="ow">and</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">optional</span><span class="p">[</span><span class="n">md</span><span class="p">[</span><span class="s2">&quot;core.data_tier&quot;</span><span class="p">]]:</span>  <span class="c1"># skip optional items by data_tier</span>
+                 
+                <span class="k">if</span> <span class="n">DEBUG</span><span class="p">:</span> <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;skipping optional missing field for data_tier&quot;</span><span class="p">,</span><span class="n">md</span><span class="p">[</span><span class="s2">&quot;core.data_tier&quot;</span><span class="p">],</span><span class="n">x</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="n">x</span><span class="o">+</span> <span class="s2">&quot; is missing from &quot;</span> <span class="o">+</span> <span class="n">fid</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">errfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">errfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">valid</span> <span class="o">*=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">fixDefaults</span><span class="p">:</span>
+                <span class="n">fixes</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">=</span><span class="n">fixDefaults</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+            <span class="k">continue</span>
+        <span class="c1"># check for type</span>
+        <span class="k">if</span> <span class="n">xtype</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="n">md</span><span class="p">[</span><span class="n">x</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">xtype</span> <span class="o">==</span> <span class="n">FLOAT</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">md</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="o">==</span> <span class="n">INT</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">error</span> <span class="o">=</span>  <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> has wrong type in </span><span class="si">%s</span><span class="se">\n</span><span class="s2"> &quot;</span><span class="o">%</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">fid</span><span class="p">)</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">errfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">errfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">error</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">valid</span> <span class="o">*=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">core</span> <span class="ow">in</span> <span class="n">known_fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">md</span><span class="p">:</span> 
+            <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;required field&quot;</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="s2">&quot;not present&quot;</span><span class="p">)</span>
+            <span class="n">valid</span> <span class="o">*=</span><span class="kc">False</span>      
+        <span class="k">if</span> <span class="n">md</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">core</span> <span class="ow">and</span> <span class="n">md</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span><span class="o">!=</span><span class="s2">&quot;-tar&quot;</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;unknown required metadata field&quot;</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="s2">&quot;=&quot;</span><span class="p">,</span><span class="n">md</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
+            <span class="n">valid</span> <span class="o">*=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">md</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="o">!=</span> <span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">and</span> <span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">md</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">valid</span> <span class="o">*=</span><span class="kc">False</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;OOPS upper case&quot;</span><span class="p">,</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">fixes</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span><span class="o">=</span><span class="n">v</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">valid</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="p">(</span><span class="n">did</span><span class="p">,</span> <span class="s2">&quot; fails basic metadata tests&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fixes</span><span class="p">)</span> <span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;you could fix this by applying this fix&quot;</span><span class="p">)</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fixes</span><span class="p">,</span><span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+    
+    <span class="c1"># look for upper case in keys</span>
+
+    
+            
+            
+            
+
+            
+    <span class="k">return</span> <span class="n">valid</span><span class="p">,</span> <span class="n">fixes</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;please provide a json file to check&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">jsonname</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">jsonname</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;input file does not exist&quot;</span><span class="p">,</span><span class="n">jsonname</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">jsonfile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">jsonname</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">filemd</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">jsonfile</span><span class="p">)</span>
+    <span class="n">errfile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">jsonname</span><span class="o">+</span><span class="s2">&quot;.err&quot;</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">status</span><span class="p">,</span><span class="n">fixes</span> <span class="o">=</span> <span class="n">MetaValidator</span><span class="p">(</span><span class="n">filemd</span><span class="o">=</span><span class="n">filemd</span><span class="p">,</span><span class="n">errfile</span><span class="o">=</span><span class="n">errfile</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">errfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">MetaValidator</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>

@@ -35,12 +35,20 @@ python API
 
 .. toctree::
        
+    do_merge
+    config
     io_utils
-    merge_set
     metacat_utils
+    meta
     rucio_utils
-    merge_rse
     justin_utils
+    merge_rse
+    merge_set 
+    retriever
+    scheduler
+    CheckConfiguration
+    MetaValidator
+    
 
 command line API
 ----------------
