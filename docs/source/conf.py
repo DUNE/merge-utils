@@ -16,6 +16,7 @@ import sys
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('../../src'))
+sys.path.insert(0, os.path.abspath('../config'))
 sys.path.insert(0, os.path.abspath('../../src/merge_utils'))
 sys.path.insert(0, os.path.abspath('../..'))
 
