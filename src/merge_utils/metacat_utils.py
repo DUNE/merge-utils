@@ -53,14 +53,15 @@ class MetaCatRetriever(FileRetriever):
         """
         if len(dids) == 0:
             return []
-        logger.debug("Retrieving files from MetaCat for batch %d", idx)
+        logger.info("Retrieving files from MetaCat for batch %d", idx)
         dictlist = [{'did':did} for did in dids]
+        logger.debug("Requesting dids:\n  %s", "\n  ".join([f['did'] for f in dictlist]))
         try:
             res = await asyncio.to_thread(self.client.get_files, dictlist,
                                           with_metadata = True, with_provenance = self.parents)
         except (ValueError, metacat.webapi.BadRequestError) as err:
-            logger.error("%s", err)
-            return []
+            logger.critical("%s", err)
+            raise ValueError(f"Failed to retrieve files from MetaCat for batch {idx}: {err}") from err
         return list(res)
 
     async def _get_query(self, idx: int) -> list:
@@ -72,15 +73,16 @@ class MetaCatRetriever(FileRetriever):
         """
         if not self.query:
             return []
-        logger.debug("Querying MetaCat for batch %d", idx)
+        logger.info("Querying MetaCat for batch %d", idx)
         query_batch = self.query + f" skip {idx*self.step} limit {self.step}"
+        logger.debug("Query: %s", query_batch)
         try:
             # async_query exists but does not seem to be compatible with asyncIO
             res = await asyncio.to_thread(self.client.query, query_batch,
                                           with_metadata = True, with_provenance = self.parents)
         except metacat.webapi.BadRequestError as err:
-            logger.error("Malformed MetaCat query:\n  %s\n%s", self.query, err)
-            return []
+            logger.critical("Malformed MetaCat query:\n  %s\n%s", self.query, err)
+            raise ValueError(f"Failed to query MetaCat for batch {idx}: {err}") from err
         return list(res)
 
     async def input_batches(self) -> AsyncGenerator[dict, None]:
@@ -105,7 +107,7 @@ class MetaCatRetriever(FileRetriever):
         # request first batch from query
         task = asyncio.create_task(self._get_query(0))
         # finish processing last batch from filelist
-        if res:
+        if dids:
             added = await self.add(res, dids)
             logger.debug("yielding last file batch")
             yield added

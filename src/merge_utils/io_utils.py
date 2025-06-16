@@ -138,8 +138,17 @@ def setup_log(name: str) -> None:
     logging.config.dictConfig(logger_config)
     logger.info("Starting script %s", os.path.basename(name))
 
-def set_log_level(level: str) -> None:
+def set_log_level(level: int) -> None:
     """Override the logging level for the console"""
+    if level == 0:
+        level = "ERROR"
+    elif level == 1:
+        level = "WARNING"
+    elif level == 2:
+        level = "INFO"
+    elif level >= 3:
+        level = "DEBUG"
+
     for handler in logging.getLogger().handlers:
         if handler.get_name() == "console":
             handler.setLevel(level)
@@ -152,7 +161,7 @@ def log_list(msg: str, items: Iterable, level=logging.WARNING) -> int:
     if total == 1:
         msg = [msg.format(n=1, s="")]
     else:
-        msg = [msg.format(n=total, s="s")]
+        msg = [msg.format(n=total, s="s", es="es")]
 
     msg += [f"\n  {item}" for item in sorted(items)]
     logger.log(level, "".join(msg), stacklevel=2)
@@ -166,7 +175,7 @@ def log_dict(msg: str, items: dict, level=logging.WARNING) -> int:
     if total == 1:
         msg = [msg.format(n=1, s="")]
     else:
-        msg = [msg.format(n=total, s="s")]
+        msg = [msg.format(n=total, s="s", es="es")]
 
     mult = max(items.values())
     if mult == 1:

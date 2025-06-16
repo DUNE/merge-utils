@@ -2,15 +2,17 @@
 # Please create your own config files instead of modifying this one directly!
 
 validation:
-    batch_size: 100 # Number of files to query metacat about at once
-    skip:           # Continue processing files even if some fail validation
+    batch_size: 100   # Number of files to query metacat about at once
+    fast_fail: True   # Stop processing files as soon as one batch fails validation
+    skip:             # Continue processing files even if some fail validation
         missing:      false # Skip files with missing metadata
         duplicate:    false # Skip duplicated files
-        inaccessible: false # Skip files that are not accessible
+        unreachable:  false # Skip files that are not accessible
         invalid:      false # Skip files with invalid metadata
+        inconsistent: false # Skip files with inconsistent metadata
     checksums:
-      - "adler32"   # Adler32 should be the default checksum
-    consistent:     # These metadata keys must be the same for all input files
+      - "adler32"     # Adler32 should be the default checksum
+    consistent:       # These metadata keys must be the same for all input files
       - "core.run_type"
       - "core.file_type"
       - "core.file_format"
@@ -89,6 +91,7 @@ merging:
 
 output:
     dir: "~/scratch/merge_test" # Directory to save local merged files
+    namespace: ~ # Optionally specify a namespace different from the parents
     name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
     #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"
     grandparents: false # List the parents of the input files as the parents of the merged file

@@ -69,7 +69,8 @@ class RucioRetriever (FileRetriever):
         """
         # Check the file size
         if file.size != rucio['bytes']:
-            logger.error("Size mismatch for %s: %d != %d", file.did, file.size, rucio['bytes'])
+            lvl = logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL
+            logger.log(lvl, "Size mismatch for %s: %d != %d", file.did, file.size, rucio['bytes'])
             return False
         # See if we should skip the checksum check
         if len(self.checksums) == 0:
@@ -82,14 +83,16 @@ class RucioRetriever (FileRetriever):
                 if csum1 == csum2:
                     logger.debug("Found matching %s checksum for %s", algo, file.did)
                     return True
-                logger.error("%s checksum mismatch for %s: %s != %s", algo, file.did, csum1, csum2)
+                lvl = logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL
+                logger.log(lvl, "%s checksum mismatch for %s: %s != %s", algo, file.did, csum1, csum2)
                 return False
             if algo not in file.checksums:
                 logger.debug("MetaCat missing %s checksum for %s", algo, file.did)
             if algo not in rucio:
                 logger.debug("Rucio missing %s checksum for %s", algo, file.did)
         # If we get here, we have no matching checksums
-        logger.error("No matching checksums for %s", file.did)
+        lvl = logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL
+        logger.log(lvl, "No matching checksums for %s", file.did)
         return False
 
     async def process(self, files: dict) -> None:
@@ -100,6 +103,7 @@ class RucioRetriever (FileRetriever):
         """
         logger.debug("Retrieving physical file paths from Rucio")
         found = set()
+        unreachable = []
         query = [{'scope':file.namespace, 'name':file.name} for file in files.values()]
         res = await asyncio.to_thread(self.client.list_replicas, query, ignore_availability=False)
         for replicas in res:
@@ -112,16 +116,19 @@ class RucioRetriever (FileRetriever):
                 self.rses.add_replicas(did, replicas),
                 self.checksum(file, replicas)
             )
-
             if not csum:
-                raise ValueError(f"Checksum mismatch for {file.did}")
+                added = 0
+            if not added:
+                unreachable.append(did)
 
             logger.debug("Added %d replicas for %s", added, did)
 
         missing = [did for did in files if did not in found]
-        errs = io_utils.log_list("No Rucio entry for {n} file{s}:", missing, logging.ERROR)
-        if errs:
-            raise ValueError("Failed to find all files in Rucio!")
+        lvl = logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL
+        io_utils.log_list("Failed to find {n} file{s} in Rucio database:", missing, lvl)
+        unreachable.extend(missing)
+        io_utils.log_list("Failed to retrieve {n} file{s} from Rucio:", unreachable, lvl)
+        self.files.set_unreachable(unreachable)
 
     async def input_batches(self) -> AsyncGenerator[dict, None]:
         """

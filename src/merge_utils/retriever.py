@@ -1,10 +1,10 @@
 """FileRetriever classes"""
 
 import logging
-import math
-import collections
-import asyncio
 import os
+import sys
+import math
+import asyncio
 from abc import ABC, abstractmethod
 
 from typing import AsyncGenerator, Generator
@@ -20,7 +20,6 @@ class FileRetriever(ABC):
     def __init__(self):
         self.step = config.validation['batch_size']
         self.allow_missing = config.validation['skip']['missing']
-        self._missing = collections.defaultdict(int)
         self._files = MergeSet()
 
     @property
@@ -36,7 +35,7 @@ class FileRetriever(ABC):
     @property
     def missing(self) -> dict:
         """Return the set of missing files from the source"""
-        return self._missing
+        return self._files.missing
 
     @abstractmethod
     async def connect(self) -> None:
@@ -56,9 +55,6 @@ class FileRetriever(ABC):
             res_set = {x['namespace'] + ':' + x['name'] for x in files}
             for did in set(dids) - res_set:
                 self.missing[did] += 1
-            if not self.allow_missing:
-                io_utils.log_dict("No metadata found for {n} file{s}:", self.missing, logging.ERROR)
-                raise ValueError("Missing file metadata")
 
         # add files to merge set
         added = await asyncio.to_thread(self.files.add_files, files)
@@ -79,20 +75,25 @@ class FileRetriever(ABC):
         await self.connect()
         # loop over batches
         async for _ in self.input_batches():
-            pass # do nothing
+            if config.validation['fast_fail']:
+                if self.files.check_errors():
+                    raise ValueError("Input files failed validation, exiting early!")
 
     def run(self) -> None:
         """Retrieve metadata for all files."""
         try:
             asyncio.run(self._loop())
         except ValueError as err:
-            logger.error("%s", err)
-            self.files = MergeSet()
-            return
+            logger.critical("%s", err)
+            sys.exit(1)
 
-        # log any missing or duplicated files
-        io_utils.log_dict("Missing metadata for {n} file{s}:", self.missing)
-        io_utils.log_dict("Found {n} duplicate file{s}:", self.dupes)
+        # do error checking
+        if self.files.check_errors(final=True):
+            logger.critical("Input files failed validation, exiting!")
+            sys.exit(1)
+        if len(self.files) == 0:
+            logger.critical("Failed to retrieve any files, exiting!")
+            sys.exit(1)
 
     def output_chunks(self) -> Generator[MergeChunk, None, None]:
         """
@@ -169,7 +170,14 @@ class LocalRetriever(FileRetriever):
         if metadata is None:
             self.missing[name] += 1
             return None
-        metadata['path'] = os.path.join(path, name)
+
+        path = os.path.join(path, name)
+        #TODO: generalize this for other sites
+        if path.startswith('/pnfs/'):
+            # convert pnfs paths to xroot paths
+            fnal_prefix = "root://fndca1.fnal.gov:1094/pnfs/fnal.gov/usr"
+            path = path.replace('/pnfs', fnal_prefix)
+        metadata['path'] = path
         return metadata
 
     async def input_batches(self) -> AsyncGenerator[dict, None]:

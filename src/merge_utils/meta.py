@@ -7,24 +7,26 @@ from merge_utils import config, io_utils
 
 logger = logging.getLogger(__name__)
 
-def fix(name: str, metadata: dict) -> dict:
+def fix(name: str, metadata: dict) -> None:
     """
     Fix the metadata dictionary.
 
     :param name: name of the file (for logging)
     :param metadata: metadata dictionary
-    :return: fixed metadata dictionary
     """
+    fixes = []
     # Fix misspelled keys
     for bad_key, good_key in config.validation['fixes']['keys'].items():
         if bad_key in metadata:
-            logger.warning("File %s replacing metadata key %s with %s", name, bad_key, good_key)
+            fixes.append(f"Key '{bad_key}' -> '{good_key}'")
             metadata[good_key] = metadata.pop(bad_key)
+
     # Fix missing keys
     for key, value in config.validation['fixes']['missing'].items():
         if key not in metadata:
-            logger.warning("File %s metadata key %s is missing, setting to %s", name, key, value)
+            fixes.append(f"Key '{key}' value None -> '{value}'")
             metadata[key] = value
+
     # Fix misspelled values
     for key in config.validation['fixes']:
         if key in ['keys', 'missing'] or key not in metadata:
@@ -32,20 +34,19 @@ def fix(name: str, metadata: dict) -> dict:
         value = metadata[key]
         if value in config.validation['fixes'][key]:
             new_value = config.validation['fixes'][key][value]
-            logger.warning("File %s replacing %s value %s with %s", name, key, value, new_value)
+            fixes.append(f"Key '{key}' value '{value}' -> '{new_value}'")
             metadata[key] = new_value
-    return metadata
 
-def validate(name: str, metadata: dict) -> dict:
+    if fixes:
+        io_utils.log_list("Applying {n} metadata fix{es} to file %s:" % name, fixes, logging.INFO)
+
+def check_required(metadata: dict) -> list:
     """
-    Validate the metadata dictionary.
+    Check if the metadata dictionary contains all required keys.
 
-    :param name: name of the file (for logging)
     :param metadata: metadata dictionary
-    :raises ValueError: if the metadata is invalid
+    :return: List of any missing required keys
     """
-    # Fix metadata
-    metadata = fix(name, metadata)
     errs = []
     # Check for required keys
     required = set()
@@ -64,17 +65,35 @@ def validate(name: str, metadata: dict) -> dict:
         expr = condition.format_map(inserts)
         try:
             if not eval(expr): #pylint: disable=eval-used
-                logger.debug("Condition failed: %s", expr)
+                logger.debug("Skipping condition: %s", expr)
                 continue
         except Exception as exc:
-            raise ValueError(f"Error evaluating condition '{condition}'") from exc
-        logger.debug("Condition matched: %s", expr)
+            raise ValueError(f"Error evaluating condition ({condition})") from exc
+        logger.debug("Matched condition: %s", expr)
         for key in keys:
             if key in required:
                 continue
             required.add(key)
             if key not in metadata and key not in config.validation['optional']:
                 errs.append(f"Missing conditionally required key: {key} (from {condition})")
+
+    return errs
+
+def validate(name: str, metadata: dict, requirements: bool = True) -> bool:
+    """
+    Validate the metadata dictionary.
+
+    :param name: name of the file (for logging)
+    :param metadata: metadata dictionary
+    :param requirements: whether to check for required keys
+    :return: True if metadata is valid, False otherwise
+    """
+    # Fix metadata
+    fix(name, metadata)
+    errs = []
+    # Check for required keys
+    if requirements:
+        errs.extend(check_required(metadata))
 
     # Check for restricted keys
     for key, options in config.validation['restricted'].items():
@@ -95,10 +114,11 @@ def validate(name: str, metadata: dict) -> dict:
         errs.append(f"Invalid type for {key}: {value} (expected {expected_type})")
 
     if errs:
-        io_utils.log_list("File %s has {n} invalid metadata key{s}:" % name, errs, logging.ERROR)
-        raise ValueError(f"Invalid metadata for file {name}")
+        lvl = logging.ERROR if config.validation['skip']['invalid'] else logging.CRITICAL
+        io_utils.log_list("File %s has {n} invalid metadata key{s}:" % name, errs, lvl)
+        return False
 
-    return metadata
+    return True
 
 class MergeMetaMin:
     """Merge metadata by taking the minimum value."""
@@ -266,7 +286,10 @@ def merged_keys(files: dict, warn: bool = False) -> dict:
             [k for k, v in metadata.items() if v.warn]
         )
     metadata = {k: v.value for k, v in metadata.items() if v.valid}
-    return validate("output", metadata)
+    if not validate("output", metadata, requirements=False):
+        logger.critical("Merged metadata is invalid, cannot continue!")
+        raise ValueError("Merged metadata is invalid")
+    return metadata
 
 def parents(files: dict) -> list[str]:
     """

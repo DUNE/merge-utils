@@ -28,7 +28,7 @@ def main():
     
 
     args = parser.parse_args()
-    print (args)
+    print ("main arguments are: ",args)
 
     # Set up logging and configuration
     name = "merge"
@@ -36,10 +36,7 @@ def main():
         name = "list "+args.list
     io_utils.setup_log(name)
     config.load(args.config)
-    if args.verbose == 1:
-        io_utils.set_log_level("INFO")
-    elif args.verbose > 1:
-        io_utils.set_log_level("DEBUG")
+    io_utils.set_log_level(args.verbose)
 
     # Set up the retriever based on the input arguments
     flist = io_utils.get_inputs(args.filelist, args.files)

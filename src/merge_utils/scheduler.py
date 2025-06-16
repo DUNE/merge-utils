@@ -2,6 +2,7 @@
 
 import logging
 import os
+import sys
 import json
 import tarfile
 import subprocess
@@ -59,7 +60,7 @@ class LocalScheduler():
         self.dir = os.path.join(io_utils.pkg_dir(), "tmp", io_utils.get_timestamp())
         self.pass1 = []
         self.pass2 = []
-    
+
     def json_name(self, tier: int) -> str:
         """
         Get the name of the next JSON config file for a given pass and site.
@@ -93,25 +94,38 @@ class LocalScheduler():
 
     def run(self) -> None:
         """Run the job scheduler."""
+        out_dir = config.output['dir']
+        if not os.path.exists(out_dir):
+            try:
+                os.makedirs(out_dir, exist_ok=True)
+                logger.info("Output directory '%s' created", out_dir)
+            except OSError as error:
+                logger.critical("Failed to create output directory '%s': %s", out_dir, error)
+                sys.exit(1)
+
         self.get_chunks()
         if not self.pass1:
             logger.warning("No files to merge")
             return
 
-        with open(os.path.join(self.dir, "pass1.sh"), 'w', encoding="utf-8") as f:
+        script1 = os.path.join(self.dir, "submit_pass1.sh")
+        with open(script1, 'w', encoding="utf-8") as f:
             f.write("#!/bin/bash\n")
             f.write("# This script will run the merge jobs for pass 1\n")
             for chunk in self.pass1:
-                cmd = [os.path.join(io_utils.src_dir(), "do_merge.py"), chunk]
+                cmd = ['python3', os.path.join(io_utils.src_dir(), "do_merge.py"), chunk, out_dir]
                 f.write(f"{' '.join(cmd)}\n")
+        subprocess.run(['chmod', '+x', script1], check=False)
 
         if self.pass2:
-            with open(os.path.join(self.dir, "pass2.sh"), 'w', encoding="utf-8") as f:
+            script2 = os.path.join(self.dir, "submit_pass2.sh")
+            with open(script2, 'w', encoding="utf-8") as f:
                 f.write("#!/bin/bash\n")
                 f.write("# This script will run the merge jobs for pass 2\n")
                 for chunk in self.pass2:
-                    cmd = [os.path.join(io_utils.src_dir(), "do_merge.py"), chunk]
+                    cmd = ['python3', os.path.join(io_utils.src_dir(), "do_merge.py"), chunk, out_dir]
                     f.write(f"{' '.join(cmd)}\n")
+            subprocess.run(['chmod', '+x', script2], check=False)
 
         logger.info("Local job scripts written to %s", self.dir)
         #subprocess.run(cmd, check=True)
@@ -212,7 +226,7 @@ class JustinScheduler():
             '--env', f'CONFIG_DIR="{self.cvmfs_dir}"',
             '--site', site,
             '--scope', 'usertests',
-            '--output-pattern', '*_merged_*:merge-test'
+            '--output-pattern', '*_merged_*:merge-test', 
             '--lifetime-days', '1'
         ]
         return cmd

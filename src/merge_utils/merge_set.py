@@ -9,7 +9,7 @@ import hashlib
 import math
 from typing import Iterable, Generator
 
-from merge_utils import config, meta
+from merge_utils import io_utils, config, meta
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +25,9 @@ class MergeFile:
             logger.warning("No checksums for %s", self)
         elif 'adler32' not in self.checksums:
             logger.warning("No adler32 checksum for %s", self)
-        self.metadata = meta.validate(self._did, data['metadata'])
+        self.metadata = data['metadata']
         self.parents = data.get('parents', [])
+        self.valid = meta.validate(self._did, self.metadata)
 
     @property
     def did(self) -> str:
@@ -75,31 +76,59 @@ class MergeSet(collections.UserDict):
     def __init__(self, files: list[MergeFile] = None):
         super().__init__()
 
-        self.allow_duplicates = config.validation['skip']['duplicate']
+        self.invalid = {}
+        self.inconsistent = {}
+        self.unreachable = {}
+        self.missing = collections.defaultdict(int)
+
         self.consistent_fields = config.validation['consistent']
         self.field_values = None
+        self.consistent = True
+
+        self.unique = True
 
         if files:
             self.add_files(files)
+
+    def set_unreachable(self, dids: Iterable[str]) -> None:
+        """
+        Mark files as unreachable, e.g. not found in Rucio or not accessible.
+
+        :param dids: list of file DIDs to mark as unreachable
+        """
+        for did in dids:
+            file = self.data.pop(did)
+            file.valid = False
+            self.unreachable[did] = file
 
     def add_file(self, file: MergeFile | dict) -> MergeFile:
         """
         Add a file to the set
 
         :param file: A MergeFile object or a dictionary with file metadata
-        :return: True if the file was added, False if it was a duplicate
+        :return: the added MergeFile object, or None if it was a duplicate
         """
         if isinstance(file, dict):
             file = MergeFile(file)
         did = file.did
 
+        # Check if the file is valid
+        if not file.valid:
+            self.invalid[did] = file
+            return None
+
         # Check if the file is already in the set
         if did in self.data:
-            if not self.allow_duplicates:
-                raise ValueError(f"Duplicate file {did} found in input list!")
+            self.unique = False
             self.data[did].count += 1
-            logger.debug("Duped file %s", did)
+            lvl = logging.ERROR if config.validation['skip']['duplicate'] else logging.CRITICAL
+            logger.log(lvl, "Found duplicate input file %s", did)
             return None
+
+        # Actualy add the file
+        self.data[did] = file
+        self.data[did].count = 1
+        logger.debug("Added file %s", did)
 
         # Check if the file metadata is consistent
         vals = file.get_fields(self.consistent_fields)
@@ -107,21 +136,8 @@ class MergeSet(collections.UserDict):
             # First file, so set the field values
             self.field_values = vals
         elif self.field_values != vals:
-            # Check against the first file
-            errs = [f"Found inconsistent metadata for file {did}:"]
-            if vals[0] != self.field_values[0]:
-                errs.append(f"\n  namespace: '{vals[0]}' != '{self.field_values[0]}'")
-            for i, field in enumerate(self.consistent_fields, start=1):
-                if vals[i] != self.field_values[i]:
-                    errs.append(f"\n  {field}: '{vals[i]}' != '{self.field_values[i]}'")
-            msg = "".join(errs)
-            logger.error(msg)
-            raise ValueError(msg)
+            self.consistent = False
 
-        # Actualy add the file
-        self.data[did] = file
-        self.data[did].count = 1
-        logger.debug("Added file %s", did)
         return file
 
     def add_files(self, files: Iterable) -> dict:
@@ -136,7 +152,7 @@ class MergeSet(collections.UserDict):
             new_file = self.add_file(file)
             if new_file is not None:
                 new_files[new_file.did] = new_file
-        logger.debug("Added %d unique files", len(new_files))
+        logger.info("Added %d unique files", len(new_files))
         return new_files
 
     @property
@@ -163,6 +179,125 @@ class MergeSet(collections.UserDict):
     def size(self) -> int:
         """Get the total size of the files"""
         return sum(file.size for file in self.data.values())
+
+    def check_validity(self, final: bool = False) -> bool:
+        """
+        Check if the files in the set are valid and log any invalid files.
+        
+        :param final: print final summary of invalid files even if bad files are allowed
+        :return: True if all files are valid, False otherwise
+        """
+        skip = config.validation['skip']['invalid']
+        if len(self.invalid) == 0 or (skip and not final):
+            return True
+        lvl = logging.ERROR if skip else logging.CRITICAL
+        io_utils.log_list("Found {n} file{s} with invalid metadata:", self.invalid, lvl)
+        return skip
+
+    def check_consistency(self, final: bool = False) -> bool:
+        """
+        Check if the files in the set have consistent namespaces and metadata fields.
+        If not, log the inconsistencies and move the inconsistent files out of the set.
+
+        :param final: do final check and log even if bad files are allowed
+        :return: True if the files are consistent, False otherwise
+        """
+        skip = config.validation['skip']['inconsistent']
+        if self.consistent or (skip and not final):
+            return True
+        lvl = logging.ERROR if skip else logging.CRITICAL
+
+        # Figure out the most common values for the checked fields
+        counts = collections.defaultdict(int)
+        for file in self.files:
+            counts[file.get_fields(self.consistent_fields)] += 1
+        self.field_values = max(counts, key=counts.get)
+        n_errs = len(self.data) - counts[self.field_values]
+        s_errs = "s" if n_errs != 1 else ""
+        errs = [f"Found {n_errs} file{s_errs} in set with inconsistent metadata:"]
+
+        for file in self.files:
+            values = file.get_fields(self.consistent_fields)
+            if values != self.field_values:
+                file.valid = False
+                file_errs = []
+                if values[0] != self.field_values[0]:
+                    v1 = f"'{values[0]}'" if values[0] else "None"
+                    v2 = f"'{self.field_values[0]}'" if self.field_values[0] else "None"
+                    file_errs.append(f"  namespace: {v1} (expected {v2})")
+                for i, key in enumerate(self.consistent_fields, start=1):
+                    if values[i] != self.field_values[i]:
+                        v1 = f"'{values[i]}'" if values[i] else "None"
+                        v2 = f"'{self.field_values[i]}'" if self.field_values[i] else "None"
+                        file_errs.append(f"  {key}: {v1} (expected {v2})")
+                n_errs = len(file_errs)
+                s_errs = "s" if n_errs != 1 else ""
+                errs.append(f"File {file.did} has {n_errs} bad key{s_errs}:")
+                errs.extend(file_errs)
+        logger.log(lvl, "\n  ".join(errs))
+
+        # Move inconsistent files out of the set
+        self.inconsistent = {did: file for did, file in self.data.items() if not file.valid}
+        self.data = {did: file for did, file in self.data.items() if file.valid}
+
+        return skip
+
+    def check_reachability(self, final: bool = False) -> bool:
+        """
+        Check if the files in the set are reachable and log any unreachable files.
+        
+        :param final: print final summary of unreachable files even if bad files are allowed
+        :return: True if all files are reachable, False otherwise
+        """
+        skip = config.validation['skip']['unreachable']
+        if len(self.unreachable) == 0 or (skip and not final):
+            return True
+        lvl = logging.ERROR if skip else logging.CRITICAL
+        io_utils.log_list("Found {n} unreachable file{s}:", self.unreachable, lvl)
+        return skip
+
+    def check_missing(self, final: bool = False) -> bool:
+        """
+        Check if any files were missing metadata.
+        
+        :param final: print final summary of missing files even if bad files are allowed
+        :return: True if all files have metadata, False otherwise
+        """
+        skip = config.validation['skip']['missing']
+        if len(self.missing) == 0 or (skip and not final):
+            return True
+        lvl = logging.ERROR if skip else logging.CRITICAL
+        io_utils.log_dict("Failed to retrieve data for {n} file{s}:", self.missing, lvl)
+        return skip
+
+    def check_uniqueness(self, final: bool = False) -> bool:
+        """
+        Check if the files in the set are unique and log any duplicate files.
+        
+        :param final: print final summary of duplicate files even if bad files are allowed
+        :return: True if all files are unique, False otherwise
+        """
+        skip = config.validation['skip']['duplicate']
+        if self.unique or (skip and not final):
+            return True
+        lvl = logging.ERROR if skip else logging.CRITICAL
+        io_utils.log_dict("Found {n} duplicated file{s}:", self.dupes, lvl)
+        return skip
+
+    def check_errors(self, final: bool = False) -> bool:
+        """
+        Check for errors in the set and log them.
+        
+        :param final: print final summary of errors even if bad files are allowed
+        :return: True if unskipped errors were found, False otherwise
+        """
+        return not all([
+            self.check_missing(final),
+            self.check_validity(final),
+            self.check_consistency(final),
+            self.check_reachability(final),
+            self.check_uniqueness(final)
+        ])
 
     def group_count(self) -> list[int]:
         """Group input files by count"""
@@ -265,50 +400,13 @@ class MergeSet(collections.UserDict):
                 group_id += 1
                 group = MergeChunk(merge_name, merge_hash, group=group_id)
 
-    def check_consistency(self, fields: list) -> bool:
-        """
-        Check that the files have consistent namespaces and selected metadata fields
-
-        :param fields: list of metadata fields to check
-        :return: True if all files have matching metadata, False otherwise
-        """
-        logger.debug("Checking metadata consistency")
-
-        if len(self.data) < 2:
-            return True
-
-        counts = collections.defaultdict(int)
-        for file in self.data.values():
-            counts[file.get_fields(fields)] += 1
-
-        if len(counts) == 1:
-            return True
-
-        mode = max(counts, key=counts.get)
-        n_errs = len(self.data) - counts[mode]
-        s_errs = "s" if n_errs != 1 else ""
-        errs = [f"Found {n_errs} file{s_errs} with inconsistent metadata:"]
-
-        for file in self.files:
-            values = file.get_fields(fields)
-            if values != mode:
-                errs.append(f"\n  {file.did}")
-                if values[0] != mode[0]:
-                    errs.append(f"\n    namespace: '{values[0]}' != '{mode[0]}'")
-                for i, key in enumerate(fields, start=1):
-                    if values[i] != mode[i]:
-                        errs.append(f"\n    {key}: '{values[i]}' != '{mode[i]}'")
-
-        logger.error("".join(errs))
-        return False
-
 
 class MergeChunk(collections.UserDict):
     """Class to keep track of a chunk of files for merging"""
     def __init__(self, name: str, merge_hash: str, group: int = -1):
         super().__init__()
         self._name = name
-        self.namespace = None
+        self.namespace = config.output['namespace']
         self.merge_hash = merge_hash
         self.site = None
         self.group_id = group
