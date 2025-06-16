@@ -162,7 +162,7 @@
 <dd class="field-odd"><p><strong>file</strong> – A MergeFile object or a dictionary with file metadata</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>True if the file was added, False if it was a duplicate</p>
+<dd class="field-even"><p>the added MergeFile object, or None if it was a duplicate</p>
 </dd>
 </dl>
 </dd></dl>
@@ -183,14 +183,85 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.check_consistency">
-<span class="sig-name descname"><span class="pre">check_consistency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.check_consistency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.check_consistency" title="Link to this definition">¶</a></dt>
-<dd><p>Check that the files have consistent namespaces and selected metadata fields</p>
+<span class="sig-name descname"><span class="pre">check_consistency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">final</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.check_consistency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.check_consistency" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the files in the set have consistent namespaces and metadata fields.
+If not, log the inconsistencies and move the inconsistent files out of the set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>fields</strong> – list of metadata fields to check</p>
+<dd class="field-odd"><p><strong>final</strong> – do final check and log even if bad files are allowed</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>True if all files have matching metadata, False otherwise</p>
+<dd class="field-even"><p>True if the files are consistent, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.check_errors">
+<span class="sig-name descname"><span class="pre">check_errors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">final</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.check_errors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.check_errors" title="Link to this definition">¶</a></dt>
+<dd><p>Check for errors in the set and log them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>final</strong> – print final summary of errors even if bad files are allowed</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if unskipped errors were found, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.check_missing">
+<span class="sig-name descname"><span class="pre">check_missing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">final</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.check_missing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.check_missing" title="Link to this definition">¶</a></dt>
+<dd><p>Check if any files were missing metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>final</strong> – print final summary of missing files even if bad files are allowed</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if all files have metadata, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.check_reachability">
+<span class="sig-name descname"><span class="pre">check_reachability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">final</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.check_reachability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.check_reachability" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the files in the set are reachable and log any unreachable files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>final</strong> – print final summary of unreachable files even if bad files are allowed</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if all files are reachable, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.check_uniqueness">
+<span class="sig-name descname"><span class="pre">check_uniqueness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">final</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.check_uniqueness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.check_uniqueness" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the files in the set are unique and log any duplicate files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>final</strong> – print final summary of duplicate files even if bad files are allowed</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if all files are unique, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.check_validity">
+<span class="sig-name descname"><span class="pre">check_validity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">final</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.check_validity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.check_validity" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the files in the set are valid and log any invalid files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>final</strong> – print final summary of invalid files even if bad files are allowed</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if all files are valid, False otherwise</p>
 </dd>
 </dl>
 </dd></dl>
@@ -229,6 +300,17 @@
 <dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.hash">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">hash</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeSet.hash" title="Link to this definition">¶</a></dt>
 <dd><p>Get a hash from the list of files</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeSet.set_unreachable">
+<span class="sig-name descname"><span class="pre">set_unreachable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeSet.set_unreachable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeSet.set_unreachable" title="Link to this definition">¶</a></dt>
+<dd><p>Mark files as unreachable, e.g. not found in Rucio or not accessible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dids</strong> – list of file DIDs to mark as unreachable</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
@@ -281,12 +363,18 @@
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.add_file"><code class="docutils literal notranslate"><span class="pre">MergeSet.add_file()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.add_files"><code class="docutils literal notranslate"><span class="pre">MergeSet.add_files()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.check_consistency"><code class="docutils literal notranslate"><span class="pre">MergeSet.check_consistency()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.check_errors"><code class="docutils literal notranslate"><span class="pre">MergeSet.check_errors()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.check_missing"><code class="docutils literal notranslate"><span class="pre">MergeSet.check_missing()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.check_reachability"><code class="docutils literal notranslate"><span class="pre">MergeSet.check_reachability()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.check_uniqueness"><code class="docutils literal notranslate"><span class="pre">MergeSet.check_uniqueness()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.check_validity"><code class="docutils literal notranslate"><span class="pre">MergeSet.check_validity()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.dupes"><code class="docutils literal notranslate"><span class="pre">MergeSet.dupes</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.files"><code class="docutils literal notranslate"><span class="pre">MergeSet.files</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.group_count"><code class="docutils literal notranslate"><span class="pre">MergeSet.group_count()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.group_size"><code class="docutils literal notranslate"><span class="pre">MergeSet.group_size()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.groups"><code class="docutils literal notranslate"><span class="pre">MergeSet.groups()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.hash"><code class="docutils literal notranslate"><span class="pre">MergeSet.hash</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.set_unreachable"><code class="docutils literal notranslate"><span class="pre">MergeSet.set_unreachable()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeSet.size"><code class="docutils literal notranslate"><span class="pre">MergeSet.size</span></code></a></li>
 </ul>
 </li>

@@ -47,7 +47,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Generator</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span><span class="p">,</span> <span class="n">meta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">meta</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -65,8 +65,9 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No checksums for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
         <span class="k">elif</span> <span class="s1">&#39;adler32&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">checksums</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No adler32 checksum for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_did</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parents</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;parents&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_did</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">did</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -121,12 +122,33 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">MergeFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">allow_duplicates</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;duplicate&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">invalid</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inconsistent</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unreachable</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">missing</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">consistent_fields</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;consistent&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">field_values</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">consistent</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">unique</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="k">if</span> <span class="n">files</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MergeSet.set_unreachable">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.set_unreachable">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_unreachable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dids</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Mark files as unreachable, e.g. not found in Rucio or not accessible.</span>
+
+<span class="sd">        :param dids: list of file DIDs to mark as unreachable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">dids</span><span class="p">:</span>
+            <span class="n">file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
+            <span class="n">file</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unreachable</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="n">file</span></div>
+
 
 <div class="viewcode-block" id="MergeSet.add_file">
 <a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.add_file">[docs]</a>
@@ -135,19 +157,29 @@
 <span class="sd">        Add a file to the set</span>
 
 <span class="sd">        :param file: A MergeFile object or a dictionary with file metadata</span>
-<span class="sd">        :return: True if the file was added, False if it was a duplicate</span>
+<span class="sd">        :return: the added MergeFile object, or None if it was a duplicate</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="n">file</span> <span class="o">=</span> <span class="n">MergeFile</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
         <span class="n">did</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span>
 
+        <span class="c1"># Check if the file is valid</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">invalid</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="n">file</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
         <span class="c1"># Check if the file is already in the set</span>
         <span class="k">if</span> <span class="n">did</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">allow_duplicates</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duplicate file </span><span class="si">{</span><span class="n">did</span><span class="si">}</span><span class="s2"> found in input list!&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unique</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">did</span><span class="p">]</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Duped file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">did</span><span class="p">)</span>
+            <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;duplicate&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="s2">&quot;Found duplicate input file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">did</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Actualy add the file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="n">file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">did</span><span class="p">]</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Added file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">did</span><span class="p">)</span>
 
         <span class="c1"># Check if the file metadata is consistent</span>
         <span class="n">vals</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">get_fields</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">consistent_fields</span><span class="p">)</span>
@@ -155,21 +187,8 @@
             <span class="c1"># First file, so set the field values</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">field_values</span> <span class="o">=</span> <span class="n">vals</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_values</span> <span class="o">!=</span> <span class="n">vals</span><span class="p">:</span>
-            <span class="c1"># Check against the first file</span>
-            <span class="n">errs</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;Found inconsistent metadata for file </span><span class="si">{</span><span class="n">did</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">vals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-                <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  namespace: &#39;</span><span class="si">{</span><span class="n">vals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; != &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">consistent_fields</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">vals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
-                    <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">: &#39;</span><span class="si">{</span><span class="n">vals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; != &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errs</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">consistent</span> <span class="o">=</span> <span class="kc">False</span>
 
-        <span class="c1"># Actualy add the file</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="n">file</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">did</span><span class="p">]</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Added file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">did</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">file</span></div>
 
 
@@ -187,7 +206,7 @@
             <span class="n">new_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">new_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">new_files</span><span class="p">[</span><span class="n">new_file</span><span class="o">.</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_file</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Added </span><span class="si">%d</span><span class="s2"> unique files&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_files</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Added </span><span class="si">%d</span><span class="s2"> unique files&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_files</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">new_files</span></div>
 
 
@@ -215,6 +234,143 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the total size of the files&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+<div class="viewcode-block" id="MergeSet.check_validity">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.check_validity">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_validity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">final</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the files in the set are valid and log any invalid files.</span>
+<span class="sd">        </span>
+<span class="sd">        :param final: print final summary of invalid files even if bad files are allowed</span>
+<span class="sd">        :return: True if all files are valid, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;invalid&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">invalid</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">skip</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">final</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">skip</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> file</span><span class="si">{s}</span><span class="s2"> with invalid metadata:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">invalid</span><span class="p">,</span> <span class="n">lvl</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">skip</span></div>
+
+
+<div class="viewcode-block" id="MergeSet.check_consistency">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.check_consistency">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">final</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the files in the set have consistent namespaces and metadata fields.</span>
+<span class="sd">        If not, log the inconsistencies and move the inconsistent files out of the set.</span>
+
+<span class="sd">        :param final: do final check and log even if bad files are allowed</span>
+<span class="sd">        :return: True if the files are consistent, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;inconsistent&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">consistent</span> <span class="ow">or</span> <span class="p">(</span><span class="n">skip</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">final</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">skip</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
+
+        <span class="c1"># Figure out the most common values for the checked fields</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+            <span class="n">counts</span><span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">get_fields</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">consistent_fields</span><span class="p">)]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_values</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+        <span class="n">n_errs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">]</span>
+        <span class="n">s_errs</span> <span class="o">=</span> <span class="s2">&quot;s&quot;</span> <span class="k">if</span> <span class="n">n_errs</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">errs</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="n">n_errs</span><span class="si">}</span><span class="s2"> file</span><span class="si">{</span><span class="n">s_errs</span><span class="si">}</span><span class="s2"> in set with inconsistent metadata:&quot;</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">get_fields</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">consistent_fields</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">values</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">:</span>
+                <span class="n">file</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">file_errs</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">v1</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span> <span class="k">if</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;None&quot;</span>
+                    <span class="n">v2</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;None&quot;</span>
+                    <span class="n">file_errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  namespace: </span><span class="si">{</span><span class="n">v1</span><span class="si">}</span><span class="s2"> (expected </span><span class="si">{</span><span class="n">v2</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">consistent_fields</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                        <span class="n">v1</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span> <span class="k">if</span> <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;None&quot;</span>
+                        <span class="n">v2</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;None&quot;</span>
+                        <span class="n">file_errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">v1</span><span class="si">}</span><span class="s2"> (expected </span><span class="si">{</span><span class="n">v2</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                <span class="n">n_errs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_errs</span><span class="p">)</span>
+                <span class="n">s_errs</span> <span class="o">=</span> <span class="s2">&quot;s&quot;</span> <span class="k">if</span> <span class="n">n_errs</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="si">}</span><span class="s2"> has </span><span class="si">{</span><span class="n">n_errs</span><span class="si">}</span><span class="s2"> bad key</span><span class="si">{</span><span class="n">s_errs</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+                <span class="n">errs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">file_errs</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errs</span><span class="p">))</span>
+
+        <span class="c1"># Move inconsistent files out of the set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inconsistent</span> <span class="o">=</span> <span class="p">{</span><span class="n">did</span><span class="p">:</span> <span class="n">file</span> <span class="k">for</span> <span class="n">did</span><span class="p">,</span> <span class="n">file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">file</span><span class="o">.</span><span class="n">valid</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="n">did</span><span class="p">:</span> <span class="n">file</span> <span class="k">for</span> <span class="n">did</span><span class="p">,</span> <span class="n">file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">valid</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">skip</span></div>
+
+
+<div class="viewcode-block" id="MergeSet.check_reachability">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.check_reachability">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_reachability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">final</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the files in the set are reachable and log any unreachable files.</span>
+<span class="sd">        </span>
+<span class="sd">        :param final: print final summary of unreachable files even if bad files are allowed</span>
+<span class="sd">        :return: True if all files are reachable, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;unreachable&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unreachable</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">skip</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">final</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">skip</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> unreachable file</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">unreachable</span><span class="p">,</span> <span class="n">lvl</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">skip</span></div>
+
+
+<div class="viewcode-block" id="MergeSet.check_missing">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.check_missing">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_missing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">final</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if any files were missing metadata.</span>
+<span class="sd">        </span>
+<span class="sd">        :param final: print final summary of missing files even if bad files are allowed</span>
+<span class="sd">        :return: True if all files have metadata, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;missing&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">skip</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">final</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">skip</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span><span class="s2">&quot;Failed to retrieve data for </span><span class="si">{n}</span><span class="s2"> file</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">,</span> <span class="n">lvl</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">skip</span></div>
+
+
+<div class="viewcode-block" id="MergeSet.check_uniqueness">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.check_uniqueness">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_uniqueness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">final</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the files in the set are unique and log any duplicate files.</span>
+<span class="sd">        </span>
+<span class="sd">        :param final: print final summary of duplicate files even if bad files are allowed</span>
+<span class="sd">        :return: True if all files are unique, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;duplicate&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unique</span> <span class="ow">or</span> <span class="p">(</span><span class="n">skip</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">final</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">skip</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> duplicated file</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dupes</span><span class="p">,</span> <span class="n">lvl</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">skip</span></div>
+
+
+<div class="viewcode-block" id="MergeSet.check_errors">
+<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.check_errors">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">final</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check for errors in the set and log them.</span>
+<span class="sd">        </span>
+<span class="sd">        :param final: print final summary of errors even if bad files are allowed</span>
+<span class="sd">        :return: True if unskipped errors were found, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check_missing</span><span class="p">(</span><span class="n">final</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check_validity</span><span class="p">(</span><span class="n">final</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check_consistency</span><span class="p">(</span><span class="n">final</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check_reachability</span><span class="p">(</span><span class="n">final</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check_uniqueness</span><span class="p">(</span><span class="n">final</span><span class="p">)</span>
+        <span class="p">])</span></div>
+
 
 <div class="viewcode-block" id="MergeSet.group_count">
 <a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.group_count">[docs]</a>
@@ -324,46 +480,6 @@
                 <span class="k">yield</span> <span class="n">group</span>
                 <span class="n">group_id</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">group</span> <span class="o">=</span> <span class="n">MergeChunk</span><span class="p">(</span><span class="n">merge_name</span><span class="p">,</span> <span class="n">merge_hash</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">group_id</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="MergeSet.check_consistency">
-<a class="viewcode-back" href="../../merge_set.html#merge_utils.merge_set.MergeSet.check_consistency">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">check_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fields</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Check that the files have consistent namespaces and selected metadata fields</span>
-
-<span class="sd">        :param fields: list of metadata fields to check</span>
-<span class="sd">        :return: True if all files have matching metadata, False otherwise</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Checking metadata consistency&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">True</span>
-
-        <span class="n">counts</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="n">counts</span><span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">get_fields</span><span class="p">(</span><span class="n">fields</span><span class="p">)]</span> <span class="o">+=</span> <span class="mi">1</span>
-
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">True</span>
-
-        <span class="n">mode</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
-        <span class="n">n_errs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="n">mode</span><span class="p">]</span>
-        <span class="n">s_errs</span> <span class="o">=</span> <span class="s2">&quot;s&quot;</span> <span class="k">if</span> <span class="n">n_errs</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-        <span class="n">errs</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="n">n_errs</span><span class="si">}</span><span class="s2"> file</span><span class="si">{</span><span class="n">s_errs</span><span class="si">}</span><span class="s2"> with inconsistent metadata:&quot;</span><span class="p">]</span>
-
-        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
-            <span class="n">values</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">get_fields</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">values</span> <span class="o">!=</span> <span class="n">mode</span><span class="p">:</span>
-                <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-                    <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    namespace: &#39;</span><span class="si">{</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; != &#39;</span><span class="si">{</span><span class="n">mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">fields</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">mode</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
-                        <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: &#39;</span><span class="si">{</span><span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; != &#39;</span><span class="si">{</span><span class="n">mode</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errs</span><span class="p">))</span>
-        <span class="k">return</span> <span class="kc">False</span></div>
 </div>
 
 
@@ -375,7 +491,7 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">merge_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">namespace</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">namespace</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">merge_hash</span> <span class="o">=</span> <span class="n">merge_hash</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">group_id</span> <span class="o">=</span> <span class="n">group</span>

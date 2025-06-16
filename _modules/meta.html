@@ -47,24 +47,26 @@
 
 <div class="viewcode-block" id="fix">
 <a class="viewcode-back" href="../meta.html#meta.fix">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">fix</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fix</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fix the metadata dictionary.</span>
 
 <span class="sd">    :param name: name of the file (for logging)</span>
 <span class="sd">    :param metadata: metadata dictionary</span>
-<span class="sd">    :return: fixed metadata dictionary</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fixes</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="c1"># Fix misspelled keys</span>
     <span class="k">for</span> <span class="n">bad_key</span><span class="p">,</span> <span class="n">good_key</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;fixes&#39;</span><span class="p">][</span><span class="s1">&#39;keys&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">bad_key</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> replacing metadata key </span><span class="si">%s</span><span class="s2"> with </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bad_key</span><span class="p">,</span> <span class="n">good_key</span><span class="p">)</span>
+            <span class="n">fixes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Key &#39;</span><span class="si">{</span><span class="n">bad_key</span><span class="si">}</span><span class="s2">&#39; -&gt; &#39;</span><span class="si">{</span><span class="n">good_key</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
             <span class="n">metadata</span><span class="p">[</span><span class="n">good_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">bad_key</span><span class="p">)</span>
+
     <span class="c1"># Fix missing keys</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;fixes&#39;</span><span class="p">][</span><span class="s1">&#39;missing&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> metadata key </span><span class="si">%s</span><span class="s2"> is missing, setting to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="n">fixes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; value None -&gt; &#39;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
             <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
     <span class="c1"># Fix misspelled values</span>
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;fixes&#39;</span><span class="p">]:</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span> <span class="s1">&#39;missing&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
@@ -72,23 +74,22 @@
         <span class="n">value</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;fixes&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]:</span>
             <span class="n">new_value</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;fixes&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">][</span><span class="n">value</span><span class="p">]</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> replacing </span><span class="si">%s</span><span class="s2"> value </span><span class="si">%s</span><span class="s2"> with </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">new_value</span><span class="p">)</span>
+            <span class="n">fixes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; value &#39;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39; -&gt; &#39;</span><span class="si">{</span><span class="n">new_value</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
             <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_value</span>
-    <span class="k">return</span> <span class="n">metadata</span></div>
+
+    <span class="k">if</span> <span class="n">fixes</span><span class="p">:</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Applying </span><span class="si">{n}</span><span class="s2"> metadata fix</span><span class="si">{es}</span><span class="s2"> to file </span><span class="si">%s</span><span class="s2">:&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span> <span class="n">fixes</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="validate">
-<a class="viewcode-back" href="../meta.html#meta.validate">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<div class="viewcode-block" id="check_required">
+<a class="viewcode-back" href="../meta.html#meta.check_required">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_required</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Validate the metadata dictionary.</span>
+<span class="sd">    Check if the metadata dictionary contains all required keys.</span>
 
-<span class="sd">    :param name: name of the file (for logging)</span>
 <span class="sd">    :param metadata: metadata dictionary</span>
-<span class="sd">    :raises ValueError: if the metadata is invalid</span>
+<span class="sd">    :return: List of any missing required keys</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Fix metadata</span>
-    <span class="n">metadata</span> <span class="o">=</span> <span class="n">fix</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>
     <span class="n">errs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="c1"># Check for required keys</span>
     <span class="n">required</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
@@ -107,17 +108,38 @@
         <span class="n">expr</span> <span class="o">=</span> <span class="n">condition</span><span class="o">.</span><span class="n">format_map</span><span class="p">(</span><span class="n">inserts</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">eval</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span> <span class="c1">#pylint: disable=eval-used</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Condition failed: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Skipping condition: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
                 <span class="k">continue</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error evaluating condition &#39;</span><span class="si">{</span><span class="n">condition</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Condition matched: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error evaluating condition (</span><span class="si">{</span><span class="n">condition</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Matched condition: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">required</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="n">required</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;optional&#39;</span><span class="p">]:</span>
                 <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing conditionally required key: </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> (from </span><span class="si">{</span><span class="n">condition</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">errs</span></div>
+
+
+<div class="viewcode-block" id="validate">
+<a class="viewcode-back" href="../meta.html#meta.validate">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">requirements</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Validate the metadata dictionary.</span>
+
+<span class="sd">    :param name: name of the file (for logging)</span>
+<span class="sd">    :param metadata: metadata dictionary</span>
+<span class="sd">    :param requirements: whether to check for required keys</span>
+<span class="sd">    :return: True if metadata is valid, False otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Fix metadata</span>
+    <span class="n">fix</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>
+    <span class="n">errs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Check for required keys</span>
+    <span class="k">if</span> <span class="n">requirements</span><span class="p">:</span>
+        <span class="n">errs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">check_required</span><span class="p">(</span><span class="n">metadata</span><span class="p">))</span>
 
     <span class="c1"># Check for restricted keys</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">options</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;restricted&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -138,10 +160,11 @@
         <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid type for </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> (expected </span><span class="si">{</span><span class="n">expected_type</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">errs</span><span class="p">:</span>
-        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> has </span><span class="si">{n}</span><span class="s2"> invalid metadata key</span><span class="si">{s}</span><span class="s2">:&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span> <span class="n">errs</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid metadata for file </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;invalid&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> has </span><span class="si">{n}</span><span class="s2"> invalid metadata key</span><span class="si">{s}</span><span class="s2">:&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span> <span class="n">errs</span><span class="p">,</span> <span class="n">lvl</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
-    <span class="k">return</span> <span class="n">metadata</span></div>
+    <span class="k">return</span> <span class="kc">True</span></div>
 
 
 <div class="viewcode-block" id="MergeMetaMin">
@@ -354,7 +377,10 @@
             <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">warn</span><span class="p">]</span>
         <span class="p">)</span>
     <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">valid</span><span class="p">}</span>
-    <span class="k">return</span> <span class="n">validate</span><span class="p">(</span><span class="s2">&quot;output&quot;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span></div>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">validate</span><span class="p">(</span><span class="s2">&quot;output&quot;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">requirements</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Merged metadata is invalid, cannot continue!&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Merged metadata is invalid&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">metadata</span></div>
 
 
 <div class="viewcode-block" id="parents">
