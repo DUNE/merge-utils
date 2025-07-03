@@ -362,6 +362,7 @@ class MergeSet(collections.UserDict):
         """Split the files into groups for merging"""
         # Get merged metadata
         merge_meta = meta.merged_keys(self.data, warn = True)
+        common = meta.common_keys(self.data, warn = True) # this goes into output dataset metadata in future
 
         # Figure out the merge method if not already set
         if config.merging['method'] == 'auto':

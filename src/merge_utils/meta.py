@@ -291,6 +291,21 @@ def merged_keys(files: dict, warn: bool = False) -> dict:
         raise ValueError("Merged metadata is invalid")
     return metadata
 
+def common_keys(files: dict, warn: bool = False) -> dict:
+    """ find keys that are common to all merged files - useful for dataset metadata """
+    common = {}
+    different = [] # flag keys that have multiple values
+    for file in files.values():    
+        for key, value in file.metadata.items():
+            if key in different: continue # already looked at this one
+            if key not in common: # first instance
+                common[key] = value
+            else:  
+                if common[key] != value: # key has 2 calues, flag it and remove from common
+                    different.append(key)
+                    common.pop(key)
+    return common 
+
 def parents(files: dict) -> list[str]:
     """
     Retrieve all the parents from a set of files.
