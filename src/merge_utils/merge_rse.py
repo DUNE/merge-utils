@@ -154,7 +154,7 @@ class MergeRSEs(collections.UserDict):
 
         # Get site distances from justIN web API
         fields = ['site', 'rse', 'dist', 'site_enabled', 'rse_read', 'rse_write']
-        res = await asyncio.to_thread(requests.get, SITES_STORAGES_URL, verify=False, timeout=100)
+        res = await asyncio.to_thread(requests.get, SITES_STORAGES_URL, verify=False, timeout=10)
         text = res.iter_lines(decode_unicode=True)
         reader = csv.DictReader(text, fields)
         for row in reader:
