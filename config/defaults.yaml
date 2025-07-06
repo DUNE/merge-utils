@@ -90,7 +90,7 @@ merging:
             ext: ".tar"
 
 output:
-    dir: "~/scratch/merge_test" # Directory to save local merged files
+    dir: "/pnfs/dune/scratch/users/${USER}/merge_test" # Directory to save local merged files" # Directory to save local merged files
     namespace: ~ # Optionally specify a namespace different from the parents
     name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
     #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"

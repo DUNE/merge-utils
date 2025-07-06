@@ -111,7 +111,6 @@ class RucioRetriever (FileRetriever):
             logger.debug("Found %d replicas for %s", len(replicas['pfns']), did)
             found.add(did)
             file = files[did]
-
             added, csum = await asyncio.gather(
                 self.rses.add_replicas(did, replicas),
                 self.checksum(file, replicas)

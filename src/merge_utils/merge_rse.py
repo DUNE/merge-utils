@@ -154,7 +154,7 @@ class MergeRSEs(collections.UserDict):
 
         # Get site distances from justIN web API
         fields = ['site', 'rse', 'dist', 'site_enabled', 'rse_read', 'rse_write']
-        res = await asyncio.to_thread(requests.get, SITES_STORAGES_URL, verify=False, timeout=10)
+        res = await asyncio.to_thread(requests.get, SITES_STORAGES_URL, verify=False, timeout=100)
         text = res.iter_lines(decode_unicode=True)
         reader = csv.DictReader(text, fields)
         for row in reader:
@@ -165,7 +165,8 @@ class MergeRSEs(collections.UserDict):
             if site not in self.sites or rse not in self or not self[rse].valid:
                 continue
             self[rse].distances[site] = 100*float(row['dist'])
-
+        # hard wire obvious options for when justin is down
+        self["DUNE_US_FNAL_DISK_STAGE"].distances["US_FNAL-FermiGrid"]=0
         n_accessible = sum(1 for rse in self.values() if rse.valid
                            and rse.nearest_site()[1] <= self.max_distance)
         logger.info("Found %d RSEs accessible from %d sites", n_accessible, len(self.sites))
