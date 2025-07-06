@@ -40,10 +40,9 @@ def main():
 
     # Set up the retriever based on the input arguments
     flist = io_utils.get_inputs(args.filelist, args.files)
+
     if args.filelist:
         ret = retriever.LocalRetriever(filelist=flist)
-        if args.query:
-            logger.warning("The --query option is ignored when processing file lists.")
     elif args.list == 'dids':
         ret = metacat_utils.MetaCatRetriever(query=args.query, filelist=flist)
     else:

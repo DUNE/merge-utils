@@ -108,7 +108,7 @@ class LocalScheduler():
             logger.warning("No files to merge")
             return
 
-        script1 = os.path.join(self.dir, "submit_pass1.sh")
+        script1 = os.path.join(self.dir, "local_pass1.sh")
         with open(script1, 'w', encoding="utf-8") as f:
             f.write("#!/bin/bash\n")
             f.write("# This script will run the merge jobs for pass 1\n")
