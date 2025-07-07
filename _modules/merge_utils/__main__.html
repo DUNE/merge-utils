@@ -86,6 +86,9 @@
     <span class="n">config</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
     <span class="n">io_utils</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
 
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">local</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;local&#39;</span>
+
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">input_mode</span><span class="p">:</span>
         <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">input_mode</span>
     <span class="n">input_mode</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]</span>
