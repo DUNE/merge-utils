@@ -97,6 +97,8 @@
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.get_timestamp"><code class="docutils literal notranslate"><span class="pre">get_timestamp()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.log_dict"><code class="docutils literal notranslate"><span class="pre">log_dict()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.log_list"><code class="docutils literal notranslate"><span class="pre">log_list()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.log_nonzero"><code class="docutils literal notranslate"><span class="pre">log_nonzero()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.log_print"><code class="docutils literal notranslate"><span class="pre">log_print()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.pkg_dir"><code class="docutils literal notranslate"><span class="pre">pkg_dir()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.read_config_file"><code class="docutils literal notranslate"><span class="pre">read_config_file()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.set_log_level"><code class="docutils literal notranslate"><span class="pre">set_log_level()</span></code></a></li>
@@ -162,16 +164,12 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="rucio_utils.html">rucio_utils</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever"><code class="docutils literal notranslate"><span class="pre">RucioRetriever</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.checksum"><code class="docutils literal notranslate"><span class="pre">RucioRetriever.checksum()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.connect"><code class="docutils literal notranslate"><span class="pre">RucioRetriever.connect()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.dupes"><code class="docutils literal notranslate"><span class="pre">RucioRetriever.dupes</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.files"><code class="docutils literal notranslate"><span class="pre">RucioRetriever.files</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.input_batches"><code class="docutils literal notranslate"><span class="pre">RucioRetriever.input_batches()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.missing"><code class="docutils literal notranslate"><span class="pre">RucioRetriever.missing</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.output_chunks"><code class="docutils literal notranslate"><span class="pre">RucioRetriever.output_chunks()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.process"><code class="docutils literal notranslate"><span class="pre">RucioRetriever.process()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.run"><code class="docutils literal notranslate"><span class="pre">RucioRetriever.run()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioFinder"><code class="docutils literal notranslate"><span class="pre">RucioFinder</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioFinder.checksum"><code class="docutils literal notranslate"><span class="pre">RucioFinder.checksum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioFinder.connect"><code class="docutils literal notranslate"><span class="pre">RucioFinder.connect()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioFinder.output_chunks"><code class="docutils literal notranslate"><span class="pre">RucioFinder.output_chunks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioFinder.process"><code class="docutils literal notranslate"><span class="pre">RucioFinder.process()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="rucio_utils.html#merge_utils.rucio_utils.RucioFinder.run"><code class="docutils literal notranslate"><span class="pre">RucioFinder.run()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -195,7 +193,6 @@
 <li class="toctree-l3"><a class="reference internal" href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.connect"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.connect()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.get_pfns"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.get_pfns()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.optimize_pfns"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.optimize_pfns()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.set_rse_sites"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.set_rse_sites()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="merge_rse.html#merge_utils.merge_rse.MergeRSEs.site_pfns"><code class="docutils literal notranslate"><span class="pre">MergeRSEs.site_pfns()</span></code></a></li>
 </ul>
 </li>
@@ -245,43 +242,41 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="retriever.html">retriever</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="retriever.html#retriever.FileRetriever"><code class="docutils literal notranslate"><span class="pre">FileRetriever</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.FileRetriever.add"><code class="docutils literal notranslate"><span class="pre">FileRetriever.add()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.FileRetriever.connect"><code class="docutils literal notranslate"><span class="pre">FileRetriever.connect()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.FileRetriever.dupes"><code class="docutils literal notranslate"><span class="pre">FileRetriever.dupes</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.FileRetriever.files"><code class="docutils literal notranslate"><span class="pre">FileRetriever.files</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.FileRetriever.input_batches"><code class="docutils literal notranslate"><span class="pre">FileRetriever.input_batches()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.FileRetriever.missing"><code class="docutils literal notranslate"><span class="pre">FileRetriever.missing</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.FileRetriever.output_chunks"><code class="docutils literal notranslate"><span class="pre">FileRetriever.output_chunks()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.FileRetriever.run"><code class="docutils literal notranslate"><span class="pre">FileRetriever.run()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="retriever.html#retriever.MetaRetriever"><code class="docutils literal notranslate"><span class="pre">MetaRetriever</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.MetaRetriever.add"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.add()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.MetaRetriever.connect"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.connect()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.MetaRetriever.dupes"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.dupes</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.MetaRetriever.files"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.files</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.MetaRetriever.input_batches"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.input_batches()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.MetaRetriever.missing"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.missing</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.MetaRetriever.output_chunks"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.output_chunks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.MetaRetriever.run"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.run()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="retriever.html#retriever.LocalRetriever"><code class="docutils literal notranslate"><span class="pre">LocalRetriever</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.LocalRetriever.connect"><code class="docutils literal notranslate"><span class="pre">LocalRetriever.connect()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.LocalRetriever.get_metadata"><code class="docutils literal notranslate"><span class="pre">LocalRetriever.get_metadata()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.LocalRetriever.input_batches"><code class="docutils literal notranslate"><span class="pre">LocalRetriever.input_batches()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="retriever.html#retriever.PathFinder"><code class="docutils literal notranslate"><span class="pre">PathFinder</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.PathFinder.connect"><code class="docutils literal notranslate"><span class="pre">PathFinder.connect()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.PathFinder.files"><code class="docutils literal notranslate"><span class="pre">PathFinder.files</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.PathFinder.input_batches"><code class="docutils literal notranslate"><span class="pre">PathFinder.input_batches()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="retriever.html#retriever.PathFinder.process"><code class="docutils literal notranslate"><span class="pre">PathFinder.process()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="scheduler.html">scheduler</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="scheduler.html#scheduler.JobScheduler"><code class="docutils literal notranslate"><span class="pre">JobScheduler</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.JobScheduler.get_chunks"><code class="docutils literal notranslate"><span class="pre">JobScheduler.get_chunks()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.JobScheduler.run"><code class="docutils literal notranslate"><span class="pre">JobScheduler.run()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.JobScheduler.write_json"><code class="docutils literal notranslate"><span class="pre">JobScheduler.write_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.JobScheduler.write_script"><code class="docutils literal notranslate"><span class="pre">JobScheduler.write_script()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="scheduler.html#scheduler.JustinScheduler"><code class="docutils literal notranslate"><span class="pre">JustinScheduler</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.JustinScheduler.get_chunks"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.get_chunks()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.JustinScheduler.get_cmd"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.get_cmd()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.JustinScheduler.json_name"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.json_name()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.JustinScheduler.run"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.run()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.JustinScheduler.upload_cfg"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.upload_cfg()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.JustinScheduler.write_script"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.write_script()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="scheduler.html#scheduler.LocalScheduler"><code class="docutils literal notranslate"><span class="pre">LocalScheduler</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.LocalScheduler.get_chunks"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.get_chunks()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.LocalScheduler.json_name"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.json_name()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.LocalScheduler.run"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.run()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.LocalScheduler.write_json"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.write_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="scheduler.html#scheduler.LocalScheduler.write_script"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.write_script()</span></code></a></li>
 </ul>
 </li>
 </ul>

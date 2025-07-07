@@ -51,6 +51,20 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Default configuration settings for merging</span>
 <span class="c1"># Please create your own config files instead of modifying this one directly!</span>
 
+<span class="n">inputs</span><span class="p">:</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="n">dids</span>              <span class="c1"># Options: query, dids, files</span>
+    <span class="n">namespace</span><span class="p">:</span> <span class="s2">&quot;usertests&quot;</span>  <span class="c1"># Default namespace for local input files</span>
+    <span class="n">inputs</span><span class="p">:</span> <span class="p">[]</span>              <span class="c1"># List of inputs</span>
+    <span class="n">search_dirs</span><span class="p">:</span> <span class="p">[]</span>         <span class="c1"># List of directories to search for metadata files</span>
+
+<span class="n">output</span><span class="p">:</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="n">justin</span>      <span class="c1"># Options: dids, replicas, pfns, local, justin</span>
+    <span class="nb">dir</span><span class="p">:</span> <span class="s2">&quot;~/scratch/merge_test&quot;</span> <span class="c1"># Directory to save local merged files</span>
+    <span class="n">namespace</span><span class="p">:</span> <span class="s2">&quot;usertests&quot;</span> <span class="c1"># Optionally specify a namespace different from the parents</span>
+    <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{core.run_type}</span><span class="s2">_</span><span class="si">{dune.campaign}</span><span class="s2">_</span><span class="si">{dune.config_file}</span><span class="s2">_</span><span class="si">{core.application.name}</span><span class="s2">&quot;</span>
+    <span class="c1">#name: &quot;{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}&quot;</span>
+    <span class="n">grandparents</span><span class="p">:</span> <span class="n">false</span> <span class="c1"># List the parents of the input files as the parents of the merged file</span>
+
 <span class="n">validation</span><span class="p">:</span>
     <span class="n">batch_size</span><span class="p">:</span> <span class="mi">100</span>   <span class="c1"># Number of files to query metacat about at once</span>
     <span class="n">fast_fail</span><span class="p">:</span> <span class="kc">True</span>   <span class="c1"># Stop processing files as soon as one batch fails validation</span>
@@ -78,13 +92,14 @@
       <span class="o">-</span> <span class="s2">&quot;dune_mc.geometry_version&quot;</span>
 
 <span class="n">sites</span><span class="p">:</span>
-    <span class="n">max_distance</span><span class="p">:</span> <span class="mi">1000</span>        <span class="c1"># Distances range from 0 to 101</span>
-    <span class="n">nearline_distance</span><span class="p">:</span>        <span class="c1"># Extra distance to account for staging</span>
-        <span class="n">default</span><span class="p">:</span>        <span class="mi">100</span>   <span class="c1"># Default distance for all RSEs</span>
-        <span class="s2">&quot;FNAL_DCACHE&quot;</span><span class="p">:</span>  <span class="mi">10</span>
-    <span class="n">allowed_sites</span><span class="p">:</span>
+    <span class="n">local_site</span><span class="p">:</span> <span class="s2">&quot;US_FNAL-FermiGrid&quot;</span>   <span class="c1"># Local site name</span>
+    <span class="n">allowed_sites</span><span class="p">:</span>                    <span class="c1"># Sites where merging is allowed</span>
       <span class="o">-</span> <span class="s2">&quot;US_FNAL-FermiGrid&quot;</span>
       <span class="o">-</span> <span class="s2">&quot;CERN&quot;</span>
+    <span class="n">max_distance</span><span class="p">:</span> <span class="mi">1000</span>                <span class="c1"># Distances range from 0 to 101</span>
+    <span class="n">nearline_distance</span><span class="p">:</span>                <span class="c1"># Extra distance to account for staging</span>
+        <span class="n">default</span><span class="p">:</span>        <span class="mi">100</span>           <span class="c1"># Default distance for all RSEs</span>
+        <span class="s2">&quot;FNAL_DCACHE&quot;</span><span class="p">:</span>  <span class="mi">10</span>
 
 <span class="n">merging</span><span class="p">:</span>
     <span class="n">method</span><span class="p">:</span> <span class="n">auto</span>        <span class="c1"># Can be auto or a specific method from the list below</span>
@@ -93,28 +108,6 @@
     <span class="n">equalize</span><span class="p">:</span> <span class="n">true</span>      <span class="c1"># Try to equalize the size of the merged files</span>
     <span class="n">chunk_min</span><span class="p">:</span> <span class="mi">5</span>        <span class="c1"># Minimum number of files to merge at once</span>
     <span class="n">chunk_max</span><span class="p">:</span> <span class="mi">100</span>      <span class="c1"># Maxiumum number of files to merge at once</span>
-    <span class="n">metadata</span><span class="p">:</span>   <span class="c1"># Special handling for metadata keys, options are:</span>
-        <span class="c1"># unique   only save key if all values are the same</span>
-        <span class="c1"># all      save a list of all values</span>
-        <span class="c1"># min      save the minimum value</span>
-        <span class="c1"># max      save the maximum value</span>
-        <span class="c1"># sum      save the sum of all values</span>
-        <span class="c1"># union    save the union of all values</span>
-        <span class="c1"># skip     ignore the key</span>
-        <span class="n">default</span><span class="p">:</span>                    <span class="n">unique</span>
-        <span class="s2">&quot;core.first_event_number&quot;</span><span class="p">:</span>  <span class="nb">min</span>
-        <span class="s2">&quot;core.last_event_number&quot;</span><span class="p">:</span>   <span class="nb">max</span>
-        <span class="s2">&quot;core.event_count&quot;</span><span class="p">:</span>         <span class="nb">sum</span>
-        <span class="s2">&quot;core.events&quot;</span><span class="p">:</span>              <span class="n">union</span>
-        <span class="s2">&quot;core.runs&quot;</span><span class="p">:</span>                <span class="n">union</span>
-        <span class="s2">&quot;core.runs_subruns&quot;</span><span class="p">:</span>        <span class="n">union</span>
-        <span class="c1"># Skip values that don&#39;t make sense to merge</span>
-        <span class="s2">&quot;core.start_time&quot;</span><span class="p">:</span>          <span class="n">skip</span>
-        <span class="s2">&quot;core.end_time&quot;</span><span class="p">:</span>            <span class="n">skip</span>
-        <span class="s2">&quot;Offline.options&quot;</span><span class="p">:</span>          <span class="n">skip</span>
-        <span class="s2">&quot;Offline.machine&quot;</span><span class="p">:</span>          <span class="n">skip</span>
-        <span class="n">overrides</span><span class="p">:</span> <span class="c1"># Set keys to specific values</span>
-            <span class="s2">&quot;retention.status&quot;</span><span class="p">:</span>     <span class="s2">&quot;active&quot;</span>
     <span class="n">methods</span><span class="p">:</span>
         <span class="s2">&quot;hadd&quot;</span><span class="p">:</span>
             <span class="n">file_format</span><span class="p">:</span>
@@ -138,75 +131,7 @@
               <span class="o">-</span> <span class="s2">&quot;unknown&quot;</span>
             <span class="n">output_format</span><span class="p">:</span> <span class="s2">&quot;tar&quot;</span>
             <span class="n">ext</span><span class="p">:</span> <span class="s2">&quot;.tar&quot;</span>
-
-<span class="n">output</span><span class="p">:</span>
-    <span class="nb">dir</span><span class="p">:</span> <span class="s2">&quot;~/scratch/merge_test&quot;</span> <span class="c1"># Directory to save local merged files</span>
-    <span class="n">namespace</span><span class="p">:</span> <span class="o">~</span> <span class="c1"># Optionally specify a namespace different from the parents</span>
-    <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{core.run_type}</span><span class="s2">_</span><span class="si">{dune.campaign}</span><span class="s2">_</span><span class="si">{dune.config_file}</span><span class="s2">_</span><span class="si">{core.application.name}</span><span class="s2">&quot;</span>
-    <span class="c1">#name: &quot;{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}&quot;</span>
-    <span class="n">grandparents</span><span class="p">:</span> <span class="n">false</span> <span class="c1"># List the parents of the input files as the parents of the merged file</span>
-    <span class="n">abbreviations</span><span class="p">:</span>
-        <span class="s2">&quot;core.run_type&quot;</span><span class="p">:</span>
-            <span class="s2">&quot;protodune-sp&quot;</span><span class="p">:</span>             <span class="s2">&quot;pd-sp&quot;</span>
-            <span class="s2">&quot;protodune-dp&quot;</span><span class="p">:</span>             <span class="s2">&quot;pd-dp&quot;</span>
-            <span class="s2">&quot;hd-coldbox&quot;</span><span class="p">:</span>               <span class="s2">&quot;cb-hd&quot;</span>
-            <span class="s2">&quot;vd-coldbox&quot;</span><span class="p">:</span>               <span class="s2">&quot;cb-vd&quot;</span>
-            <span class="s2">&quot;vd-coldbox-bottom&quot;</span><span class="p">:</span>        <span class="s2">&quot;cb-vd-b&quot;</span>
-            <span class="s2">&quot;vd-coldbox-top&quot;</span><span class="p">:</span>           <span class="s2">&quot;cb-vd-t&quot;</span>
-            <span class="s2">&quot;protodune-hd&quot;</span><span class="p">:</span>             <span class="s2">&quot;pd-hd&quot;</span>
-            <span class="s2">&quot;hd-protodune&quot;</span><span class="p">:</span>             <span class="s2">&quot;pd-hd&quot;</span>
-            <span class="s2">&quot;vd-protodune&quot;</span><span class="p">:</span>             <span class="s2">&quot;pd-vd&quot;</span>
-            <span class="s2">&quot;vd-protodune-pds&quot;</span><span class="p">:</span>         <span class="s2">&quot;pd-vd-pds&quot;</span>
-            <span class="s2">&quot;vd-protodune-arapucas&quot;</span><span class="p">:</span>    <span class="s2">&quot;pd-vd-arapucas&quot;</span>
-            <span class="s2">&quot;dc4-vd-coldbox-bottom&quot;</span><span class="p">:</span>    <span class="s2">&quot;cb-dc4-vd-b&quot;</span>
-            <span class="s2">&quot;dc4-vd-coldbox-top&quot;</span><span class="p">:</span>       <span class="s2">&quot;cb-dc4-vd-t&quot;</span>
-            <span class="s2">&quot;dc4-hd-protodune&quot;</span><span class="p">:</span>         <span class="s2">&quot;pd-dc4-hd&quot;</span>
-            <span class="s2">&quot;neardet&quot;</span><span class="p">:</span>                  <span class="s2">&quot;nd&quot;</span>
-            <span class="s2">&quot;neardet-lar&quot;</span><span class="p">:</span>              <span class="s2">&quot;nd-lar&quot;</span>
-            <span class="s2">&quot;neardet-2x2&quot;</span><span class="p">:</span>              <span class="s2">&quot;nd-2x2&quot;</span>
-            <span class="s2">&quot;neardet-2x2-lar&quot;</span><span class="p">:</span>          <span class="s2">&quot;nd-2x2-lar&quot;</span>
-            <span class="s2">&quot;neardet-2x2-lar-charge&quot;</span><span class="p">:</span>   <span class="s2">&quot;nd-2x2-lar-charge&quot;</span>
-            <span class="s2">&quot;neardet-2x2-lar-light&quot;</span><span class="p">:</span>    <span class="s2">&quot;nd-2x2-lar-light&quot;</span>
-            <span class="s2">&quot;neardet-2x2-minerva&quot;</span><span class="p">:</span>      <span class="s2">&quot;nd-2x2-minerva&quot;</span>
-            <span class="s2">&quot;fardet&quot;</span><span class="p">:</span>                   <span class="s2">&quot;fd&quot;</span>
-            <span class="s2">&quot;fardet-sp&quot;</span><span class="p">:</span>                <span class="s2">&quot;fd-sp&quot;</span>
-            <span class="s2">&quot;fardet-hd&quot;</span><span class="p">:</span>                <span class="s2">&quot;fd-hd&quot;</span>
-            <span class="s2">&quot;fardet-vd&quot;</span><span class="p">:</span>                <span class="s2">&quot;fd-vd&quot;</span>
-            <span class="s2">&quot;fardet-dp&quot;</span><span class="p">:</span>                <span class="s2">&quot;fd-dp&quot;</span>
-            <span class="s2">&quot;fardet-moo&quot;</span><span class="p">:</span>               <span class="s2">&quot;fd-moo&quot;</span>
-            <span class="s2">&quot;311_dp_light&quot;</span><span class="p">:</span>             <span class="s2">&quot;311-dp-light&quot;</span>
-            <span class="s2">&quot;physics&quot;</span><span class="p">:</span>                  <span class="s2">&quot;phys&quot;</span>
-            <span class="s2">&quot;protodune&quot;</span><span class="p">:</span>                <span class="s2">&quot;pd&quot;</span>
-            <span class="s2">&quot;protodune-vst&quot;</span><span class="p">:</span>            <span class="s2">&quot;pd-vst&quot;</span>
-        <span class="s2">&quot;core.file_type&quot;</span><span class="p">:</span>
-            <span class="s2">&quot;detector&quot;</span><span class="p">:</span>                 <span class="s2">&quot;det&quot;</span>
-            <span class="s2">&quot;importedDetector&quot;</span><span class="p">:</span>         <span class="s2">&quot;imp-det&quot;</span>
-            <span class="s2">&quot;binary&quot;</span><span class="p">:</span>                   <span class="s2">&quot;bin&quot;</span>
-            <span class="s2">&quot;photon_detector&quot;</span><span class="p">:</span>          <span class="s2">&quot;photo-det&quot;</span>
-        <span class="s2">&quot;core.data_stream&quot;</span><span class="p">:</span>
-            <span class="s2">&quot;calibration&quot;</span><span class="p">:</span>              <span class="s2">&quot;calib&quot;</span>
-            <span class="s2">&quot;physics&quot;</span><span class="p">:</span>                  <span class="s2">&quot;phys&quot;</span>
-            <span class="s2">&quot;commissioning&quot;</span><span class="p">:</span>            <span class="s2">&quot;comm&quot;</span>
-            <span class="s2">&quot;pedestal&quot;</span><span class="p">:</span>                 <span class="s2">&quot;pdstl&quot;</span>
-            <span class="s2">&quot;g4beamline&quot;</span><span class="p">:</span>               <span class="s2">&quot;g4&quot;</span>
-        <span class="s2">&quot;core.data_tier&quot;</span><span class="p">:</span>
-            <span class="s2">&quot;simulated&quot;</span><span class="p">:</span>                <span class="s2">&quot;sim&quot;</span>
-            <span class="s2">&quot;hit-reconstructed&quot;</span><span class="p">:</span>        <span class="s2">&quot;hit-reco&quot;</span>
-            <span class="s2">&quot;full-reconstructed&quot;</span><span class="p">:</span>       <span class="s2">&quot;full-reco&quot;</span>
-            <span class="s2">&quot;generated&quot;</span><span class="p">:</span>                <span class="s2">&quot;gen&quot;</span>
-            <span class="s2">&quot;detector-simulated&quot;</span><span class="p">:</span>       <span class="s2">&quot;det-sim&quot;</span>
-            <span class="s2">&quot;root-tuple&quot;</span><span class="p">:</span>               <span class="s2">&quot;r-tuple&quot;</span>
-            <span class="s2">&quot;root-hist&quot;</span><span class="p">:</span>                <span class="s2">&quot;r-hist&quot;</span>
-            <span class="s2">&quot;decoded-raw&quot;</span><span class="p">:</span>              <span class="s2">&quot;dec-raw&quot;</span>
-            <span class="s2">&quot;pandora-info&quot;</span><span class="p">:</span>             <span class="s2">&quot;pandora&quot;</span>
-            <span class="s2">&quot;reco-recalibrated&quot;</span><span class="p">:</span>        <span class="s2">&quot;reco-recal&quot;</span>
-            <span class="s2">&quot;root-tuple-virtual&quot;</span><span class="p">:</span>       <span class="s2">&quot;r-tuple-v&quot;</span>
-            <span class="s2">&quot;binary-raw&quot;</span><span class="p">:</span>               <span class="s2">&quot;binary&quot;</span>
-            <span class="s2">&quot;sam-user&quot;</span><span class="p">:</span>                 <span class="s2">&quot;sam&quot;</span>
-        <span class="s2">&quot;core.file_format&quot;</span><span class="p">:</span>
-            <span class="s2">&quot;artroot&quot;</span><span class="p">:</span>                  <span class="s2">&quot;art&quot;</span>
-            <span class="s2">&quot;binary&quot;</span><span class="p">:</span>                   <span class="s2">&quot;bin&quot;</span>
-            <span class="s2">&quot;rootntuple&quot;</span><span class="p">:</span>               <span class="s2">&quot;tuple&quot;</span>
+    
 </pre></div>
 </div>
 </section>

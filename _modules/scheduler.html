@@ -48,7 +48,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileRetriever</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">PathFinder</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -57,102 +57,114 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">JobScheduler</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for scheduling a merge job&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">FileRetriever</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">PathFinder</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the JobScheduler with a source of files to merge.</span>
 <span class="sd">        </span>
-<span class="sd">        :param source: FileRetriever object to provide input files</span>
+<span class="sd">        :param source: PathFinder object to provide input files</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">source</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">pkg_dir</span><span class="p">(),</span> <span class="s2">&quot;tmp&quot;</span><span class="p">,</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">get_timestamp</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pass1</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span> <span class="o">=</span> <span class="p">[</span><span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">),</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)]</span>
 
-<div class="viewcode-block" id="JobScheduler.get_chunks">
-<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.get_chunks">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_chunks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the FileRetriever and get the list of chunks.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">output_chunks</span><span class="p">():</span>
-            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">json</span>
-            <span class="k">if</span> <span class="n">chunk</span><span class="o">.</span><span class="n">chunks</span><span class="p">:</span> <span class="c1"># if the chunk has sub-chunks it is pass 2</span>
-                <span class="n">json_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;pass2_</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pass2</span><span class="p">)</span><span class="si">:</span><span class="s2">&gt;06</span><span class="si">}</span><span class="s2">.json&quot;</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json_name</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span> <span class="c1"># if the chunk has no sub-chunks it is pass 1</span>
-                <span class="n">json_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;pass1_</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pass1</span><span class="p">)</span><span class="si">:</span><span class="s2">&gt;06</span><span class="si">}</span><span class="s2">.json&quot;</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">pass1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json_name</span><span class="p">)</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fjson</span><span class="p">:</span>
-                <span class="n">fjson</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">json_dict</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span></div>
+<div class="viewcode-block" id="JobScheduler.write_json">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.write_json">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write a JSON dictionary to a file and return the file name.</span>
+<span class="sd">        </span>
+<span class="sd">        :param chunk: MergeChunk object to write</span>
+<span class="sd">        :return: Name of the written JSON file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">json_dict</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">json</span>
+        <span class="n">site</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">site</span>
+        <span class="n">tier</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">tier</span>
+
+        <span class="n">site_jobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="n">tier</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">site</span><span class="p">]</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">site_jobs</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">site</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;pass</span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">idx</span><span class="si">:</span><span class="s2">&gt;06</span><span class="si">}</span><span class="s2">.json&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;pass</span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">idx</span><span class="si">:</span><span class="s2">&gt;06</span><span class="si">}</span><span class="s2">.json&quot;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fjson</span><span class="p">:</span>
+            <span class="n">fjson</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">json_dict</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">site_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">name</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.write_script">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.write_script">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tier</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write the job script for a given tier.</span>
+<span class="sd">        </span>
+<span class="sd">        :param tier: Pass number (1 or 2)</span>
+<span class="sd">        :return: Name of the generated script file</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
 
 
 <div class="viewcode-block" id="JobScheduler.run">
 <a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.run">[docs]</a>
-    <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the job scheduler.&quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Subclasses must implement this method&quot;</span><span class="p">)</span></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the Job scheduler.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">output_chunks</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_json</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No files to merge&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job config files written to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;Execute the merge by running:&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_script</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">write_script</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span></div>
 </div>
 
 
 <div class="viewcode-block" id="LocalScheduler">
 <a class="viewcode-back" href="../scheduler.html#scheduler.LocalScheduler">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">LocalScheduler</span><span class="p">():</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LocalScheduler</span><span class="p">(</span><span class="n">JobScheduler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Job scheduler for local merge jobs&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">FileRetriever</span><span class="p">):</span>
+<div class="viewcode-block" id="LocalScheduler.write_json">
+<a class="viewcode-back" href="../scheduler.html#scheduler.LocalScheduler.write_json">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialize the LocalScheduler with a source of files to merge.</span>
+<span class="sd">        Write a JSON dictionary to a file and return the file name.</span>
 <span class="sd">        </span>
-<span class="sd">        :param source: FileRetriever object to provide input files</span>
+<span class="sd">        :param chunk: MergeChunk object to write</span>
+<span class="sd">        :return: Name of the written JSON file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">source</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">pkg_dir</span><span class="p">(),</span> <span class="s2">&quot;tmp&quot;</span><span class="p">,</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">get_timestamp</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pass1</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">chunk</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Local jobs do not require a site</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">write_json</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="LocalScheduler.json_name">
-<a class="viewcode-back" href="../scheduler.html#scheduler.LocalScheduler.json_name">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">json_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tier</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+
+<div class="viewcode-block" id="LocalScheduler.write_script">
+<a class="viewcode-back" href="../scheduler.html#scheduler.LocalScheduler.write_script">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tier</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get the name of the next JSON config file for a given pass and site.</span>
+<span class="sd">        Write the job script for a given tier.</span>
 <span class="sd">        </span>
 <span class="sd">        :param tier: Pass number (1 or 2)</span>
-<span class="sd">        :param site: Optional site name</span>
-<span class="sd">        :return: Name of the JSON file</span>
+<span class="sd">        :return: Name of the generated script file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">tier</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">site_jobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass1</span>
-        <span class="k">elif</span> <span class="n">tier</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">site_jobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Tier must be 1 or 2&quot;</span><span class="p">)</span>
-
-        <span class="n">idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">site_jobs</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;pass</span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">idx</span><span class="si">:</span><span class="s2">&gt;06</span><span class="si">}</span><span class="s2">.json&quot;</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-        <span class="n">site_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">name</span></div>
-
-
-<div class="viewcode-block" id="LocalScheduler.get_chunks">
-<a class="viewcode-back" href="../scheduler.html#scheduler.LocalScheduler.get_chunks">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_chunks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the FileRetriever and get the list of chunks.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">output_chunks</span><span class="p">():</span>
-            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">json</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">json_name</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">tier</span><span class="p">)</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fjson</span><span class="p">:</span>
-                <span class="n">fjson</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">json_dict</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span></div>
-
-
-<div class="viewcode-block" id="LocalScheduler.run">
-<a class="viewcode-back" href="../scheduler.html#scheduler.LocalScheduler.run">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the job scheduler.&quot;&quot;&quot;</span>
         <span class="n">out_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;dir&#39;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">out_dir</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">tier</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">out_dir</span><span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Output directory &#39;</span><span class="si">%s</span><span class="s2">&#39; created&quot;</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">)</span>
@@ -160,92 +172,31 @@
                 <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Failed to create output directory &#39;</span><span class="si">%s</span><span class="s2">&#39;: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
                 <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">get_chunks</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass1</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No files to merge&quot;</span><span class="p">)</span>
-            <span class="k">return</span>
-
-        <span class="n">script1</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="s2">&quot;submit_pass1.sh&quot;</span><span class="p">)</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">script1</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">script_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;run_pass</span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="s2">.sh&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">script_name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;#!/bin/bash</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;# This script will run the merge jobs for pass 1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass1</span><span class="p">:</span>
-                <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;python3&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">src_dir</span><span class="p">(),</span> <span class="s2">&quot;do_merge.py&quot;</span><span class="p">),</span> <span class="n">chunk</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">]</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;# This script will run local merge jobs for pass </span><span class="si">{tier}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="n">tier</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="kc">None</span><span class="p">]:</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;python3&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">src_dir</span><span class="p">(),</span> <span class="s2">&quot;do_merge.py&quot;</span><span class="p">),</span> <span class="n">job</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">]</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;chmod&#39;</span><span class="p">,</span> <span class="s1">&#39;+x&#39;</span><span class="p">,</span> <span class="n">script1</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span><span class="p">:</span>
-            <span class="n">script2</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="s2">&quot;submit_pass2.sh&quot;</span><span class="p">)</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">script2</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;#!/bin/bash</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;# This script will run the merge jobs for pass 2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span><span class="p">:</span>
-                    <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;python3&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">src_dir</span><span class="p">(),</span> <span class="s2">&quot;do_merge.py&quot;</span><span class="p">),</span> <span class="n">chunk</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">]</span>
-                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;chmod&#39;</span><span class="p">,</span> <span class="s1">&#39;+x&#39;</span><span class="p">,</span> <span class="n">script2</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Local job scripts written to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">)</span></div>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;chmod&#39;</span><span class="p">,</span> <span class="s1">&#39;+x&#39;</span><span class="p">,</span> <span class="n">script_name</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">script_name</span></div>
 </div>
 
-        <span class="c1">#subprocess.run(cmd, check=True)</span>
 
 <div class="viewcode-block" id="JustinScheduler">
 <a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">JustinScheduler</span><span class="p">():</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">JustinScheduler</span><span class="p">(</span><span class="n">JobScheduler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Job scheduler for JustIN merge jobs&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">FileRetriever</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">PathFinder</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the JustinScheduler with a source of files to merge.</span>
 <span class="sd">        </span>
-<span class="sd">        :param source: FileRetriever object to provide input files</span>
+<span class="sd">        :param source: PathFinder object to provide input files</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">source</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">pkg_dir</span><span class="p">(),</span> <span class="s2">&quot;tmp&quot;</span><span class="p">,</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">get_timestamp</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pass1</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cvmfs_dir</span> <span class="o">=</span> <span class="kc">None</span>
-
-<div class="viewcode-block" id="JustinScheduler.json_name">
-<a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler.json_name">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">json_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get the name of the next JSON config file for a given pass and site.</span>
-<span class="sd">        </span>
-<span class="sd">        :param tier: Pass number (1 or 2)</span>
-<span class="sd">        :param site: Optional site name</span>
-<span class="sd">        :return: Name of the JSON file</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">tier</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">site_jobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass1</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="n">tier</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">site_jobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Tier must be 1 or 2&quot;</span><span class="p">)</span>
-
-        <span class="n">idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">site_jobs</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="k">if</span> <span class="n">site</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;pass</span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">idx</span><span class="si">:</span><span class="s2">&gt;06</span><span class="si">}</span><span class="s2">.json&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;pass</span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">idx</span><span class="si">:</span><span class="s2">&gt;06</span><span class="si">}</span><span class="s2">.json&quot;</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-        <span class="n">site_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">name</span></div>
-
-
-<div class="viewcode-block" id="JustinScheduler.get_chunks">
-<a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler.get_chunks">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_chunks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the FileRetriever and get the list of chunks.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">output_chunks</span><span class="p">():</span>
-            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">json</span>
-            <span class="n">site</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">site</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">json_name</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">tier</span><span class="p">,</span> <span class="n">site</span><span class="p">)</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fjson</span><span class="p">:</span>
-                <span class="n">fjson</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">json_dict</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span></div>
-
 
 <div class="viewcode-block" id="JustinScheduler.upload_cfg">
 <a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler.upload_cfg">[docs]</a>
@@ -257,7 +208,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">cfg</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="s2">&quot;config.tar&quot;</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tar</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">collections</span><span class="o">.</span><span class="n">ChainMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pass1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">collections</span><span class="o">.</span><span class="n">ChainMap</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
                     <span class="n">tar</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file</span><span class="p">))</span>
             <span class="n">tar</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">src_dir</span><span class="p">(),</span> <span class="s2">&quot;do_merge.py&quot;</span><span class="p">),</span> <span class="s2">&quot;do_merge.py&quot;</span><span class="p">)</span>
@@ -270,73 +221,39 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Uploaded configuration files to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cvmfs_dir</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="JustinScheduler.get_cmd">
-<a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler.get_cmd">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<div class="viewcode-block" id="JustinScheduler.write_script">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler.write_script">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tier</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get the command to run for a given tier and site.</span>
+<span class="sd">        Write the job script for a given tier.</span>
 <span class="sd">        </span>
 <span class="sd">        :param tier: Pass number (1 or 2)</span>
-<span class="sd">        :param site: Optional site name</span>
-<span class="sd">        :return: Command string</span>
+<span class="sd">        :return: Name of the generated script file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">tier</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">site_jobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass1</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="n">tier</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">site_jobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Tier must be 1 or 2&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">upload_cfg</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">site_jobs</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No jobs found for pass </span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="s2"> and site </span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s1">&#39;justin&#39;</span><span class="p">,</span> <span class="s1">&#39;simple-workflow&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;--monte-carlo&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">site_jobs</span><span class="p">)),</span>
-            <span class="s1">&#39;--jobscript&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">src_dir</span><span class="p">(),</span> <span class="s2">&quot;merge.jobscript&quot;</span><span class="p">),</span>
-            <span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;MERGE_CONFIG=&quot;pass</span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;CONFIG_DIR=&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cvmfs_dir</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;--site&#39;</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span>
-            <span class="s1">&#39;--scope&#39;</span><span class="p">,</span> <span class="s1">&#39;usertests&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;--output-pattern&#39;</span><span class="p">,</span> <span class="s1">&#39;*_merged_*:merge-test&#39;</span><span class="p">,</span> 
-            <span class="s1">&#39;--lifetime-days&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span>
-        <span class="p">]</span>
-        <span class="k">return</span> <span class="n">cmd</span></div>
-
-
-<div class="viewcode-block" id="JustinScheduler.run">
-<a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler.run">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Run the JustIN job scheduler.</span>
-<span class="sd">        </span>
-<span class="sd">        :return: None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">get_chunks</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass1</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No files to merge&quot;</span><span class="p">)</span>
-            <span class="k">return</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">upload_cfg</span><span class="p">()</span>
-
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="s2">&quot;pass1.sh&quot;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">script_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;submit_pass</span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="s2">.sh&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">script_name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;#!/bin/bash</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;# This script will submit the JustIN jobs for pass 1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass1</span><span class="p">:</span>
-                <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cmd</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">site</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="s2">&quot;pass2.sh&quot;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;#!/bin/bash</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;# This script will submit the JustIN jobs for pass 2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass2</span><span class="p">:</span>
-                    <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cmd</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">site</span><span class="p">)</span>
-                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;JustIN job scripts written to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">)</span></div>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;# This script will submit JustIN jobs for pass </span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">site</span><span class="p">,</span> <span class="n">site_jobs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="n">tier</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="s1">&#39;justin&#39;</span><span class="p">,</span> <span class="s1">&#39;simple-workflow&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;--monte-carlo&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">site_jobs</span><span class="p">)),</span>
+                    <span class="s1">&#39;--jobscript&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">src_dir</span><span class="p">(),</span> <span class="s2">&quot;merge.jobscript&quot;</span><span class="p">),</span>
+                    <span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;MERGE_CONFIG=&quot;pass</span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;CONFIG_DIR=&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cvmfs_dir</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;--site&#39;</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span>
+                    <span class="s1">&#39;--scope&#39;</span><span class="p">,</span> <span class="s1">&#39;usertests&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;--output-pattern&#39;</span><span class="p">,</span> <span class="s1">&#39;*_merged_*:merge-test&#39;</span><span class="p">,</span> 
+                    <span class="s1">&#39;--lifetime-days&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span>
+                <span class="p">]</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;chmod&#39;</span><span class="p">,</span> <span class="s1">&#39;+x&#39;</span><span class="p">,</span> <span class="n">script_name</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">script_name</span></div>
 </div>
 
-        <span class="c1">#subprocess.run(cmd, check=True)</span>
 </pre></div>
 
             <div class="clearer"></div>

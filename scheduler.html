@@ -48,82 +48,18 @@
 <p>JobScheduler classes</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="scheduler.JobScheduler">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scheduler.</span></span><span class="sig-name descname"><span class="pre">JobScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FileRetriever</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#JobScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scheduler.</span></span><span class="sig-name descname"><span class="pre">JobScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathFinder</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#JobScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler" title="Link to this definition">¶</a></dt>
 <dd><p>Base class for scheduling a merge job</p>
 <p>Initialize the JobScheduler with a source of files to merge.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>source</strong> – FileRetriever object to provide input files</p>
+<dd class="field-odd"><p><strong>source</strong> – PathFinder object to provide input files</p>
 </dd>
 </dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="scheduler.JobScheduler.get_chunks">
-<span class="sig-name descname"><span class="pre">get_chunks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.get_chunks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.get_chunks" title="Link to this definition">¶</a></dt>
-<dd><p>Run the FileRetriever and get the list of chunks.</p>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="scheduler.JobScheduler.run">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.run" title="Link to this definition">¶</a></dt>
-<dd><p>Run the job scheduler.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="scheduler.JustinScheduler">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scheduler.</span></span><span class="sig-name descname"><span class="pre">JustinScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FileRetriever</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler" title="Link to this definition">¶</a></dt>
-<dd><p>Job scheduler for JustIN merge jobs</p>
-<p>Initialize the JustinScheduler with a source of files to merge.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>source</strong> – FileRetriever object to provide input files</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="scheduler.JustinScheduler.get_chunks">
-<span class="sig-name descname"><span class="pre">get_chunks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler.get_chunks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler.get_chunks" title="Link to this definition">¶</a></dt>
-<dd><p>Run the FileRetriever and get the list of chunks.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="scheduler.JustinScheduler.get_cmd">
-<span class="sig-name descname"><span class="pre">get_cmd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler.get_cmd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler.get_cmd" title="Link to this definition">¶</a></dt>
-<dd><p>Get the command to run for a given tier and site.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>tier</strong> – Pass number (1 or 2)</p></li>
-<li><p><strong>site</strong> – Optional site name</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Command string</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="scheduler.JustinScheduler.json_name">
-<span class="sig-name descname"><span class="pre">json_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler.json_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler.json_name" title="Link to this definition">¶</a></dt>
-<dd><p>Get the name of the next JSON config file for a given pass and site.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>tier</strong> – Pass number (1 or 2)</p></li>
-<li><p><strong>site</strong> – Optional site name</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Name of the JSON file</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="scheduler.JustinScheduler.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler.run" title="Link to this definition">¶</a></dt>
-<dd><p>Run the JustIN job scheduler.</p>
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.run" title="Link to this definition">¶</a></dt>
+<dd><p>Run the Job scheduler.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>None</p>
@@ -131,6 +67,46 @@
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.write_json">
+<span class="sig-name descname"><span class="pre">write_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chunk</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.write_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.write_json" title="Link to this definition">¶</a></dt>
+<dd><p>Write a JSON dictionary to a file and return the file name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>chunk</strong> – MergeChunk object to write</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Name of the written JSON file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.write_script">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">write_script</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.write_script"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.write_script" title="Link to this definition">¶</a></dt>
+<dd><p>Write the job script for a given tier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>tier</strong> – Pass number (1 or 2)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Name of the generated script file</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scheduler.JustinScheduler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scheduler.</span></span><span class="sig-name descname"><span class="pre">JustinScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathFinder</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler" title="Link to this definition">¶</a></dt>
+<dd><p>Job scheduler for JustIN merge jobs</p>
+<p>Initialize the JustinScheduler with a source of files to merge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>source</strong> – PathFinder object to provide input files</p>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="scheduler.JustinScheduler.upload_cfg">
 <span class="sig-name descname"><span class="pre">upload_cfg</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler.upload_cfg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler.upload_cfg" title="Link to this definition">¶</a></dt>
@@ -142,45 +118,58 @@
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JustinScheduler.write_script">
+<span class="sig-name descname"><span class="pre">write_script</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler.write_script"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler.write_script" title="Link to this definition">¶</a></dt>
+<dd><p>Write the job script for a given tier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>tier</strong> – Pass number (1 or 2)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Name of the generated script file</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="scheduler.LocalScheduler">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scheduler.</span></span><span class="sig-name descname"><span class="pre">LocalScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FileRetriever</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scheduler.</span></span><span class="sig-name descname"><span class="pre">LocalScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathFinder</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler" title="Link to this definition">¶</a></dt>
 <dd><p>Job scheduler for local merge jobs</p>
-<p>Initialize the LocalScheduler with a source of files to merge.</p>
+<p>Initialize the JobScheduler with a source of files to merge.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>source</strong> – FileRetriever object to provide input files</p>
+<dd class="field-odd"><p><strong>source</strong> – PathFinder object to provide input files</p>
 </dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="scheduler.LocalScheduler.get_chunks">
-<span class="sig-name descname"><span class="pre">get_chunks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler.get_chunks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler.get_chunks" title="Link to this definition">¶</a></dt>
-<dd><p>Run the FileRetriever and get the list of chunks.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="scheduler.LocalScheduler.json_name">
-<span class="sig-name descname"><span class="pre">json_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler.json_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler.json_name" title="Link to this definition">¶</a></dt>
-<dd><p>Get the name of the next JSON config file for a given pass and site.</p>
+<dt class="sig sig-object py" id="scheduler.LocalScheduler.write_json">
+<span class="sig-name descname"><span class="pre">write_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chunk</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler.write_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler.write_json" title="Link to this definition">¶</a></dt>
+<dd><p>Write a JSON dictionary to a file and return the file name.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>tier</strong> – Pass number (1 or 2)</p></li>
-<li><p><strong>site</strong> – Optional site name</p></li>
-</ul>
+<dd class="field-odd"><p><strong>chunk</strong> – MergeChunk object to write</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Name of the JSON file</p>
+<dd class="field-even"><p>Name of the written JSON file</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="scheduler.LocalScheduler.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler.run" title="Link to this definition">¶</a></dt>
-<dd><p>Run the job scheduler.</p>
+<dt class="sig sig-object py" id="scheduler.LocalScheduler.write_script">
+<span class="sig-name descname"><span class="pre">write_script</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler.write_script"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler.write_script" title="Link to this definition">¶</a></dt>
+<dd><p>Write the job script for a given tier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>tier</strong> – Pass number (1 or 2)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Name of the generated script file</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -199,22 +188,19 @@
     <ul>
 <li><a class="reference internal" href="#">scheduler</a><ul>
 <li><a class="reference internal" href="#scheduler.JobScheduler"><code class="docutils literal notranslate"><span class="pre">JobScheduler</span></code></a><ul>
-<li><a class="reference internal" href="#scheduler.JobScheduler.get_chunks"><code class="docutils literal notranslate"><span class="pre">JobScheduler.get_chunks()</span></code></a></li>
 <li><a class="reference internal" href="#scheduler.JobScheduler.run"><code class="docutils literal notranslate"><span class="pre">JobScheduler.run()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.write_json"><code class="docutils literal notranslate"><span class="pre">JobScheduler.write_json()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.write_script"><code class="docutils literal notranslate"><span class="pre">JobScheduler.write_script()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#scheduler.JustinScheduler"><code class="docutils literal notranslate"><span class="pre">JustinScheduler</span></code></a><ul>
-<li><a class="reference internal" href="#scheduler.JustinScheduler.get_chunks"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.get_chunks()</span></code></a></li>
-<li><a class="reference internal" href="#scheduler.JustinScheduler.get_cmd"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.get_cmd()</span></code></a></li>
-<li><a class="reference internal" href="#scheduler.JustinScheduler.json_name"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.json_name()</span></code></a></li>
-<li><a class="reference internal" href="#scheduler.JustinScheduler.run"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.run()</span></code></a></li>
 <li><a class="reference internal" href="#scheduler.JustinScheduler.upload_cfg"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.upload_cfg()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JustinScheduler.write_script"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.write_script()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#scheduler.LocalScheduler"><code class="docutils literal notranslate"><span class="pre">LocalScheduler</span></code></a><ul>
-<li><a class="reference internal" href="#scheduler.LocalScheduler.get_chunks"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.get_chunks()</span></code></a></li>
-<li><a class="reference internal" href="#scheduler.LocalScheduler.json_name"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.json_name()</span></code></a></li>
-<li><a class="reference internal" href="#scheduler.LocalScheduler.run"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.run()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.LocalScheduler.write_json"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.write_json()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.LocalScheduler.write_script"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.write_script()</span></code></a></li>
 </ul>
 </li>
 </ul>

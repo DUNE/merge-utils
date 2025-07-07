@@ -42,58 +42,42 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span><span class="p">,</span> <span class="n">Generator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generator</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">rucio.client.replicaclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReplicaClient</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">MergeSet</span><span class="p">,</span> <span class="n">MergeChunk</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileRetriever</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">MergeChunk</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaRetriever</span><span class="p">,</span> <span class="n">PathFinder</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_rse</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeRSEs</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="RucioRetriever">
-<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">RucioRetriever</span> <span class="p">(</span><span class="n">FileRetriever</span><span class="p">):</span>
+<div class="viewcode-block" id="RucioFinder">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioFinder">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RucioFinder</span> <span class="p">(</span><span class="n">PathFinder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for managing asynchronous queries to the Rucio web API.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">FileRetriever</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">MetaRetriever</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the RucioRetriever with a source of file metadata.</span>
 <span class="sd">        </span>
 <span class="sd">        :param source: FileRetriever object to use as the source of file metadata</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">checksums</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;checksums&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rses</span> <span class="o">=</span> <span class="n">MergeRSEs</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">source</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeSet</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the set of files from the source&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">files</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">missing</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the set of missing files from the source&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">missing</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">dupes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the set of duplicate files from the source&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">dupes</span>
-
-<div class="viewcode-block" id="RucioRetriever.connect">
-<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.connect">[docs]</a>
+<div class="viewcode-block" id="RucioFinder.connect">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioFinder.connect">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Connect to the Rucio web API&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Connecting to Rucio&quot;</span><span class="p">)</span>
-            <span class="n">src_connect</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">connect</span><span class="p">())</span>
+            <span class="n">src_connect</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">connect</span><span class="p">())</span>
             <span class="n">rse_connect</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="o">.</span><span class="n">connect</span><span class="p">())</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">ReplicaClient</span><span class="p">()</span>
             <span class="k">await</span> <span class="n">rse_connect</span>
@@ -102,8 +86,8 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Already connected to Rucio&quot;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="RucioRetriever.checksum">
-<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.checksum">[docs]</a>
+<div class="viewcode-block" id="RucioFinder.checksum">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioFinder.checksum">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">rucio</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Ensure file sizes and checksums from Rucio agree with the input metadata.</span>
@@ -128,21 +112,25 @@
                 <span class="k">if</span> <span class="n">csum1</span> <span class="o">==</span> <span class="n">csum2</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found matching </span><span class="si">%s</span><span class="s2"> checksum for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
                     <span class="k">return</span> <span class="kc">True</span>
-                <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;unreachable&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> checksum mismatch for </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2"> != </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">,</span> <span class="n">csum1</span><span class="p">,</span> <span class="n">csum2</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;unreachable&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">,</span>
+                    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> checksum mismatch for </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2"> != </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">,</span> <span class="n">csum1</span><span class="p">,</span> <span class="n">csum2</span>
+                <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">False</span>
             <span class="k">if</span> <span class="n">algo</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">checksums</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;MetaCat missing </span><span class="si">%s</span><span class="s2"> checksum for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">algo</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rucio</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Rucio missing </span><span class="si">%s</span><span class="s2"> checksum for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
         <span class="c1"># If we get here, we have no matching checksums</span>
-        <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;unreachable&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="s2">&quot;No matching checksums for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;unreachable&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">,</span>
+            <span class="s2">&quot;No matching checksums for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="kc">False</span></div>
 
 
-<div class="viewcode-block" id="RucioRetriever.process">
-<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.process">[docs]</a>
+<div class="viewcode-block" id="RucioFinder.process">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioFinder.process">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Process a batch of files to find their physical locations in Rucio.</span>
@@ -179,29 +167,16 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">set_unreachable</span><span class="p">(</span><span class="n">unreachable</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="RucioRetriever.input_batches">
-<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.input_batches">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_batches</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Asynchronously retrieve metadata for the next batch of files.</span>
-
-<span class="sd">        :return: dict of MergeFile objects that were added</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">input_batches</span><span class="p">():</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
-            <span class="k">yield</span> <span class="n">batch</span></div>
-
-
-<div class="viewcode-block" id="RucioRetriever.run">
-<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.run">[docs]</a>
+<div class="viewcode-block" id="RucioFinder.run">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioFinder.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve metadata for all files.&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="RucioRetriever.output_chunks">
-<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioRetriever.output_chunks">[docs]</a>
+<div class="viewcode-block" id="RucioFinder.output_chunks">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioFinder.output_chunks">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">output_chunks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">MergeChunk</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Yield chunks of files for merging.</span>

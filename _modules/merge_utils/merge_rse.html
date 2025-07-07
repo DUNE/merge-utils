@@ -39,6 +39,7 @@
 <span></span><span class="sd">&quot;&quot;&quot;Keep track of RSEs where files are stored&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
@@ -52,7 +53,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">rucio.client.rseclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">RSEClient</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -183,7 +184,12 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to keep track of a set of RSEs&quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sites</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="p">[</span><span class="s1">&#39;allowed_sites&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;local&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sites</span> <span class="o">=</span> <span class="p">[</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="p">[</span><span class="s1">&#39;local_site&#39;</span><span class="p">]]</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Running locally on site </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sites</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sites</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="p">[</span><span class="s1">&#39;allowed_sites&#39;</span><span class="p">]</span>
+            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Running on </span><span class="si">{n}</span><span class="s2"> allowed merging site</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sites</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="p">[</span><span class="s1">&#39;max_distance&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nearline_distances</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="p">[</span><span class="s1">&#39;nearline_distance&#39;</span><span class="p">]</span>
 
@@ -210,22 +216,49 @@
             <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">MergeRSE</span><span class="p">(</span><span class="n">valid</span><span class="p">,</span> <span class="n">nearline_dist</span><span class="p">)</span>
 
         <span class="c1"># Get site distances from justIN web API</span>
-        <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">,</span> <span class="s1">&#39;rse&#39;</span><span class="p">,</span> <span class="s1">&#39;dist&#39;</span><span class="p">,</span> <span class="s1">&#39;site_enabled&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_read&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_write&#39;</span><span class="p">]</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">SITES_STORAGES_URL</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-        <span class="n">text</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">iter_lines</span><span class="p">(</span><span class="n">decode_unicode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">fields</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site_enabled&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse_read&#39;</span><span class="p">]:</span>
-                <span class="k">continue</span>
-            <span class="n">site</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
-            <span class="n">rse</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">site</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sites</span> <span class="ow">or</span> <span class="n">rse</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dist&#39;</span><span class="p">])</span>
-
-        <span class="n">n_accessible</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">rse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">rse</span><span class="o">.</span><span class="n">valid</span>
-                           <span class="ow">and</span> <span class="n">rse</span><span class="o">.</span><span class="n">nearest_site</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">%d</span><span class="s2"> RSEs accessible from </span><span class="si">%d</span><span class="s2"> sites&quot;</span><span class="p">,</span> <span class="n">n_accessible</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sites</span><span class="p">))</span></div>
+        <span class="n">accessible</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span>
+                <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">SITES_STORAGES_URL</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span>
+            <span class="p">)</span>
+            <span class="n">connected</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">ok</span>
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">ConnectionError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;JustIN connection error: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+            <span class="n">connected</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">connected</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">iter_lines</span><span class="p">(</span><span class="n">decode_unicode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">,</span> <span class="s1">&#39;rse&#39;</span><span class="p">,</span> <span class="s1">&#39;dist&#39;</span><span class="p">,</span> <span class="s1">&#39;site_enabled&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_read&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_write&#39;</span><span class="p">]</span>
+            <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">fields</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site_enabled&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse_read&#39;</span><span class="p">]:</span>
+                    <span class="k">continue</span>
+                <span class="n">site</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
+                <span class="n">rse</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">site</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sites</span> <span class="ow">or</span> <span class="n">rse</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">dist</span> <span class="o">=</span> <span class="mi">100</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dist&#39;</span><span class="p">])</span>
+                <span class="bp">self</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">dist</span>
+                <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">:</span>
+                    <span class="n">accessible</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rse</span><span class="p">)</span>
+            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> accessible RSE</span><span class="si">{s}</span><span class="s2"> in JustIN database:&quot;</span><span class="p">,</span>
+                              <span class="n">accessible</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to retrieve RSE-site distances from JustIN!</span><span class="se">\n</span><span class="s2">&quot;</span>
+                         <span class="s2">&quot;  Falling back to RSEs located directly at merging sites.&quot;</span><span class="p">)</span>
+            <span class="c1"># fall back to rucio RSE attributes</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">rse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">rse</span><span class="o">.</span><span class="n">valid</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">attr</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">rse_client</span><span class="o">.</span><span class="n">list_rse_attributes</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="n">site</span> <span class="o">=</span> <span class="n">attr</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;site&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">site</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sites</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">rse</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">accessible</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> accessible RSE</span><span class="si">{s}</span><span class="s2"> in Rucio:&quot;</span><span class="p">,</span> <span class="n">accessible</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">accessible</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;No accessible RSEs found in JustIN or Rucio!&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="MergeRSEs.add_pfn">
@@ -297,16 +330,6 @@
                          <span class="n">did</span><span class="p">,</span> <span class="n">best_dist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;File exceeds max distance&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">results</span> <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="MergeRSEs.set_rse_sites">
-<a class="viewcode-back" href="../../merge_rse.html#merge_utils.merge_rse.MergeRSEs.set_rse_sites">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">set_rse_sites</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Query Rucio for the site associated with each RSE&quot;&quot;&quot;</span>
-        <span class="n">rse_client</span> <span class="o">=</span> <span class="n">RSEClient</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">rse</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">attr</span> <span class="o">=</span> <span class="n">rse_client</span><span class="o">.</span><span class="n">list_rse_attributes</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-            <span class="n">rse</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="MergeRSEs.cleanup">

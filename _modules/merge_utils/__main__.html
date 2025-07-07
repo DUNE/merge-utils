@@ -40,8 +40,9 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">metacat_utils</span><span class="p">,</span> <span class="n">rucio_utils</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">,</span> <span class="n">retriever</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">,</span> <span class="n">local</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -52,20 +53,27 @@
 
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Command line interface for merge_utils&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;--config&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;append&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;a configuration file&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-v&#39;</span><span class="p">,</span> <span class="s1">&#39;--verbose&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;count&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;print more verbose output&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;--config&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;append&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;CFG&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;a configuration file&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-v&#39;</span><span class="p">,</span> <span class="s1">&#39;--verbose&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;count&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;print more verbose output (e.g. -vvv for debug output)&#39;</span><span class="p">)</span>
 
     <span class="n">in_group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;input arguments&#39;</span><span class="p">)</span>
-    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-l&#39;</span><span class="p">,</span> <span class="s1">&#39;--local&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span>
-                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;use local files instead of MetaCat&#39;</span><span class="p">)</span>
-    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-q&#39;</span><span class="p">,</span> <span class="s1">&#39;--query&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;a MetaCat query&#39;</span><span class="p">)</span>
-    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-f&#39;</span><span class="p">,</span> <span class="s1">&#39;--filelist&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;a text file with a list of input files&#39;</span><span class="p">)</span>
-    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;files&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">REMAINDER</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;input_mode&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;?&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;MODE&#39;</span><span class="p">,</span>
+                          <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;query&#39;</span><span class="p">,</span> <span class="s1">&#39;dids&#39;</span><span class="p">,</span> <span class="s1">&#39;files&#39;</span><span class="p">],</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;input mode (query, dids, files, dir)&#39;</span><span class="p">)</span>
+    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-f&#39;</span><span class="p">,</span> <span class="s1">&#39;--file&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;append&#39;</span><span class="p">,</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;a text file with a list of input files&#39;</span><span class="p">)</span>
+    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--dir&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;append&#39;</span><span class="p">,</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;a directory to add to search locations&#39;</span><span class="p">)</span>
+    <span class="c1">#in_group.add_argument(&#39;inputs&#39;, nargs=argparse.REMAINDER, help=&#39;remaining command line inputs&#39;)</span>
+    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;inputs&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;remaining command line inputs&#39;</span><span class="p">)</span>
 
     <span class="n">out_group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;output arguments&#39;</span><span class="p">)</span>
-    <span class="n">out_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--list&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dids&#39;</span><span class="p">,</span> <span class="s1">&#39;replicas&#39;</span><span class="p">,</span> <span class="s1">&#39;pfns&#39;</span><span class="p">],</span>
-                           <span class="n">help</span><span class="o">=</span><span class="s1">&#39;list output instead of merging&#39;</span><span class="p">)</span>
-    
+    <span class="n">out_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--list&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dids&#39;</span><span class="p">,</span> <span class="s1">&#39;replicas&#39;</span><span class="p">,</span> <span class="s1">&#39;pfns&#39;</span><span class="p">],</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;OPT&#39;</span><span class="p">,</span>
+                           <span class="n">help</span><span class="o">=</span><span class="s1">&#39;list (dids, replicas, pfns) instead of merging&#39;</span><span class="p">)</span>
+    <span class="n">out_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-l&#39;</span><span class="p">,</span> <span class="s1">&#39;--local&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span>
+                           <span class="n">help</span><span class="o">=</span><span class="s1">&#39;run merge locally instead of submitting to JustIN&#39;</span><span class="p">)</span>
 
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
     <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;main arguments are: &quot;</span><span class="p">,</span><span class="n">args</span><span class="p">)</span>
@@ -78,47 +86,88 @@
     <span class="n">config</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
     <span class="n">io_utils</span><span class="o">.</span><span class="n">set_log_level</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
 
-    <span class="c1"># Set up the retriever based on the input arguments</span>
-    <span class="n">flist</span> <span class="o">=</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">get_inputs</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">filelist</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">local</span><span class="p">:</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">retriever</span><span class="o">.</span><span class="n">LocalRetriever</span><span class="p">(</span><span class="n">filelist</span><span class="o">=</span><span class="n">flist</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">query</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;The --query option is ignored when processing local files.&quot;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">list</span> <span class="o">==</span> <span class="s1">&#39;dids&#39;</span><span class="p">:</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">metacat_utils</span><span class="o">.</span><span class="n">MetaCatRetriever</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="n">filelist</span><span class="o">=</span><span class="n">flist</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">rucio_utils</span><span class="o">.</span><span class="n">RucioRetriever</span><span class="p">(</span>
-            <span class="n">metacat_utils</span><span class="o">.</span><span class="n">MetaCatRetriever</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="n">filelist</span><span class="o">=</span><span class="n">flist</span><span class="p">)</span>
-        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">input_mode</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">input_mode</span>
+    <span class="n">input_mode</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Input mode: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">input_mode</span><span class="p">)</span>
 
+    <span class="c1"># Collect inputs</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> input</span><span class="si">{s}</span><span class="s2"> from config files&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> input</span><span class="si">{s}</span><span class="s2"> from command line&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">inputs</span><span class="p">)):</span>
+        <span class="n">inputs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="n">inputs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">get_inputs</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">file</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;No input provided, exiting.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> total input</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+    <span class="c1"># Determine input mode and retrieve metadata</span>
+    <span class="n">paths</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">input_mode</span> <span class="o">==</span> <span class="s1">&#39;files&#39;</span><span class="p">:</span>
+        <span class="n">dirs</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;search_dirs&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> search location</span><span class="si">{s}</span><span class="s2"> from config files&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dirs</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">dir</span><span class="p">:</span>
+            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> search location</span><span class="si">{s}</span><span class="s2"> from command line&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">dir</span><span class="p">))</span>
+            <span class="n">dirs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">dir</span><span class="p">)</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> total search location</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+        <span class="n">paths</span> <span class="o">=</span> <span class="n">local</span><span class="o">.</span><span class="n">get_local_files</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">dirs</span><span class="p">)</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">meta</span>
+    <span class="k">elif</span> <span class="n">input_mode</span> <span class="o">==</span> <span class="s1">&#39;query&#39;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.metacat_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaCatRetriever</span> <span class="c1">#pylint: disable=import-outside-toplevel</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Query mode currently only supports a single MetaCat query.&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">MetaCatRetriever</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">input_mode</span> <span class="o">==</span> <span class="s1">&#39;dids&#39;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.metacat_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaCatRetriever</span> <span class="c1">#pylint: disable=import-outside-toplevel</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">MetaCatRetriever</span><span class="p">(</span><span class="n">dids</span><span class="o">=</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Unknown input mode: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">input_mode</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># If we&#39;re only listing DIDs, we can skip the rest of the setup</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">list</span> <span class="o">==</span> <span class="s1">&#39;dids&#39;</span><span class="p">:</span>
+        <span class="n">metadata</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Set up a retriever for physical file locations if needed</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">paths</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.rucio_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">RucioFinder</span> <span class="c1">#pylint: disable=import-outside-toplevel</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="n">RucioFinder</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+
+    <span class="c1"># Process the other list options</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">list</span><span class="p">:</span>
-        <span class="n">ret</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">list</span> <span class="o">==</span> <span class="s1">&#39;dids&#39;</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">ret</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">list</span> <span class="o">==</span> <span class="s1">&#39;replicas&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">local</span><span class="p">:</span>
+        <span class="n">paths</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">list</span> <span class="o">==</span> <span class="s1">&#39;replicas&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">input_mode</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;files&#39;</span><span class="p">]:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Local file paths:&quot;</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">ret</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
                     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">rse</span> <span class="ow">in</span> <span class="n">ret</span><span class="o">.</span><span class="n">rses</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">rse</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">rses</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RSE </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
                     <span class="k">for</span> <span class="n">pfn</span> <span class="ow">in</span> <span class="n">rse</span><span class="o">.</span><span class="n">pfns</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
                         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">pfn</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">list</span> <span class="o">==</span> <span class="s1">&#39;pfns&#39;</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">ret</span><span class="o">.</span><span class="n">output_chunks</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">output_chunks</span><span class="p">():</span>
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output file </span><span class="si">{</span><span class="n">chunk</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (site </span><span class="si">{</span><span class="n">chunk</span><span class="o">.</span><span class="n">site</span><span class="si">}</span><span class="s2">):&quot;</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">pfn</span> <span class="ow">in</span> <span class="n">chunk</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
                     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">pfn</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown list option: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">list</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Process merging</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">local</span><span class="p">:</span>
+        <span class="n">sched</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">LocalScheduler</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">local</span><span class="p">:</span>
-            <span class="n">sched</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">LocalScheduler</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">sched</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">JustinScheduler</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-        <span class="n">sched</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
+        <span class="n">sched</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">JustinScheduler</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+    <span class="n">sched</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
 
 </pre></div>
 

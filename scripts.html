@@ -52,14 +52,25 @@
 <dd><p>Test the command line interface for merge_utils.</p>
 </dd></dl>
 
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
-  File &quot;/home/runner/work/merge-utils/merge-utils/docs/source/merge&quot;, line 4, in &lt;module&gt;
-    from merge_utils.__main__ import main
-  File &quot;/opt/hostedtoolcache/Python/3.9.23/x64/lib/python3.9/site-packages/merge_utils/__main__.py&quot;, line 6, in &lt;module&gt;
-    from merge_utils import io_utils, config, metacat_utils, rucio_utils, scheduler, retriever
-  File &quot;/opt/hostedtoolcache/Python/3.9.23/x64/lib/python3.9/site-packages/merge_utils/metacat_utils.py&quot;, line 9, in &lt;module&gt;
-    import metacat.webapi as metacat
-ModuleNotFoundError: No module named &#39;metacat&#39;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: merge [-h] [-c CFG] [-v] [-f FILE] [-d DIR] [--list OPT] [-l]
+             [MODE] [inputs ...]
+
+Command line interface for merge_utils
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CFG, --config CFG  a configuration file
+  -v, --verbose         print more verbose output (e.g. -vvv for debug output)
+
+input arguments:
+  MODE                  input mode (query, dids, files, dir)
+  -f FILE, --file FILE  a text file with a list of input files
+  -d DIR, --dir DIR     a directory to add to search locations
+  inputs                remaining command line inputs
+
+output arguments:
+  --list OPT            list (dids, replicas, pfns) instead of merging
+  -l, --local           run merge locally instead of submitting to JustIN
 </pre></div>
 </div>
 </section>

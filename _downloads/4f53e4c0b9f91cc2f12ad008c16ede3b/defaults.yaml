@@ -1,6 +1,20 @@
 # Default configuration settings for merging
 # Please create your own config files instead of modifying this one directly!
 
+inputs:
+    mode: dids              # Options: query, dids, files
+    namespace: "usertests"  # Default namespace for local input files
+    inputs: []              # List of inputs
+    search_dirs: []         # List of directories to search for metadata files
+
+output:
+    mode: justin      # Options: dids, replicas, pfns, local, justin
+    dir: "~/scratch/merge_test" # Directory to save local merged files
+    namespace: "usertests" # Optionally specify a namespace different from the parents
+    name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
+    #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"
+    grandparents: false # List the parents of the input files as the parents of the merged file
+
 validation:
     batch_size: 100   # Number of files to query metacat about at once
     fast_fail: True   # Stop processing files as soon as one batch fails validation
@@ -28,13 +42,14 @@ validation:
       - "dune_mc.geometry_version"
 
 sites:
-    max_distance: 1000        # Distances range from 0 to 101
-    nearline_distance:        # Extra distance to account for staging
-        default:        100   # Default distance for all RSEs
-        "FNAL_DCACHE":  10
-    allowed_sites:
+    local_site: "US_FNAL-FermiGrid"   # Local site name
+    allowed_sites:                    # Sites where merging is allowed
       - "US_FNAL-FermiGrid"
       - "CERN"
+    max_distance: 1000                # Distances range from 0 to 101
+    nearline_distance:                # Extra distance to account for staging
+        default:        100           # Default distance for all RSEs
+        "FNAL_DCACHE":  10
 
 merging:
     method: auto        # Can be auto or a specific method from the list below
@@ -43,28 +58,6 @@ merging:
     equalize: true      # Try to equalize the size of the merged files
     chunk_min: 5        # Minimum number of files to merge at once
     chunk_max: 100      # Maxiumum number of files to merge at once
-    metadata:   # Special handling for metadata keys, options are:
-        # unique   only save key if all values are the same
-        # all      save a list of all values
-        # min      save the minimum value
-        # max      save the maximum value
-        # sum      save the sum of all values
-        # union    save the union of all values
-        # skip     ignore the key
-        default:                    unique
-        "core.first_event_number":  min
-        "core.last_event_number":   max
-        "core.event_count":         sum
-        "core.events":              union
-        "core.runs":                union
-        "core.runs_subruns":        union
-        # Skip values that don't make sense to merge
-        "core.start_time":          skip
-        "core.end_time":            skip
-        "Offline.options":          skip
-        "Offline.machine":          skip
-        overrides: # Set keys to specific values
-            "retention.status":     "active"
     methods:
         "hadd":
             file_format:
@@ -88,72 +81,4 @@ merging:
               - "unknown"
             output_format: "tar"
             ext: ".tar"
-
-output:
-    dir: "~/scratch/merge_test" # Directory to save local merged files
-    namespace: ~ # Optionally specify a namespace different from the parents
-    name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
-    #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"
-    grandparents: false # List the parents of the input files as the parents of the merged file
-    abbreviations:
-        "core.run_type":
-            "protodune-sp":             "pd-sp"
-            "protodune-dp":             "pd-dp"
-            "hd-coldbox":               "cb-hd"
-            "vd-coldbox":               "cb-vd"
-            "vd-coldbox-bottom":        "cb-vd-b"
-            "vd-coldbox-top":           "cb-vd-t"
-            "protodune-hd":             "pd-hd"
-            "hd-protodune":             "pd-hd"
-            "vd-protodune":             "pd-vd"
-            "vd-protodune-pds":         "pd-vd-pds"
-            "vd-protodune-arapucas":    "pd-vd-arapucas"
-            "dc4-vd-coldbox-bottom":    "cb-dc4-vd-b"
-            "dc4-vd-coldbox-top":       "cb-dc4-vd-t"
-            "dc4-hd-protodune":         "pd-dc4-hd"
-            "neardet":                  "nd"
-            "neardet-lar":              "nd-lar"
-            "neardet-2x2":              "nd-2x2"
-            "neardet-2x2-lar":          "nd-2x2-lar"
-            "neardet-2x2-lar-charge":   "nd-2x2-lar-charge"
-            "neardet-2x2-lar-light":    "nd-2x2-lar-light"
-            "neardet-2x2-minerva":      "nd-2x2-minerva"
-            "fardet":                   "fd"
-            "fardet-sp":                "fd-sp"
-            "fardet-hd":                "fd-hd"
-            "fardet-vd":                "fd-vd"
-            "fardet-dp":                "fd-dp"
-            "fardet-moo":               "fd-moo"
-            "311_dp_light":             "311-dp-light"
-            "physics":                  "phys"
-            "protodune":                "pd"
-            "protodune-vst":            "pd-vst"
-        "core.file_type":
-            "detector":                 "det"
-            "importedDetector":         "imp-det"
-            "binary":                   "bin"
-            "photon_detector":          "photo-det"
-        "core.data_stream":
-            "calibration":              "calib"
-            "physics":                  "phys"
-            "commissioning":            "comm"
-            "pedestal":                 "pdstl"
-            "g4beamline":               "g4"
-        "core.data_tier":
-            "simulated":                "sim"
-            "hit-reconstructed":        "hit-reco"
-            "full-reconstructed":       "full-reco"
-            "generated":                "gen"
-            "detector-simulated":       "det-sim"
-            "root-tuple":               "r-tuple"
-            "root-hist":                "r-hist"
-            "decoded-raw":              "dec-raw"
-            "pandora-info":             "pandora"
-            "reco-recalibrated":        "reco-recal"
-            "root-tuple-virtual":       "r-tuple-v"
-            "binary-raw":               "binary"
-            "sam-user":                 "sam"
-        "core.file_format":
-            "artroot":                  "art"
-            "binary":                   "bin"
-            "rootntuple":               "tuple"
+    
