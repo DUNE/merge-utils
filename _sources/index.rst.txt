@@ -28,6 +28,12 @@ setup
 .. toctree::
    
     startup
+
+Configuration
+-------------
+
+.. toctree::
+
     defaults
 
 python API
