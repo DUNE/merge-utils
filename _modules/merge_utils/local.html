@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>merge_utils.local &#8212; merge-utils 0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=fd3f3429" />
+    <script src="../../_static/documentation_options.js?v=837179f8"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://hschellman.github.io/merge-utils-test/_modules/merge_utils/local.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">merge-utils 0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">merge_utils.local</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for merge_utils.local</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Class variants for managing local file retrieval and merging operations.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="c1">#import sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaRetriever</span><span class="p">,</span> <span class="n">PathFinder</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="search">
+<a class="viewcode-back" href="../../local.html#merge_utils.local.search">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dirs</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Search for a file in a list of directories.</span>
+<span class="sd">    </span>
+<span class="sd">    :param file: Name of the file to search for</span>
+<span class="sd">    :param dirs: List of directories to search in</span>
+<span class="sd">    :return: Full path to the file if found, otherwise None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">directory</span> <span class="ow">in</span> <span class="n">dirs</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">path</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="get_local_files">
+<a class="viewcode-back" href="../../local.html#merge_utils.local.get_local_files">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_local_files</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">dirs</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PathFinder</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Search local filesystem for pairs of data and metadata files.</span>
+<span class="sd">    If both data and metadata files are found, return a LocalPathFinder using a LocalMetaRetriever.</span>
+<span class="sd">    If only metadata files are found, return a RucioPathFinder using a LocalMetaRetriever.</span>
+<span class="sd">    If only data files are found, return a LocalPathFinder using a MetaCatRetriever.</span>
+<span class="sd">    </span>
+<span class="sd">    :param files: List of input data or metadata file paths</span>
+<span class="sd">    :param dirs: List of directories to search for corresponding data or metadata files</span>
+<span class="sd">    :return: Appropriate PathFinder object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span>
+
+    <span class="c1"># Sort input files into data and metadata</span>
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">name</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;.json&#39;</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">name</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">inputs</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">file</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">inputs</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">file</span>
+
+    <span class="c1"># Search for missing data and/or metadata files</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">paths</span> <span class="ow">in</span> <span class="n">inputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">paths</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">paths</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">search</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span> <span class="o">+</span> <span class="n">dirs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">paths</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">paths</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">search</span><span class="p">(</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span> <span class="o">+</span> <span class="n">dirs</span><span class="p">)</span>
+
+    <span class="n">has_data</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">paths</span> <span class="ow">in</span> <span class="n">inputs</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">has_meta</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">paths</span> <span class="ow">in</span> <span class="n">inputs</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="n">has_meta</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reading metadata from local files&quot;</span><span class="p">)</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">LocalMetaRetriever</span><span class="p">({</span><span class="n">name</span><span class="p">:</span> <span class="n">paths</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">paths</span> <span class="ow">in</span> <span class="n">inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No metadata files found, requesting metadata from MetaCat&quot;</span><span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.metacat_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaCatRetriever</span> <span class="c1">#pylint: disable=import-outside-toplevel</span>
+        <span class="n">ns</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">MetaCatRetriever</span><span class="p">(</span><span class="n">dids</span> <span class="o">=</span> <span class="p">[</span><span class="n">ns</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">has_data</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reading data from local files&quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">LocalPathFinder</span><span class="p">(</span><span class="n">meta</span><span class="p">,</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">paths</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">paths</span> <span class="ow">in</span> <span class="n">inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">paths</span><span class="p">[</span><span class="mi">0</span><span class="p">]})</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No data files found, requesting physical file paths from Rucio&quot;</span><span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.rucio_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">RucioFinder</span> <span class="c1">#pylint: disable=import-outside-toplevel</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">RucioFinder</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="LocalMetaRetriever">
+<a class="viewcode-back" href="../../local.html#merge_utils.local.LocalMetaRetriever">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LocalMetaRetriever</span><span class="p">(</span><span class="n">MetaRetriever</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;MetaRetriever for local files&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the LocalMetaRetriever with a list of json files.</span>
+
+<span class="sd">        :param files: dictionary of metadata file names and paths</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span> <span class="o">=</span> <span class="n">files</span>
+
+<div class="viewcode-block" id="LocalMetaRetriever.input_batches">
+<a class="viewcode-back" href="../../local.html#merge_utils.local.LocalMetaRetriever.input_batches">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_batches</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve metadata for local files in batches&quot;&quot;&quot;</span>
+        <span class="n">batch_id</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span><span class="p">:</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span><span class="o">.</span><span class="n">popitem</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">[</span><span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">continue</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">read_config_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">[</span><span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">continue</span>
+            <span class="n">batch</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">:</span>
+                <span class="n">added</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;yielding file batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">)</span>
+                <span class="n">batch_id</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">yield</span> <span class="n">added</span>
+                <span class="n">batch</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">batch</span><span class="p">:</span>
+            <span class="n">added</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;yielding last file batch&quot;</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">added</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="LocalPathFinder">
+<a class="viewcode-back" href="../../local.html#merge_utils.local.LocalPathFinder">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LocalPathFinder</span><span class="p">(</span><span class="n">PathFinder</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;PathFinder for local files&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">MetaRetriever</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dirs</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the LocalMetaRetriever with a list of json files.</span>
+
+<span class="sd">        :param source: MetaRetriever object to use as the source of file metadata</span>
+<span class="sd">        :param files: dictionary of metadata file names and paths</span>
+<span class="sd">        :param dirs: list of directories to search for data files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span> <span class="o">=</span> <span class="n">files</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dirs</span> <span class="o">=</span> <span class="n">dirs</span> <span class="ow">or</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="LocalPathFinder.process">
+<a class="viewcode-back" href="../../local.html#merge_utils.local.LocalPathFinder.process">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process a batch of files to find their physical locations.</span>
+<span class="sd">        </span>
+<span class="sd">        :param files: dictionary of files to process</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Retrieving physical file paths&quot;</span><span class="p">)</span>
+        <span class="n">unreachable</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filelist</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># If no path is found, try searching in the provided directories</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">search</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dirs</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># If still not found, mark as unreachable</span>
+                    <span class="n">unreachable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+            <span class="c1">#TODO: generalize this for other sites</span>
+            <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/pnfs/&#39;</span><span class="p">):</span>
+                <span class="c1"># convert pnfs paths to xroot paths</span>
+                <span class="n">fnal_prefix</span> <span class="o">=</span> <span class="s2">&quot;root://fndca1.fnal.gov:1094/pnfs/fnal.gov/usr&quot;</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;/pnfs&#39;</span><span class="p">,</span> <span class="n">fnal_prefix</span><span class="p">)</span>
+            <span class="n">file</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+
+        <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;unreachable&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Failed to locate </span><span class="si">{n}</span><span class="s2"> file path</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="n">unreachable</span><span class="p">,</span> <span class="n">lvl</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">set_unreachable</span><span class="p">(</span><span class="n">unreachable</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">merge-utils 0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">merge_utils.local</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>

@@ -1,3 +1,5 @@
+.. _io_utils:
+
 io_utils
 --------
 

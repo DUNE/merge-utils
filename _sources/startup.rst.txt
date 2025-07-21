@@ -50,30 +50,49 @@ You can check to see if it is set up by typing
 Dependencies
 ------------
 
-.. image:: merge_utils_io_utils.png
-    :width: 400
+local.py 
+
+.. image:: merge_utils_local.png
+    :width: 600
 
 ----
+
+io_utils.py
+
+.. image:: merge_utils_io_utils.png
+    :width: 600
+
+----
+
+metacat_utils
 
 .. image:: merge_utils_metacat_utils.png
     :width: 400
 
 ----
 
+merge_set
+
 .. image:: merge_utils_merge_set.png
     :width: 400
 
 ----
+
+merge_rse
 
 .. image:: merge_utils_merge_rse.png
     :width: 400
 
 ----
 
+rucio_utils
+
 .. image:: merge_utils_rucio_utils.png
     :width: 400
 
 ----
+
+justin_utils
 
 .. image:: merge_utils_justin_utils.png
     :width: 400
