@@ -62,9 +62,27 @@ Missing keys will be filled in with the defaults in DEFAULT_CONFIG.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="config.recursive_update">
-<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">recursive_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#recursive_update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.recursive_update" title="Link to this definition">¶</a></dt>
-<dd><p>Recursively update dictionary d with values from dictionary u.</p>
+<dt class="sig sig-object py" id="config.update">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.update" title="Link to this definition">¶</a></dt>
+<dd><p>Update the global configuration with values from the provided dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cfg</strong> – Dictionary containing new configuration values.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config.update_dict">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">update_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#update_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.update_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Add key value pairs from new_dict to old_dict.
+If a key in new_dict does not exist in old_dict, it is added.
+If the value is a dict or list, the values are merged recursively.
+If a key in new_dict starts with ‘~’, it overrides the value in old_dict instead.
+If the value is None, the key is removed from old_dict instead.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -79,12 +97,16 @@ Missing keys will be filled in with the defaults in DEFAULT_CONFIG.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="config.update">
-<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.update" title="Link to this definition">¶</a></dt>
-<dd><p>Update the global configuration with values from the provided dictionary.</p>
+<dt class="sig sig-object py" id="config.update_list">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">update_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#update_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.update_list" title="Link to this definition">¶</a></dt>
+<dd><p>Append values from new_list to old_list.
+Strings beginning with ‘~’ are removed from old_list instead.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>cfg</strong> – Dictionary containing new configuration values.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>old_list</strong> – List to be updated.</p></li>
+<li><p><strong>new_list</strong> – List with new values.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>None</p>
@@ -106,8 +128,9 @@ Missing keys will be filled in with the defaults in DEFAULT_CONFIG.</p>
     <ul>
 <li><a class="reference internal" href="#">config</a><ul>
 <li><a class="reference internal" href="#config.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
-<li><a class="reference internal" href="#config.recursive_update"><code class="docutils literal notranslate"><span class="pre">recursive_update()</span></code></a></li>
 <li><a class="reference internal" href="#config.update"><code class="docutils literal notranslate"><span class="pre">update()</span></code></a></li>
+<li><a class="reference internal" href="#config.update_dict"><code class="docutils literal notranslate"><span class="pre">update_dict()</span></code></a></li>
+<li><a class="reference internal" href="#config.update_list"><code class="docutils literal notranslate"><span class="pre">update_list()</span></code></a></li>
 </ul>
 </li>
 </ul>

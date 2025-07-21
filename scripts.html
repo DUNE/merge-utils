@@ -52,7 +52,8 @@
 <dd><p>Test the command line interface for merge_utils.</p>
 </dd></dl>
 
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: merge [-h] [-c CFG] [-v] [-f FILE] [-d DIR] [--list OPT] [-l]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: merge [-h] [-c CFG] [-v] [--log LOG] [-f FILE] [-d DIR] [--list OPT]
+             [-l]
              [MODE] [inputs ...]
 
 Command line interface for merge_utils
@@ -61,6 +62,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -c CFG, --config CFG  a configuration file
   -v, --verbose         print more verbose output (e.g. -vvv for debug output)
+  --log LOG             specify a custom log file path
 
 input arguments:
   MODE                  input mode (query, dids, files, dir)

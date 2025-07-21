@@ -39,10 +39,11 @@
 <span></span><span class="sd">&quot;&quot;&quot;Module for configuration settings.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span>
 
-<span class="n">DEFAULT_CONFIG</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;metadata.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;defaults.yaml&quot;</span><span class="p">]</span>
+<span class="n">DEFAULT_CONFIG</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;defaults/metadata.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;defaults/defaults.yaml&quot;</span><span class="p">]</span>
 
 <span class="c1"># Configuration dictionaries</span>
 <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
@@ -55,17 +56,55 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="recursive_update">
-<a class="viewcode-back" href="../config.html#config.recursive_update">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">recursive_update</span><span class="p">(</span><span class="n">old_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">new_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="update_list">
+<a class="viewcode-back" href="../config.html#config.update_list">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">update_list</span><span class="p">(</span><span class="n">old_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">new_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Recursively update dictionary d with values from dictionary u.</span>
+<span class="sd">    Append values from new_list to old_list.</span>
+<span class="sd">    Strings beginning with &#39;~&#39; are removed from old_list instead.</span>
+<span class="sd">    </span>
+<span class="sd">    :param old_list: List to be updated.</span>
+<span class="sd">    :param new_list: List with new values.</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Ensure new_list is a list</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_list</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">new_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;~&quot;</span><span class="p">):</span>
+            <span class="c1"># Remove the value if it starts with &#39;~&#39;</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>  <span class="c1"># Remove the &#39;~&#39; prefix</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">old_list</span><span class="p">:</span>
+                <span class="n">old_list</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">old_list</span><span class="p">:</span>
+            <span class="c1"># Add the value if it is not already in the old list</span>
+            <span class="n">old_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="update_dict">
+<a class="viewcode-back" href="../config.html#config.update_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">update_dict</span><span class="p">(</span><span class="n">old_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">new_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add key value pairs from new_dict to old_dict.</span>
+<span class="sd">    If a key in new_dict does not exist in old_dict, it is added.</span>
+<span class="sd">    If the value is a dict or list, the values are merged recursively.</span>
+<span class="sd">    If a key in new_dict starts with &#39;~&#39;, it overrides the value in old_dict instead.</span>
+<span class="sd">    If the value is None, the key is removed from old_dict instead.</span>
 <span class="sd">    </span>
 <span class="sd">    :param old_dict: Dictionary to be updated.</span>
 <span class="sd">    :param new_dict: Dictionary with new values.</span>
 <span class="sd">    :return: None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">new_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">old_dict</span><span class="p">:</span>
+            <span class="c1"># If the value is None, remove the key from the old dictionary</span>
+            <span class="k">del</span> <span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;~&quot;</span><span class="p">):</span>
+            <span class="c1"># If the key starts with &#39;~&#39;, override the value in old_dict</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>  <span class="c1"># Remove the &#39;~&#39; prefix</span>
+            <span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="k">continue</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">old_dict</span><span class="p">:</span>
             <span class="c1"># If the key does not exist in the old dictionary, add it</span>
             <span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
@@ -74,13 +113,10 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">old_val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="c1"># If both are dictionaries, recursively update</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                <span class="n">recursive_update</span><span class="p">(</span><span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">val</span><span class="p">)</span>
+                <span class="n">update_dict</span><span class="p">(</span><span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">val</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">old_val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="c1"># If the old value is a list, extend it with the new value</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-                <span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="n">update_list</span><span class="p">(</span><span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">val</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span></div>
 
@@ -94,11 +130,11 @@
 <span class="sd">    :param cfg: Dictionary containing new configuration values.</span>
 <span class="sd">    :return: None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">recursive_update</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;inputs&quot;</span><span class="p">,</span> <span class="p">{}))</span>
-    <span class="n">recursive_update</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output&quot;</span><span class="p">,</span> <span class="p">{}))</span>
-    <span class="n">recursive_update</span><span class="p">(</span><span class="n">validation</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;validation&quot;</span><span class="p">,</span> <span class="p">{}))</span>
-    <span class="n">recursive_update</span><span class="p">(</span><span class="n">sites</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sites&quot;</span><span class="p">,</span> <span class="p">{}))</span>
-    <span class="n">recursive_update</span><span class="p">(</span><span class="n">merging</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;merging&quot;</span><span class="p">,</span> <span class="p">{}))</span></div>
+    <span class="n">update_dict</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;inputs&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+    <span class="n">update_dict</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+    <span class="n">update_dict</span><span class="p">(</span><span class="n">validation</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;validation&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+    <span class="n">update_dict</span><span class="p">(</span><span class="n">sites</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sites&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+    <span class="n">update_dict</span><span class="p">(</span><span class="n">merging</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;merging&quot;</span><span class="p">,</span> <span class="p">{}))</span></div>
 
 
 <div class="viewcode-block" id="load">
@@ -122,7 +158,16 @@
     <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
         <span class="n">cfg</span> <span class="o">=</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">read_config_file</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loaded configuration file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
-        <span class="n">update</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span></div>
+        <span class="n">update</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s2">&quot;Final configuration:</span><span class="se">\n</span><span class="s2">inputs: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">output: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">validation: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">sites: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">merging: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">validation</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">sites</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">merging</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="p">)</span></div>
 
 </pre></div>
 

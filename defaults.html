@@ -45,96 +45,10 @@
             
   <section id="configuration">
 <h1>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h1>
-<p>A default configuration resides in file <a class="reference download internal" download="" href="_downloads/4f53e4c0b9f91cc2f12ad008c16ede3b/defaults.yaml"><code class="xref download docutils literal notranslate"><span class="pre">config/defaults.yaml</span></code></a></p>
+<p>A default configuration resides in file <code class="xref download docutils literal notranslate"><span class="pre">config/defaults.yaml</span></code></p>
 <p>You can specify a different configuration file with the option ‘-c newconfig.yaml’ on the command line.</p>
 <section id="defaults-yaml">
 <h2>defaults.yaml<a class="headerlink" href="#defaults-yaml" title="Link to this heading">¶</a></h2>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Default configuration settings for merging</span>
-<span class="c1"># Please create your own config files instead of modifying this one directly!</span>
-
-<span class="n">inputs</span><span class="p">:</span>
-    <span class="n">mode</span><span class="p">:</span> <span class="n">dids</span>              <span class="c1"># Options: query, dids, files</span>
-    <span class="n">namespace</span><span class="p">:</span> <span class="s2">&quot;usertests&quot;</span>  <span class="c1"># Default namespace for local input files</span>
-    <span class="n">inputs</span><span class="p">:</span> <span class="p">[]</span>              <span class="c1"># List of inputs</span>
-    <span class="n">search_dirs</span><span class="p">:</span> <span class="p">[]</span>         <span class="c1"># List of directories to search for metadata files</span>
-
-<span class="n">output</span><span class="p">:</span>
-    <span class="n">mode</span><span class="p">:</span> <span class="n">justin</span>      <span class="c1"># Options: dids, replicas, pfns, local, justin</span>
-    <span class="nb">dir</span><span class="p">:</span> <span class="s2">&quot;/pnfs/dune/scratch/users/$</span><span class="si">{USER}</span><span class="s2">/merge_test&quot;</span> <span class="c1"># Directory to save local merged files</span>
-    <span class="n">namespace</span><span class="p">:</span> <span class="s2">&quot;usertests&quot;</span> <span class="c1"># Optionally specify a namespace different from the parents</span>
-    <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{core.run_type}</span><span class="s2">_</span><span class="si">{dune.campaign}</span><span class="s2">_</span><span class="si">{dune.config_file}</span><span class="s2">_</span><span class="si">{core.application.name}</span><span class="s2">&quot;</span>
-    <span class="c1">#name: &quot;{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}&quot;</span>
-    <span class="n">grandparents</span><span class="p">:</span> <span class="n">false</span> <span class="c1"># List the parents of the input files as the parents of the merged file</span>
-
-<span class="n">validation</span><span class="p">:</span>
-    <span class="n">batch_size</span><span class="p">:</span> <span class="mi">100</span>   <span class="c1"># Number of files to query metacat about at once</span>
-    <span class="n">fast_fail</span><span class="p">:</span> <span class="kc">True</span>   <span class="c1"># Stop processing files as soon as one batch fails validation</span>
-    <span class="n">skip</span><span class="p">:</span>             <span class="c1"># Continue processing files even if some fail validation</span>
-        <span class="n">missing</span><span class="p">:</span>      <span class="n">false</span> <span class="c1"># Skip files with missing metadata</span>
-        <span class="n">duplicate</span><span class="p">:</span>    <span class="n">false</span> <span class="c1"># Skip duplicated files</span>
-        <span class="n">unreachable</span><span class="p">:</span>  <span class="n">false</span> <span class="c1"># Skip files that are not accessible</span>
-        <span class="n">invalid</span><span class="p">:</span>      <span class="n">false</span> <span class="c1"># Skip files with invalid metadata</span>
-        <span class="n">inconsistent</span><span class="p">:</span> <span class="n">false</span> <span class="c1"># Skip files with inconsistent metadata</span>
-    <span class="n">checksums</span><span class="p">:</span>
-      <span class="o">-</span> <span class="s2">&quot;adler32&quot;</span>     <span class="c1"># Adler32 should be the default checksum</span>
-    <span class="n">consistent</span><span class="p">:</span>       <span class="c1"># These metadata keys must be the same for all input files</span>
-      <span class="o">-</span> <span class="s2">&quot;core.run_type&quot;</span>
-      <span class="o">-</span> <span class="s2">&quot;core.file_type&quot;</span>
-      <span class="o">-</span> <span class="s2">&quot;core.file_format&quot;</span>
-      <span class="o">-</span> <span class="s2">&quot;core.data_tier&quot;</span>
-      <span class="o">-</span> <span class="s2">&quot;core.data_stream&quot;</span>
-      <span class="o">-</span> <span class="s2">&quot;core.application.name&quot;</span>
-      <span class="o">-</span> <span class="s2">&quot;dune.campaign&quot;</span>
-      <span class="o">-</span> <span class="s2">&quot;dune.requestid&quot;</span>
-      <span class="o">-</span> <span class="s2">&quot;dune.config_file&quot;</span>          <span class="c1"># Not checked in old merging</span>
-      <span class="o">-</span> <span class="s2">&quot;core.application.version&quot;</span>  <span class="c1"># Not checked in old merging</span>
-    <span class="n">required</span><span class="p">:</span>       <span class="c1"># These metadata keys must be present in all input files</span>
-    <span class="n">optional</span><span class="p">:</span>       <span class="c1"># These metadata keys are optional (overrides required and conditional keys)</span>
-      <span class="o">-</span> <span class="s2">&quot;dune_mc.geometry_version&quot;</span>
-
-<span class="n">sites</span><span class="p">:</span>
-    <span class="n">local_site</span><span class="p">:</span> <span class="s2">&quot;US_FNAL-FermiGrid&quot;</span>   <span class="c1"># Local site name</span>
-    <span class="n">allowed_sites</span><span class="p">:</span>                    <span class="c1"># Sites where merging is allowed</span>
-      <span class="o">-</span> <span class="s2">&quot;US_FNAL-FermiGrid&quot;</span>
-      <span class="o">-</span> <span class="s2">&quot;CERN&quot;</span>
-    <span class="n">max_distance</span><span class="p">:</span> <span class="mi">1000</span>                <span class="c1"># Distances range from 0 to 101</span>
-    <span class="n">nearline_distance</span><span class="p">:</span>                <span class="c1"># Extra distance to account for staging</span>
-        <span class="n">default</span><span class="p">:</span>        <span class="mi">100</span>           <span class="c1"># Default distance for all RSEs</span>
-        <span class="s2">&quot;FNAL_DCACHE&quot;</span><span class="p">:</span>  <span class="mi">10</span>
-
-<span class="n">merging</span><span class="p">:</span>
-    <span class="n">method</span><span class="p">:</span> <span class="n">auto</span>        <span class="c1"># Can be auto or a specific method from the list below</span>
-    <span class="n">target_mode</span><span class="p">:</span> <span class="n">size</span>   <span class="c1"># Options: size, count</span>
-    <span class="n">target_size</span><span class="p">:</span> <span class="mi">10</span>     <span class="c1"># Target size (in GB) or number of files</span>
-    <span class="n">equalize</span><span class="p">:</span> <span class="n">true</span>      <span class="c1"># Try to equalize the size of the merged files</span>
-    <span class="n">chunk_min</span><span class="p">:</span> <span class="mi">5</span>        <span class="c1"># Minimum number of files to merge at once</span>
-    <span class="n">chunk_max</span><span class="p">:</span> <span class="mi">100</span>      <span class="c1"># Maxiumum number of files to merge at once</span>
-    <span class="n">methods</span><span class="p">:</span>
-        <span class="s2">&quot;hadd&quot;</span><span class="p">:</span>
-            <span class="n">file_format</span><span class="p">:</span>
-              <span class="o">-</span> <span class="s2">&quot;root&quot;</span>
-              <span class="o">-</span> <span class="s2">&quot;rootntuple&quot;</span>
-              <span class="o">-</span> <span class="s2">&quot;tfile&quot;</span>
-            <span class="n">ext</span><span class="p">:</span> <span class="s2">&quot;.root&quot;</span>
-        <span class="s2">&quot;lar&quot;</span><span class="p">:</span>
-            <span class="n">file_format</span><span class="p">:</span>
-              <span class="o">-</span> <span class="s2">&quot;artroot&quot;</span>
-            <span class="n">ext</span><span class="p">:</span> <span class="s2">&quot;.root&quot;</span>
-            <span class="n">fcl</span><span class="p">:</span> <span class="s2">&quot;artcat.fcl&quot;</span>
-        <span class="s2">&quot;hdf5&quot;</span><span class="p">:</span>
-            <span class="n">file_format</span><span class="p">:</span>
-              <span class="o">-</span> <span class="s2">&quot;hdf5&quot;</span>
-            <span class="n">ext</span><span class="p">:</span> <span class="s2">&quot;.hdf5&quot;</span>
-        <span class="s2">&quot;tar&quot;</span><span class="p">:</span>
-            <span class="n">file_format</span><span class="p">:</span>
-              <span class="o">-</span> <span class="s2">&quot;binary&quot;</span>
-              <span class="o">-</span> <span class="s2">&quot;tar&quot;</span>
-              <span class="o">-</span> <span class="s2">&quot;unknown&quot;</span>
-            <span class="n">output_format</span><span class="p">:</span> <span class="s2">&quot;tar&quot;</span>
-            <span class="n">ext</span><span class="p">:</span> <span class="s2">&quot;.tar&quot;</span>
-    
-</pre></div>
-</div>
 </section>
 </section>
 
