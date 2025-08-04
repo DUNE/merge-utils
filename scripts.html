@@ -52,8 +52,8 @@
 <dd><p>Test the command line interface for merge_utils.</p>
 </dd></dl>
 
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: merge [-h] [-c CFG] [-v] [--log LOG] [-f FILE] [-d DIR] [--list OPT]
-             [-l]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: merge [-h] [-c CFG] [-v] [--log LOG] [-f FILE] [-d DIR] [--validate]
+             [--list OPT] [-l]
              [MODE] [inputs ...]
 
 Command line interface for merge_utils
@@ -71,6 +71,7 @@ input arguments:
   inputs                remaining command line inputs
 
 output arguments:
+  --validate            only validate metadata instead of merging
   --list OPT            list (dids, replicas, pfns) instead of merging
   -l, --local           run merge locally instead of submitting to JustIN
 </pre></div>
