@@ -298,11 +298,13 @@ def merge_hdf5(output: str, inputs: list, config: str) -> None:
     fout = h5py.File(output, 'w')
 
     # Merge all the input files
+    # copy files locally
     fins = [h5py.File(f, 'r') for f in inputs]
     fout.attrs.update( merge_attrs('', [f.attrs for f in fins]) )
     merge_group(fout, fins)
     for f in fins:
         f.close()
+        # remove the local copy
 
     # Warn about inconsistent attributes
     if inconsistent:
