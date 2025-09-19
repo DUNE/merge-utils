@@ -7,6 +7,8 @@ import os
 import json
 import subprocess
 import tarfile
+import socket
+
 
 def checksums(filename: str) -> dict:
     """Calculate the checksum of a file"""
@@ -17,6 +19,20 @@ def checksums(filename: str) -> dict:
     results = {'adler32':checksum}
 
     return results
+
+
+def renew_token():
+    "" 
+    cmd = "htgettoken -i dune --vaultserver htvaultprod.fnal.gov -r interactive --nooidc".split(" ")
+    try:
+        print ("Renewing token with command: %s"%(" ".join(cmd)))
+        rval = subprocess.run(cmd, check=True)
+        print ("Token renewed",rval)
+    except:
+        print ("WARNING: Token renewal failed, skip for now")
+        
+
+
 
 def merge_hadd(output: str, inputs: list) -> None:
     """Merge the input files using hadd"""
@@ -47,7 +63,9 @@ def merge(config: dict, outdir: str) -> None:
     method = config['metadata']['merge.method']
     output = os.path.join(outdir, config['name'])
     inputs = config.pop('inputs')
-
+    # Renew token if on interactive gpvm at fnal
+    if  "dunegpvm" in socket.gethostname():
+        renew_token() 
     # Merge the input files based on the specified method
     if method == "hadd":
         merge_hadd(output, inputs)
@@ -67,9 +85,12 @@ def merge(config: dict, outdir: str) -> None:
     config['checksums'] = checksums(output)
 
     # Write the configuration to a JSON file
-    json_name = output + '.json'
-    with open(json_name, 'w', encoding="utf-8") as fjson:
-        fjson.write(json.dumps(config, indent=2))
+    try:
+        json_name = output + '.json'
+        with open(json_name, 'w', encoding="utf-8") as fjson:
+            fjson.write(json.dumps(config, indent=2))
+    except Exception as e:
+        print(f"WARNING: Could not write JSON file {json_name}: {e}")
 
 def main():
     """Main function for command line execution"""

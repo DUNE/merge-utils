@@ -4,7 +4,7 @@ from __future__ import annotations
 import csv
 import requests
 
-SITES_STORAGES_URL = "https://justin-ui-pro.dune.hep.ac.uk/api/info/sites_storages.csv"
+SITES_STORAGES_URL = "https://justin-ui-fnal.dune.hep.ac.uk/api/info/sites_storages.csv"
 
 def get_distances(sites: list, rses: list) -> dict:
     """Get the distances between sites and storage elements"""

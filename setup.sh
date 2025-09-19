@@ -31,6 +31,7 @@ elif [[ "$release" == "Scientific" ]]; then
 
     setup rucio
     # Try to fix broken rucio config file
+    mkdir -p $MERGE_UTILS_DIR/config/misc/
     export RUCIO_CONFIG=$MERGE_UTILS_DIR/config/misc/rucio.cfg
     cp $RUCIO_HOME/etc/rucio.cfg $RUCIO_CONFIG
     sed -i 's/account = .*/account = '$USER'/' $RUCIO_CONFIG

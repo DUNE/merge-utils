@@ -19,7 +19,7 @@ from merge_utils import io_utils, config
 
 logger = logging.getLogger(__name__)
 
-SITES_STORAGES_URL = "https://justin-ui-pro.dune.hep.ac.uk/api/info/sites_storages.csv"
+SITES_STORAGES_URL = "https://justin-ui-fnal.dune.hep.ac.uk/api/info/sites_storages.csv"
 LOCAL_PING_THRESHOLD = 5
 
 def check_path(path: str) -> str:
