@@ -8,6 +8,7 @@ import json
 import subprocess
 import tarfile
 import socket
+import io_utils
 
 
 def checksums(filename: str) -> dict:
@@ -87,6 +88,12 @@ def merge(config: dict, outdir: str) -> None:
     # Write the configuration to a JSON file
     try:
         json_name = output + '.json'
+        if os.path.exists(json_name):
+            
+            oldname = json_name+io_utils.get_timestamp()+".bak"
+            os.rename(json_name,oldname)  
+            print(f"WARNING: JSON file {json_name} already exists, renaming to {oldname}")      
+
         with open(json_name, 'w', encoding="utf-8") as fjson:
             fjson.write(json.dumps(config, indent=2))
     except Exception as e:
