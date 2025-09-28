@@ -96,10 +96,14 @@ class RucioFinder (PathFinder):
         res = await asyncio.to_thread(self.client.list_replicas, query, ignore_availability=False)
         for replicas in res:
             did = replicas['scope'] + ':' + replicas['name']
-            logger.debug("Found %d replicas for %s", len(replicas['pfns']), did)
             found.add(did)
-            file = files[did]
+            count = len(replicas['pfns'])
+            logger.debug("Found %d replicas for %s", count, did)
+            if count == 0:
+                unreachable.append(did)
+                continue
 
+            file = files[did]
             added, csum = await asyncio.gather(
                 self.rses.add_replicas(did, replicas),
                 self.checksum(file, replicas)

@@ -24,7 +24,11 @@ class JobScheduler(ABC):
         :param source: PathFinder object to provide input files
         """
         self.source = source
-        self.dir = os.path.join(io_utils.pkg_dir(), "tmp", io_utils.get_timestamp())
+        self.dir = os.path.expanduser(os.path.expandvars(os.path.join(
+            config.output['scripts'], io_utils.get_timestamp()
+        )))
+        if not os.path.isabs(self.dir):
+            self.dir = os.path.join(io_utils.pkg_dir(), self.dir)
         self.jobs = [collections.defaultdict(list), collections.defaultdict(list)]
 
     def write_json(self, chunk) -> str:
@@ -73,9 +77,16 @@ class JobScheduler(ABC):
         for chunk in self.source.output_chunks():
             self.write_json(chunk)
         if not self.jobs[0]:
-            logger.warning("No files to merge")
+            logger.critical("No files to merge")
             return
         io_utils.log_print(f"Job config files written to {self.dir}")
+
+        if not self.jobs[1]:
+            io_utils.log_print("Only one merging pass is required")
+        elif len(self.jobs[0]) > 1:
+            io_utils.log_print("Two merging passes are required due to distributed inputs")
+        else:
+            io_utils.log_print("Two merging passes are required due to high multiplicity")
 
         msg = [
             "Execute the merge by running:",
@@ -106,7 +117,7 @@ class LocalScheduler(JobScheduler):
         :param tier: Pass number (1 or 2)
         :return: Name of the generated script file
         """
-        out_dir = config.output['dir']
+        out_dir = os.path.expanduser(os.path.expandvars(config.output['dir']))
         if tier == 1 and not os.path.exists(out_dir):
             try:
                 os.makedirs(out_dir, exist_ok=True)
@@ -118,9 +129,10 @@ class LocalScheduler(JobScheduler):
         script_name = os.path.join(self.dir, f"run_pass{tier}.sh")
         with open(script_name, 'w', encoding="utf-8") as f:
             f.write("#!/bin/bash\n")
-            f.write("# This script will run local merge jobs for pass {tier}\n")
+            f.write(f"# This script will run local merge jobs for pass {tier}\n")
             for job in self.jobs[tier-1][None]:
-                cmd = ['python3', os.path.join(io_utils.src_dir(), "do_merge.py"), job, out_dir]
+                cmd = ["LD_PRELOAD=$XROOTD_LIB/libXrdPosixPreload.so",
+                       "python3", os.path.join(io_utils.src_dir(), "do_merge.py"), job, out_dir]
                 f.write(f"{' '.join(cmd)}\n")
         subprocess.run(['chmod', '+x', script_name], check=False)
         return script_name
@@ -150,6 +162,7 @@ class JustinScheduler(JobScheduler):
                     tar.add(file, os.path.basename(file))
             tar.add(os.path.join(io_utils.src_dir(), "do_merge.py"), "do_merge.py")
 
+        io_utils.log_print("Uploading configuration files to cvmfs...")
         proc = subprocess.run(['justin-cvmfs-upload', cfg], capture_output=True, check=False)
         if proc.returncode != 0:
             logger.error("Failed to upload configuration files: %s", proc.stderr.decode('utf-8'))

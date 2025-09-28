@@ -8,8 +8,9 @@ inputs:
     search_dirs: []         # List of directories to search for metadata files
 
 output:
+    scripts: "tmp"    # Directory for generated job scripts (relative to package dir)
     mode: justin      # Options: dids, replicas, pfns, local, justin
-    dir: "/pnfs/dune/scratch/users/${USER}/merge_test" # Directory to save local merged files
+    dir: "/pnfs/dune/scratch/users/${USER}/merge_test" # Directory for output merged files
     namespace: "usertests" # Optionally specify a namespace different from the parents
     name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
     #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"
@@ -26,22 +27,12 @@ validation:
         inconsistent: False # Skip files with inconsistent metadata
     checksums:
       - "adler32"     # Adler32 should be the default checksum
-    consistent:       # These metadata keys must be the same for all input files
-      - "core.run_type"
-      - "core.file_type"
-      - "core.file_format"
-      - "core.data_tier"
-      - "core.data_stream"
-      - "core.application.name"
-      - "dune.campaign"
-      - "dune.requestid"
-      - "dune.config_file"          # Not checked in old merging
-      - "core.application.version"  # Not checked in old merging
-    optional:       # These metadata keys are optional (overrides required and conditional keys)
+    optional:         # These metadata keys are optional (overrides required and conditional keys)
       - "dune_mc.geometry_version"
       - "dune_mc.gen_fcl_filename"
 
 sites:
+    justin_url: "https://justin-ui-fnal.dune.hep.ac.uk"
     local_site: "US_FNAL-FermiGrid"   # Local site name
     allowed_sites:                    # Sites where merging is allowed
       - "US_FNAL-FermiGrid"
@@ -50,12 +41,13 @@ sites:
     nearline_distance:                # Extra distance to account for staging
         default:        100           # Default distance for all RSEs
         "FNAL_DCACHE":  10
+    streaming: True                   # Stream files from remote sites instead of making a local copy
 
 merging:
     target_mode: size   # Options: size, count
     target_size: 10     # Target size (in GB) or number of files
     equalize: True      # Try to equalize the size of the merged files
-    chunk_min: 5        # Minimum number of files to merge at once
+    chunk_min: 2        # Minimum number of files to merge at once
     chunk_max: 100      # Maxiumum number of files to merge at once
     method: auto        # Can be auto or a specific method from the list below
     methods:

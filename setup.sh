@@ -6,6 +6,7 @@ if [[ "$release" == "AlmaLinux" ]]; then
     echo "Doing setup for Alma Linux"
 
     source /cvmfs/larsoft.opensciencegrid.org/spack-packages/setup-env.sh
+    spack load root@6.28.06
     spack load r-m-dd-config experiment=dune
     spack load justin
     htgettoken -a htvaultprod.fnal.gov -i dune
@@ -45,4 +46,6 @@ elif [[ "$release" == "Scientific" ]]; then
     . $MERGE_UTILS_DIR/.venv_sl7/bin/activate
     pip install $MERGE_UTILS_DIR --use-feature=in-tree-build
 
+    pip install h5py
+    
 fi

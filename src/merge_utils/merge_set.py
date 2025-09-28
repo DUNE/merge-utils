@@ -68,7 +68,12 @@ class MergeFile:
         :param fields: list of metadata fields to extract
         :return: tuple of values for each field
         """
-        values = [self.namespace] + [self.metadata.get(field, "") for field in fields]
+        values = [self.namespace]
+        for field in fields:
+            value = self.metadata.get(field, "")
+            if isinstance(value, list):
+                value = tuple(value)
+            values.append(value)
         return tuple(values)
 
 class MergeSet(collections.UserDict):
@@ -481,6 +486,7 @@ class MergeChunk(collections.UserDict):
             'metadata': self.metadata,
             'parents': self.parents,
             'inputs': self.inputs,
+            'streaming': config.sites['streaming'],
         }
         return data
 
@@ -492,7 +498,7 @@ class MergeChunk(collections.UserDict):
 
     def chunk(self) -> MergeChunk:
         """Create a subset of the chunk with the same metadata"""
-        chunk = MergeChunk(self.name, self.merge_hash, self.group_id)
+        chunk = MergeChunk(self._name, self.merge_hash, self.group_id)
         chunk.site = self.site
         chunk.chunk_id = self.chunks
         self.chunks += 1

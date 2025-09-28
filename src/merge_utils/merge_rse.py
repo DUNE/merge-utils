@@ -19,7 +19,7 @@ from merge_utils import io_utils, config
 
 logger = logging.getLogger(__name__)
 
-SITES_STORAGES_URL = "https://justin-ui-fnal.dune.hep.ac.uk/api/info/sites_storages.csv"
+SITE_STORAGE_URL = "/api/info/sites_storages.csv"
 LOCAL_PING_THRESHOLD = 5
 
 def check_path(path: str) -> str:
@@ -162,7 +162,7 @@ class MergeRSEs(collections.UserDict):
         accessible = set()
         try:
             res = await asyncio.to_thread(
-                requests.get, SITES_STORAGES_URL, verify=False, timeout=10
+                requests.get, config.sites['justin_url']+SITE_STORAGE_URL, verify=False, timeout=10
             )
             connected = res.ok
         except requests.ConnectionError as err:

@@ -164,6 +164,21 @@ validation:
             - "core.application.version"
         "'{core.data_tier}' == 'root-tuple-virtual'": *tuple_requirements
     optional: []  # These metadata keys are optional (overrides required and conditional keys)
+    consistent:   # These metadata keys must be the same for all input files
+      - "core.run_type"
+      - "core.file_type"
+      - "core.file_format"
+      - "core.data_tier"
+      - "core.data_stream"
+      - "core.application.name"
+      - "dune.campaign"
+      - "dune.requestid"
+      - "dune.config_file"          # Not checked in old merging
+      - "core.application.version"  # Not checked in old merging
+      - "dune.output_status"
+    # - "core.runs"
+    group:        # These metadata keys must be merged as separate groups
+      - "core.runs"
 
 merging:
     metadata:   # Special merging behavior for metadata keys, options are:

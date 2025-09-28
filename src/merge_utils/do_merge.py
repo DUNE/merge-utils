@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Actually perform the merging"""
 
 #test?#
@@ -31,7 +30,7 @@ def renew_token():
         print ("Token renewed",rval)
     except:
         print ("WARNING: Token renewal failed, skip for now")
-        
+
 
 
 
@@ -59,14 +58,59 @@ def merge_tar(output: str, inputs: list[str]) -> None:
         for file in inputs:
             tar.add(file,os.path.basename(file))
 
+def local_copy(inputs: list[str], outdir: str) -> list[str]:
+    """Make a local copy of the input files"""
+    tmp_files = []
+    tmp_dir = os.path.join(outdir, "tmp")
+    print(f"Making local copy of input files in {tmp_dir}:")
+    for i, path in enumerate(inputs):
+        basename = os.path.basename(path)
+        if os.path.exists(path):
+            print(f"  Skipping {basename} (file already local)")
+            continue
+
+        local_path = os.path.join(tmp_dir, basename)
+        if os.path.exists(local_path):
+            print(f"  Skipping {basename} (local copy already exists)")
+        else:
+            print(f"  Copying {basename}")
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            cmd = ['xrdcp', path, local_path]
+            subprocess.run(cmd, check=True)
+
+        tmp_files.append(local_path)
+        inputs[i] = local_path
+
+    print(f"Copied {len(tmp_files)} files")
+    return tmp_files
+
 def merge(config: dict, outdir: str) -> None:
     """Merge the input files into a single output file"""
     method = config['metadata']['merge.method']
     output = os.path.join(outdir, config['name'])
     inputs = config.pop('inputs')
+    streaming = config.pop('streaming', False)
+
     # Renew token if on interactive gpvm at fnal
     if  "dunegpvm" in socket.gethostname():
-        renew_token() 
+        renew_token()
+
+    # Make local copies of the input files if not streaming
+    tmp_files = []
+    if not streaming:
+        tmp_files = local_copy(inputs, outdir)
+
+    # Remove output files if they already exist
+    if os.path.exists(output):
+        oldname = output+io_utils.get_timestamp()+".bak"
+        os.rename(output,oldname)  
+        print(f"WARNING: Output file {output} already exists, renaming to {oldname}")
+    json_name = output + '.json'
+    if os.path.exists(json_name):
+        oldname = json_name+io_utils.get_timestamp()+".bak"
+        os.rename(json_name,oldname)  
+        print(f"WARNING: JSON file {json_name} already exists, renaming to {oldname}")
+
     # Merge the input files based on the specified method
     if method == "hadd":
         merge_hadd(output, inputs)
@@ -81,23 +125,20 @@ def merge(config: dict, outdir: str) -> None:
     else:
         raise ValueError(f"Unsupported merge method: {method}")
 
-    # Clean up the configuration dictionary
+    # Write metadata to a JSON file
     config['size'] = os.path.getsize(output)
     config['checksums'] = checksums(output)
-
-    # Write the configuration to a JSON file
     try:
-        json_name = output + '.json'
-        if os.path.exists(json_name):
-            
-            oldname = json_name+io_utils.get_timestamp()+".bak"
-            os.rename(json_name,oldname)  
-            print(f"WARNING: JSON file {json_name} already exists, renaming to {oldname}")      
-
         with open(json_name, 'w', encoding="utf-8") as fjson:
             fjson.write(json.dumps(config, indent=2))
     except Exception as e:
         print(f"WARNING: Could not write JSON file {json_name}: {e}")
+
+    # Clean up temporary files
+    if not streaming and len(tmp_files) > 0:
+        print("Deleting local input file copies")
+        for file in tmp_files:
+            os.remove(file)
 
 def main():
     """Main function for command line execution"""
