@@ -70,12 +70,20 @@ def local_copy(inputs: list[str], outdir: str) -> list[str]:
             continue
 
         local_path = os.path.join(tmp_dir, basename)
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
         if os.path.exists(local_path):
-            print(f"  Skipping {basename} (local copy already exists)")
+            print(f"  Checking {basename} (local copy already exists)")
+            try:
+                cmd = ['xrdcp', path, local_path, '-C', 'adler32', '--continue']
+                subprocess.run(cmd, check=True)
+            except subprocess.CalledProcessError:
+                print(f"  Replacing {basename} (existing local copy is corrupted)")
+                os.remove(local_path)
+                cmd = ['xrdcp', path, local_path, '-C', 'adler32']
+                subprocess.run(cmd, check=True)
         else:
             print(f"  Copying {basename}")
-            os.makedirs(os.path.dirname(local_path), exist_ok=True)
-            cmd = ['xrdcp', path, local_path]
+            cmd = ['xrdcp', path, local_path, '-C', 'adler32']
             subprocess.run(cmd, check=True)
 
         tmp_files.append(local_path)
