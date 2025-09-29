@@ -161,6 +161,7 @@ class JustinScheduler(JobScheduler):
                 for file in files:
                     tar.add(file, os.path.basename(file))
             tar.add(os.path.join(io_utils.src_dir(), "do_merge.py"), "do_merge.py")
+            tar.add(os.path.join(io_utils.src_dir(), "hdf5_merge.py"), "hdf5_merge.py")
 
         io_utils.log_print("Uploading configuration files to cvmfs...")
         proc = subprocess.run(['justin-cvmfs-upload', cfg], capture_output=True, check=False)
@@ -185,16 +186,20 @@ class JustinScheduler(JobScheduler):
             f.write("#!/bin/bash\n")
             f.write(f"# This script will submit JustIN jobs for pass {tier}\n")
             for site, site_jobs in self.jobs[tier-1].items():
+                if site is None:
+                    site = config.sites['default']
+                    logger.warning("No site for pass %d job, defaulting to %s", tier, site)
                 cmd = [
                     'justin', 'simple-workflow',
+                    '--description', f'"Merge {io_utils.get_timestamp()} p{tier} {site}"',
                     '--monte-carlo', str(len(site_jobs)),
                     '--jobscript', os.path.join(io_utils.src_dir(), "merge.jobscript"),
                     '--env', f'MERGE_CONFIG="pass{tier}_{site}"',
                     '--env', f'CONFIG_DIR="{self.cvmfs_dir}"',
                     '--site', site,
-                    '--scope', 'usertests',
-                    '--output-pattern', '*_merged_*:merge-test', 
-                    '--lifetime-days', '1'
+                    '--scope', config.output['namespace'],
+                    '--output-pattern', '*_merged_*',
+                    '--lifetime-days', str(config.output['lifetime'])
                 ]
                 f.write(f"{' '.join(cmd)}\n")
         subprocess.run(['chmod', '+x', script_name], check=False)

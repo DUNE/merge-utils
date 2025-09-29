@@ -141,8 +141,8 @@ class RucioFinder (PathFinder):
 
             if len(pfns) == 1:
                 site = next(iter(pfns))
+                group.site = site
                 if len(pfns[site]) <= config.merging['chunk_max']:
-                    group.site = site
                     yield group
                     continue
 
@@ -159,4 +159,7 @@ class RucioFinder (PathFinder):
                         chunk.site = site
                 if chunk:
                     yield chunk
+            
+            if not group.site:
+                group.site = config.sites['default']
             yield group

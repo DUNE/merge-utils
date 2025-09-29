@@ -7,8 +7,7 @@ import json
 import subprocess
 import tarfile
 import socket
-import io_utils
-
+from datetime import datetime, timezone
 
 def checksums(filename: str) -> dict:
     """Calculate the checksum of a file"""
@@ -109,14 +108,15 @@ def merge(config: dict, outdir: str) -> None:
         tmp_files = local_copy(inputs, outdir)
 
     # Remove output files if they already exist
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
     if os.path.exists(output):
-        oldname = output+io_utils.get_timestamp()+".bak"
-        os.rename(output,oldname)  
+        oldname = output+"_"+timestamp+".bak"
+        os.rename(output,oldname)
         print(f"WARNING: Output file {output} already exists, renaming to {oldname}")
     json_name = output + '.json'
     if os.path.exists(json_name):
-        oldname = json_name+io_utils.get_timestamp()+".bak"
-        os.rename(json_name,oldname)  
+        oldname = json_name+"_"+timestamp+".bak"
+        os.rename(json_name,oldname)
         print(f"WARNING: JSON file {json_name} already exists, renaming to {oldname}")
 
     # Merge the input files based on the specified method

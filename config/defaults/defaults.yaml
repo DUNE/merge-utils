@@ -15,6 +15,8 @@ output:
     name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
     #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"
     grandparents: False # List the parents of the input files as the parents of the merged file
+    lifetime: 7      # Lifetime of output files (in days)
+    
 
 validation:
     batch_size: 100   # Number of files to query metacat about at once
@@ -22,7 +24,7 @@ validation:
     skip:             # Continue processing files even if some fail validation
         missing:      False # Skip files with missing metadata
         duplicate:    False # Skip duplicated files
-        unreachable:  False # Skip files that are not accessible
+        unreachable:  True # Skip files that are not accessible
         invalid:      False # Skip files with invalid metadata
         inconsistent: False # Skip files with inconsistent metadata
     checksums:
@@ -33,7 +35,8 @@ validation:
 
 sites:
     justin_url: "https://justin-ui-fnal.dune.hep.ac.uk"
-    local_site: "US_FNAL-FermiGrid"   # Local site name
+    local: "US_FNAL-FermiGrid"        # Local site name
+    default: "US_FNAL-FermiGrid"      # Default site (eg for stage 2 jobs)
     allowed_sites:                    # Sites where merging is allowed
       - "US_FNAL-FermiGrid"
       - "CERN"

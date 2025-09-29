@@ -130,7 +130,7 @@ class MergeRSEs(collections.UserDict):
     def __init__(self):
         super().__init__()
         if config.output['mode'] == 'local':
-            self.sites = [config.sites['local_site']]
+            self.sites = [config.sites['local']]
             logger.info("Running locally on site %s", self.sites[0])
         else:
             self.sites = config.sites['allowed_sites']
