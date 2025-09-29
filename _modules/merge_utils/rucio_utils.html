@@ -195,8 +195,8 @@
 
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pfns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">site</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">pfns</span><span class="p">))</span>
+                <span class="n">group</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">site</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pfns</span><span class="p">[</span><span class="n">site</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;chunk_max&#39;</span><span class="p">]:</span>
-                    <span class="n">group</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">site</span>
                     <span class="k">yield</span> <span class="n">group</span>
                     <span class="k">continue</span>
 
@@ -213,6 +213,9 @@
                         <span class="n">chunk</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">site</span>
                 <span class="k">if</span> <span class="n">chunk</span><span class="p">:</span>
                     <span class="k">yield</span> <span class="n">chunk</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">group</span><span class="o">.</span><span class="n">site</span><span class="p">:</span>
+                <span class="n">group</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span>
             <span class="k">yield</span> <span class="n">group</span></div>
 </div>
 
