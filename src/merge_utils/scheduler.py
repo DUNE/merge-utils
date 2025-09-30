@@ -155,15 +155,17 @@ class JustinScheduler(JobScheduler):
         
         :return: Path to the uploaded configuration directory
         """
+        io_utils.log_print("Uploading configuration files to cvmfs...")
         cfg = os.path.join(self.dir, "config.tar")
         with tarfile.open(cfg,"w") as tar:
-            for _, files in collections.ChainMap(*self.jobs).items():
-                for file in files:
-                    tar.add(file, os.path.basename(file))
+            for tier in [0, 1]:
+                for files in self.jobs[tier].values():
+                    for file in files:
+                        logger.debug("Adding %s to config tarball", os.path.basename(file))
+                        tar.add(file, os.path.basename(file))
             tar.add(os.path.join(io_utils.src_dir(), "do_merge.py"), "do_merge.py")
             tar.add(os.path.join(io_utils.src_dir(), "hdf5_merge.py"), "hdf5_merge.py")
 
-        io_utils.log_print("Uploading configuration files to cvmfs...")
         proc = subprocess.run(['justin-cvmfs-upload', cfg], capture_output=True, check=False)
         if proc.returncode != 0:
             logger.error("Failed to upload configuration files: %s", proc.stderr.decode('utf-8'))
