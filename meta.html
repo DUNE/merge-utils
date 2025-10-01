@@ -107,18 +107,6 @@
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="meta.MergeMetaNameDict">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MergeMetaNameDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaNameDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaNameDict" title="Link to this definition">¶</a></dt>
-<dd><p>Class to inject metadata into a name template.</p>
-<p>Initialize the NameMetaFormatter with a value.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>value</strong> – value to insert</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py class">
 <dt class="sig sig-object py" id="meta.MergeMetaOverride">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MergeMetaOverride</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaOverride"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaOverride" title="Link to this definition">¶</a></dt>
 <dd><p>Merge metadata by overriding the value.</p>
@@ -132,6 +120,30 @@
 <dt class="sig sig-object py" id="meta.MergeMetaOverride.valid">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">valid</span></span><a class="headerlink" href="#meta.MergeMetaOverride.valid" title="Link to this definition">¶</a></dt>
 <dd><p>Check if the value is valid.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MergeMetaSubset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MergeMetaSubset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaSubset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaSubset" title="Link to this definition">¶</a></dt>
+<dd><p>Merge metadata by taking the subset of consistent values.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MergeMetaSubset.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MergeMetaSubset.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MergeMetaSubset.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add a new value to the metadata.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MergeMetaSubset.valid">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">valid</span></span><a class="headerlink" href="#meta.MergeMetaSubset.valid" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the value is valid.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MergeMetaSubset.warn">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">warn</span></span><a class="headerlink" href="#meta.MergeMetaSubset.warn" title="Link to this definition">¶</a></dt>
+<dd><p>Whether to warn about inconsistent metadata.</p>
 </dd></dl>
 
 </dd></dl>
@@ -192,6 +204,19 @@
 <dt class="sig sig-object py" id="meta.MergeMetaUnique.valid">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">valid</span></span><a class="headerlink" href="#meta.MergeMetaUnique.valid" title="Link to this definition">¶</a></dt>
 <dd><p>Check if the value is valid.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MetaNameDict">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MetaNameDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MetaNameDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict" title="Link to this definition">¶</a></dt>
+<dd><p>Wrapper class to access metadata dictionary.</p>
+<p>Initialize the MetaNameDict with a metadata dictionary.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MetaNameDict.MetaNameReader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MetaNameReader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MetaNameDict.MetaNameReader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict.MetaNameReader" title="Link to this definition">¶</a></dt>
+<dd><p>Class to read metadata values.</p>
 </dd></dl>
 
 </dd></dl>
@@ -316,10 +341,15 @@
 <li><a class="reference internal" href="#meta.MergeMetaMin.valid"><code class="docutils literal notranslate"><span class="pre">MergeMetaMin.valid</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#meta.MergeMetaNameDict"><code class="docutils literal notranslate"><span class="pre">MergeMetaNameDict</span></code></a></li>
 <li><a class="reference internal" href="#meta.MergeMetaOverride"><code class="docutils literal notranslate"><span class="pre">MergeMetaOverride</span></code></a><ul>
 <li><a class="reference internal" href="#meta.MergeMetaOverride.add"><code class="docutils literal notranslate"><span class="pre">MergeMetaOverride.add()</span></code></a></li>
 <li><a class="reference internal" href="#meta.MergeMetaOverride.valid"><code class="docutils literal notranslate"><span class="pre">MergeMetaOverride.valid</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#meta.MergeMetaSubset"><code class="docutils literal notranslate"><span class="pre">MergeMetaSubset</span></code></a><ul>
+<li><a class="reference internal" href="#meta.MergeMetaSubset.add"><code class="docutils literal notranslate"><span class="pre">MergeMetaSubset.add()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaSubset.valid"><code class="docutils literal notranslate"><span class="pre">MergeMetaSubset.valid</span></code></a></li>
+<li><a class="reference internal" href="#meta.MergeMetaSubset.warn"><code class="docutils literal notranslate"><span class="pre">MergeMetaSubset.warn</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#meta.MergeMetaSum"><code class="docutils literal notranslate"><span class="pre">MergeMetaSum</span></code></a><ul>
@@ -336,6 +366,10 @@
 <li><a class="reference internal" href="#meta.MergeMetaUnique"><code class="docutils literal notranslate"><span class="pre">MergeMetaUnique</span></code></a><ul>
 <li><a class="reference internal" href="#meta.MergeMetaUnique.add"><code class="docutils literal notranslate"><span class="pre">MergeMetaUnique.add()</span></code></a></li>
 <li><a class="reference internal" href="#meta.MergeMetaUnique.valid"><code class="docutils literal notranslate"><span class="pre">MergeMetaUnique.valid</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#meta.MetaNameDict"><code class="docutils literal notranslate"><span class="pre">MetaNameDict</span></code></a><ul>
+<li><a class="reference internal" href="#meta.MetaNameDict.MetaNameReader"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.MetaNameReader</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#meta.check_required"><code class="docutils literal notranslate"><span class="pre">check_required()</span></code></a></li>
