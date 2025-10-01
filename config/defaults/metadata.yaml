@@ -196,6 +196,7 @@ merging:
         "core.events":              union
         "core.runs":                union
         "core.runs_subruns":        union
+        "dune.workflow":            subset
         # Skip values that don't make sense to merge
         "core.start_time":          skip
         "core.end_time":            skip

@@ -50,19 +50,16 @@ def check_required(metadata: dict) -> list:
     errs = []
     # Check for required keys
     required = set()
-    inserts = MergeMetaNameDict()
     for key in config.validation['required']:
         required.add(key)
         if key not in metadata:
             if key in config.validation['optional']:
                 continue
             errs.append(f"Missing required key: {key}")
-        else:
-            inserts[key] = metadata[key]
 
     # Check for conditionally required keys
     for condition, keys in config.validation['conditional'].items():
-        expr = condition.format_map(inserts)
+        expr = condition.format_map(MetaNameDict(metadata))
         try:
             if not eval(expr): #pylint: disable=eval-used
                 logger.debug("Skipping condition: %s", expr)
@@ -232,6 +229,31 @@ class MergeMetaAll:
         """Check if the value is valid."""
         return len(self._value) > 0
 
+class MergeMetaSubset:
+    """Merge metadata by taking the subset of consistent values."""
+    def __init__(self, value=None):
+        self.value = value
+
+    def add(self, value):
+        """Add a new value to the metadata."""
+        if self.value is None:
+            self.value = value
+        else:
+            for k, v in value.items():
+                if k in self.value and self.value[k] != v:
+                    logger.debug("Removing inconsistent key '%s': %s != %s", k, self.value[k], v)
+                    del self.value[k]
+
+    @property
+    def valid(self):
+        """Check if the value is valid."""
+        return self.value is not None and len(self.value) > 0
+
+    @property
+    def warn(self):
+        """Whether to warn about inconsistent metadata."""
+        return self.value is not None and len(self.value) == 0
+
 class MergeMetaOverride:
     """Merge metadata by overriding the value."""
     warn = False
@@ -254,6 +276,7 @@ MERGE_META_CLASSES = {
     'max': MergeMetaMax,
     'sum': MergeMetaSum,
     'union': MergeMetaUnion,
+    'subset': MergeMetaSubset,
     #'skip': MergeMetaOverride,
 }
 
@@ -282,7 +305,7 @@ def merged_keys(files: dict, warn: bool = False) -> dict:
             metadata[key].add(value)
 
     if warn:
-        io_utils.log_list("Omitting {n} inconsistent metadata key{s}:",
+        io_utils.log_list("Omitting {n} inconsistent metadata key{s} from output:",
             [k for k, v in metadata.items() if v.warn]
         )
     metadata = {k: v.value for k, v in metadata.items() if v.valid}
@@ -315,41 +338,50 @@ def parents(files: dict) -> list[str]:
             grandparents.add(tuple(sorted(grandparent.items())))
     return [dict(t) for t in grandparents]
 
-class MergeMetaNameDict(collections.UserDict):
-    """Class to inject metadata into a name template."""
+class MetaNameDict:
+    """Wrapper class to access metadata dictionary."""
 
-    def __init__(self, value: str = None):
+    def __init__(self, meta: dict):
         """
-        Initialize the NameMetaFormatter with a value.
-
-        :param value: value to insert
+        Initialize the MetaNameDict with a metadata dictionary.
         """
-        super().__init__()
-        self._str = value or ""
+        self._dict = meta
 
-    def __str__(self):
-        return self._str
+    class MetaNameReader:
+        """Class to read metadata values."""
 
-    def __repr__(self):
-        if not self._str:
-            return f"{self.data}"
-        if not self.data:
-            return f"'{self._str}'"
-        return f"'{self._str}'{self.data}"
+        def __init__(self, meta: dict, key: str):
+            self._dict = meta
+            self._key = key
+
+        def __getattr__(self, name):
+            return MetaNameDict.MetaNameReader(self._dict, self._key + '.' + name)
+
+        def __str__(self):
+            val = self._dict.get(self._key)
+            if val is None:
+                logger.warning("Metadata key '%s' not found", self._key)
+                return self._key
+            val = str(val)
+            return config.output['abbreviations'].get(self._key, {}).get(val, val)
+
+        def __getitem__(self, name):
+            val = self._dict.get(self._key)
+            if val is None:
+                logger.warning("Metadata key '%s' not found", self._key)
+                return self._key
+            if not hasattr(val, '__getitem__'):
+                logger.warning("Metadata key '%s' is not subscriptable", self._key)
+                return f"{self._key}[{name}]"
+            val2 = val.get(eval(name)) #pylint: disable=eval-used
+            if val2 is None:
+                logger.warning("Metadata key '%s[%s]' not found", self._key, name)
+                return f"{self._key}[{name}]"
+            val2 = str(val2)
+            return config.output['abbreviations'].get(f"{self._key}[{name}]", {}).get(val2, val2)
 
     def __getitem__(self, name):
-        name_list = name.split('.', 1)
-        if name_list[0] not in self.data:
-            self.data[name_list[0]] = MergeMetaNameDict(name_list[0])
-        if len(name_list) == 1:
-            return self.data[name_list[0]]
-        return self.data[name_list[0]][name_list[1]]
-
-    def __setitem__(self, name, value):
-        self[name]._str = value
-
-    def __getattr__(self, name):
-        return self[name]
+        return MetaNameDict.MetaNameReader(self._dict, name)
 
 def make_name(metadata: dict) -> str:
     """
@@ -358,15 +390,6 @@ def make_name(metadata: dict) -> str:
     :param metadata: metadata dictionary
     :return: merged file name
     """
-    inserts = MergeMetaNameDict()
-    for key, value in metadata.items():
-        if not isinstance(value, str):
-            value = str(value)
-        value = value.split('.', 1)[0]
-        value = config.output['abbreviations'].get(key, {}).get(value, value)
-        inserts[key] = value
-    inserts['timestamp'] = io_utils.get_timestamp()
-
-    name = config.output['name'].format_map(inserts)
+    name = config.output['name'].format_map(MetaNameDict(metadata))
     ext = config.merging['methods'][config.merging['method']]['ext']
-    return f"{name}_merged_{inserts['timestamp']}{ext}"
+    return f"{name}_merged_{io_utils.get_timestamp()}{ext}"
