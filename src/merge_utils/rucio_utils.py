@@ -148,15 +148,15 @@ class RucioFinder (PathFinder):
 
             for site in pfns:
                 n_chunks = math.ceil(len(group) / config.merging['chunk_max'])
-                target_size = len(group) / n_chunks
+                target_size = math.ceil(len(group) / n_chunks)
                 chunk = group.chunk()
                 chunk.site = site
                 for did in pfns[site]:
-                    chunk.add(group[did])
-                    if len(chunk) >= target_size:
+                    if len(chunk) + 1 > target_size:
                         yield chunk
                         chunk = group.chunk()
                         chunk.site = site
+                    chunk.add(group[did])
                 if chunk:
                     yield chunk
             

@@ -53,16 +53,15 @@ class JobScheduler(ABC):
 
         with open(name, 'w', encoding="utf-8") as fjson:
             fjson.write(json.dumps(json_dict, indent=2))
-        site_jobs.append(name)
+        site_jobs.append((name, chunk))
         return name
 
     @abstractmethod
-    def write_script(self, tier: int) -> str:
+    def write_script(self) -> list:
         """
-        Write the job script for a given tier.
-        
-        :param tier: Pass number (1 or 2)
-        :return: Name of the generated script file
+        Write the job script
+
+        :return: List of the generated script file name(s)
         """
 
     def run(self) -> None:
@@ -79,22 +78,42 @@ class JobScheduler(ABC):
         if not self.jobs[0]:
             logger.critical("No files to merge")
             return
-        io_utils.log_print(f"Job config files written to {self.dir}")
+        io_utils.log_print(f"Writing job config files to {self.dir}")
 
-        if not self.jobs[1]:
-            io_utils.log_print("Only one merging pass is required")
-        elif len(self.jobs[0]) > 1:
-            io_utils.log_print("Two merging passes are required due to distributed inputs")
-        else:
-            io_utils.log_print("Two merging passes are required due to high multiplicity")
+        n_inputs = 0
+        n_stage1 = 0
+        n_outputs = 0
+        msg = [""]
+        for site, site_jobs in self.jobs[0].items():
+            site_inputs = sum(len(job[1]) for job in site_jobs)
+            site_stage1 = len(site_jobs)
+            site_outputs = sum(1 for job in site_jobs if job[1].chunk == 0)
+            n_inputs += site_inputs
+            n_stage1 += site_stage1
+            n_outputs += site_outputs
+            if site is None:
+                site = "local"
+            msg.append(f"{site}: \t{site_inputs} -> {site_stage1}")
+        n_stage2 = sum(len(site_jobs) for site_jobs in self.jobs[1].values())
+        n_outputs += n_stage2
 
-        msg = [
-            "Execute the merge by running:",
-            self.write_script(1)
-        ]
-        if self.jobs[1]:
-            msg.append(self.write_script(2))
+        script = self.write_script()
 
+        msg[0] = f"Merging {n_inputs} input files into {n_outputs} merged files:"
+        io_utils.log_print("\n  ".join(msg))
+        if len(script) > 1:
+            if len(self.jobs[0]) > 1:
+                msg = ["A second merging pass is required due to distributed inputs:"]
+            else:
+                msg = ["A second merging pass is required due to high multiplicity:"]
+            for site, site_jobs in self.jobs[1].items():
+                site_inputs = sum(len(job[1].inputs) for job in site_jobs)
+                site_stage2 = len(site_jobs)
+                msg.append(f"{site}: \t{site_inputs} -> {site_stage2}")
+        io_utils.log_print("\n  ".join(msg))
+
+        io_utils.log_print(f"Files will be merged using {config.merging['method']}")
+        msg = ["Execute the merge by running:"] + script
         io_utils.log_print("\n  ".join(msg))
 
 class LocalScheduler(JobScheduler):
@@ -110,15 +129,14 @@ class LocalScheduler(JobScheduler):
         chunk.site = None  # Local jobs do not require a site
         return super().write_json(chunk)
 
-    def write_script(self, tier: int) -> str:
+    def write_script(self) -> list:
         """
-        Write the job script for a given tier.
-        
-        :param tier: Pass number (1 or 2)
+        Write the job script for running local merge jobs.
+
         :return: Name of the generated script file
         """
         out_dir = os.path.expanduser(os.path.expandvars(config.output['dir']))
-        if tier == 1 and not os.path.exists(out_dir):
+        if not os.path.exists(out_dir):
             try:
                 os.makedirs(out_dir, exist_ok=True)
                 logger.info("Output directory '%s' created", out_dir)
@@ -126,16 +144,23 @@ class LocalScheduler(JobScheduler):
                 logger.critical("Failed to create output directory '%s': %s", out_dir, error)
                 sys.exit(1)
 
-        script_name = os.path.join(self.dir, f"run_pass{tier}.sh")
+        script_name = os.path.join(self.dir, "run.sh")
+        pass_msg = [
+            "echo 'Creating intermediate merged files'",
+            "echo 'Creating final merged files'"
+        ]
         with open(script_name, 'w', encoding="utf-8") as f:
             f.write("#!/bin/bash\n")
-            f.write(f"# This script will run local merge jobs for pass {tier}\n")
-            for job in self.jobs[tier-1][None]:
-                cmd = ["LD_PRELOAD=$XROOTD_LIB/libXrdPosixPreload.so",
-                       "python3", os.path.join(io_utils.src_dir(), "do_merge.py"), job, out_dir]
-                f.write(f"{' '.join(cmd)}\n")
+            f.write("# This script will run the merge jobs locally\n")
+            for tier in range(2):
+                if self.jobs[1]:
+                    f.write(pass_msg[tier] + "\n")
+                for job in self.jobs[tier][None]:
+                    cmd = ["LD_PRELOAD=$XROOTD_LIB/libXrdPosixPreload.so", "python3",
+                           os.path.join(io_utils.src_dir(), "do_merge.py"), job[0], out_dir]
+                    f.write(f"{' '.join(cmd)}\n")
         subprocess.run(['chmod', '+x', script_name], check=False)
-        return script_name
+        return [script_name]
 
 class JustinScheduler(JobScheduler):
     """Job scheduler for JustIN merge jobs"""
@@ -158,11 +183,10 @@ class JustinScheduler(JobScheduler):
         io_utils.log_print("Uploading configuration files to cvmfs...")
         cfg = os.path.join(self.dir, "config.tar")
         with tarfile.open(cfg,"w") as tar:
-            for tier in [0, 1]:
-                for files in self.jobs[tier].values():
-                    for file in files:
-                        logger.debug("Adding %s to config tarball", os.path.basename(file))
-                        tar.add(file, os.path.basename(file))
+            for site_jobs in self.jobs[0].values():
+                for job in site_jobs:
+                    logger.debug("Adding %s to config tarball", os.path.basename(job[0]))
+                    tar.add(job[0], os.path.basename(job[0]))
             tar.add(os.path.join(io_utils.src_dir(), "do_merge.py"), "do_merge.py")
             tar.add(os.path.join(io_utils.src_dir(), "hdf5_merge.py"), "hdf5_merge.py")
 
@@ -173,36 +197,87 @@ class JustinScheduler(JobScheduler):
         self.cvmfs_dir = proc.stdout.decode('utf-8').strip()
         logger.info("Uploaded configuration files to %s", self.cvmfs_dir)
 
-    def write_script(self, tier: int) -> str:
+    def justin_cmd(self, tier: int, site: str, cvmfs_dir: str = None) -> str:
         """
-        Write the job script for a given tier.
+        Create the JustIN command for submitting a merge job.
         
-        :param tier: Pass number (1 or 2)
-        :return: Name of the generated script file
+        :param tier: Merge pass (1 or 2)
+        :param site: Site to run the job
+        :param cvmfs_dir: CVMFS directory where config files are located
+        :return: JustIN command string
         """
-        if tier == 1:
-            self.upload_cfg()
+        if site is None:
+            logger.critical("No site for pass %d job!", tier)
+            sys.exit(1)
+        if cvmfs_dir is None:
+            cvmfs_dir = self.cvmfs_dir
+        cmd = [
+            'justin', 'simple-workflow',
+            '--description', f'"Merge {io_utils.get_timestamp()} p{tier} {site}"',
+            '--monte-carlo', str(len(self.jobs[tier-1][site])),
+            '--jobscript', os.path.join(io_utils.src_dir(), "merge.jobscript"),
+            '--env', f'MERGE_CONFIG="pass{tier}_{site}"',
+            '--env', f'CONFIG_DIR="{cvmfs_dir}"',
+            '--site', site,
+            '--scope', config.output['namespace'],
+            '--output-pattern', '*_merged_*',
+            '--lifetime-days', str(config.output['lifetime'])
+        ]
+        return f"{' '.join(cmd)}\n"
 
-        script_name = os.path.join(self.dir, f"submit_pass{tier}.sh")
-        with open(script_name, 'w', encoding="utf-8") as f:
+    def write_script(self) -> list:
+        """
+        Write the job scripts for submitting JustIN merge jobs.
+        
+        :return: Name of the generated script file(s)
+        """
+        self.upload_cfg()
+
+        # If no second pass is needed, create a single submission script
+        if len(self.jobs[1]) == 0:
+            script_name = os.path.join(self.dir, "submit_job.sh")
+            with open(script_name, 'w', encoding="utf-8") as f:
+                f.write("#!/bin/bash\n")
+                f.write("# This script will submit JustIN jobs\n")
+                for site in self.jobs[0]:
+                    f.write(self.justin_cmd(1, site))
+            subprocess.run(['chmod', '+x', script_name], check=False)
+            return [script_name]
+
+        # Pass 1 submission script
+        script_pass1 = os.path.join(self.dir, "submit_pass1.sh")
+        with open(script_pass1, 'w', encoding="utf-8") as f:
             f.write("#!/bin/bash\n")
-            f.write(f"# This script will submit JustIN jobs for pass {tier}\n")
-            for site, site_jobs in self.jobs[tier-1].items():
-                if site is None:
-                    site = config.sites['default']
-                    logger.warning("No site for pass %d job, defaulting to %s", tier, site)
-                cmd = [
-                    'justin', 'simple-workflow',
-                    '--description', f'"Merge {io_utils.get_timestamp()} p{tier} {site}"',
-                    '--monte-carlo', str(len(site_jobs)),
-                    '--jobscript', os.path.join(io_utils.src_dir(), "merge.jobscript"),
-                    '--env', f'MERGE_CONFIG="pass{tier}_{site}"',
-                    '--env', f'CONFIG_DIR="{self.cvmfs_dir}"',
-                    '--site', site,
-                    '--scope', config.output['namespace'],
-                    '--output-pattern', '*_merged_*',
-                    '--lifetime-days', str(config.output['lifetime'])
-                ]
-                f.write(f"{' '.join(cmd)}\n")
-        subprocess.run(['chmod', '+x', script_name], check=False)
-        return script_name
+            f.write("# This script will submit JustIN jobs for pass 1\n")
+            for site in self.jobs[0]:
+                f.write(self.justin_cmd(1, site))
+        subprocess.run(['chmod', '+x', script_pass1], check=False)
+
+        # Pass 2 JustIN submission commands
+        pass2_justin = os.path.join(self.dir, "pass2_justin.sh")
+        with open(pass2_justin, 'w', encoding="utf-8") as f:
+            f.write("#!/bin/bash\n"
+                    "# This script will submit JustIN jobs for pass 2\n"
+                    "# Use submit_pass2.sh to generate the cvmfs directory first!\n"
+                    "cvmfs_dir=$1\n"
+                    "if [ -z \"$cvmfs_dir\" ]; then\n"
+                    "  echo 'Use submit_pass2.sh instead of calling this script directly!'\n"
+                    "  exit 1\n"
+                    "fi\n")
+            for site in self.jobs[1]:
+                f.write(self.justin_cmd(2, site, "$cvmfs_dir"))
+        subprocess.run(['chmod', '+x', pass2_justin], check=False)
+
+        # Pass 2 submission script
+        script_pass2 = os.path.join(self.dir, "submit_pass2.sh")
+        pass2_cfgs = []
+        for site_jobs in self.jobs[1].values():
+            pass2_cfgs.extend(os.path.basename(job[0]) for job in site_jobs)
+        with open(script_pass2, 'w', encoding="utf-8") as f:
+            f.write("#!/bin/bash\n")
+            f.write("# This script will update the cfg files for pass 2 before submission\n")
+            pass2_fix = os.path.join(io_utils.src_dir(), 'pass2_fix.py')
+            f.write(f"python3 {pass2_fix} {self.dir} {' '.join(pass2_cfgs)}\n")
+        subprocess.run(['chmod', '+x', script_pass2], check=False)
+
+        return [script_pass1, script_pass2]

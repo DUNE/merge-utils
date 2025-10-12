@@ -51,7 +51,7 @@ merging:
     target_size: 10     # Target size (in GB) or number of files
     equalize: True      # Try to equalize the size of the merged files
     chunk_min: 2        # Minimum number of files to merge at once
-    chunk_max: 100      # Maxiumum number of files to merge at once
+    chunk_max: 1000     # Maxiumum number of files to merge at once
     method: auto        # Can be auto or a specific method from the list below
     methods:
         "hadd":
