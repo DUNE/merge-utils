@@ -452,7 +452,7 @@ class MergeChunk(collections.UserDict):
         """Get the list of input files"""
         if self.chunks == 0:
             return [file.path for file in self.data.values()]
-        the_name, ext = self.name.split('.', 1)
+        the_name, ext = self.name.rsplit('.', 1)
         if config.output['mode'] != 'local':
             return [f"{self.namespace}:{the_name}_c{c}.{ext}" for c in range(1, self.chunks+1)]
         output_dir = config.output['dir']
