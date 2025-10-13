@@ -1,6 +1,11 @@
 export MERGE_UTILS_DIR="$(dirname `readlink -f "${BASH_SOURCE[0]}"`)"
 echo "Setting MERGE_UTILS_DIR to $MERGE_UTILS_DIR"
 
+# Set up rucio configuration file
+mkdir -p $MERGE_UTILS_DIR/config/misc/
+export RUCIO_CONFIG=$MERGE_UTILS_DIR/config/misc/rucio.cfg
+sed "s/<username>/$USER/g" $MERGE_UTILS_DIR/config/misc/rucio_template.cfg > $RUCIO_CONFIG
+
 release=`lsb_release -i | cut -f 2`
 if [[ "$release" == "AlmaLinux" ]]; then
     echo "Doing setup for Alma Linux"
@@ -31,13 +36,6 @@ elif [[ "$release" == "Scientific" ]]; then
     setup metacat
 
     setup rucio
-    # Try to fix broken rucio config file
-    mkdir -p $MERGE_UTILS_DIR/config/misc/
-    export RUCIO_CONFIG=$MERGE_UTILS_DIR/config/misc/rucio.cfg
-    cp $RUCIO_HOME/etc/rucio.cfg $RUCIO_CONFIG
-    sed -i 's/account = .*/account = '$USER'/' $RUCIO_CONFIG
-    sed -i 's/auth_type = .*/auth_type = oidc/' $RUCIO_CONFIG
-    echo "oidc_scope = openid profile email org.cilogon.userinfo wlcg.capabilityset:/duneana wlcg.groups:/dune" >> $RUCIO_CONFIG
 
     setup justin
     htgettoken -a htvaultprod.fnal.gov -i dune
