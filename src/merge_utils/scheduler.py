@@ -87,7 +87,7 @@ class JobScheduler(ABC):
         for site, site_jobs in self.jobs[0].items():
             site_inputs = sum(len(job[1]) for job in site_jobs)
             site_stage1 = len(site_jobs)
-            site_outputs = sum(1 for job in site_jobs if job[1].chunk == 0)
+            site_outputs = sum(1 for job in site_jobs if job[1].chunk_id < 0)
             n_inputs += site_inputs
             n_stage1 += site_stage1
             n_outputs += site_outputs
@@ -110,7 +110,7 @@ class JobScheduler(ABC):
                 site_inputs = sum(len(job[1].inputs) for job in site_jobs)
                 site_stage2 = len(site_jobs)
                 msg.append(f"{site}: \t{site_inputs} -> {site_stage2}")
-        io_utils.log_print("\n  ".join(msg))
+            io_utils.log_print("\n  ".join(msg))
 
         io_utils.log_print(f"Files will be merged using {config.merging['method']}")
         msg = ["Execute the merge by running:"] + script
@@ -235,10 +235,10 @@ class JustinScheduler(JobScheduler):
 
         # If no second pass is needed, create a single submission script
         if len(self.jobs[1]) == 0:
-            script_name = os.path.join(self.dir, "submit_job.sh")
+            script_name = os.path.join(self.dir, "submit.sh")
             with open(script_name, 'w', encoding="utf-8") as f:
                 f.write("#!/bin/bash\n")
-                f.write("# This script will submit JustIN jobs\n")
+                f.write("# This script will submit the JustIN jobs\n")
                 for site in self.jobs[0]:
                     f.write(self.justin_cmd(1, site))
             subprocess.run(['chmod', '+x', script_name], check=False)

@@ -454,9 +454,9 @@ class MergeChunk(collections.UserDict):
             return [file.path for file in self.data.values()]
         the_name, ext = self.name.rsplit('.', 1)
         if config.output['mode'] != 'local':
-            return [f"{self.namespace}:{the_name}_c{c}.{ext}" for c in range(1, self.chunks+1)]
+            return [f"{self.namespace}:{the_name}_c{c}.{ext}" for c in range(self.chunks)]
         output_dir = config.output['dir']
-        return [os.path.join(output_dir, f"{the_name}_c{c}.{ext}") for c in range(1, self.chunks+1)]
+        return [os.path.join(output_dir, f"{the_name}_c{c}.{ext}") for c in range(self.chunks)]
 
     @property
     def metadata(self) -> dict:
@@ -501,9 +501,9 @@ class MergeChunk(collections.UserDict):
     def chunk(self) -> MergeChunk:
         """Create a subset of the chunk with the same metadata"""
         chunk = MergeChunk(self._name, self.merge_hash, self.group_id)
-        self.chunks += 1
         chunk.site = self.site
         chunk.chunk_id = self.chunks
+        self.chunks += 1
         return chunk
 
 
