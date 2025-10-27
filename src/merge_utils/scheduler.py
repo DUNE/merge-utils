@@ -3,6 +3,7 @@
 import logging
 import os
 import sys
+import shutil
 import json
 import tarfile
 import subprocess
@@ -24,11 +25,10 @@ class JobScheduler(ABC):
         :param source: PathFinder object to provide input files
         """
         self.source = source
-        self.dir = os.path.expanduser(os.path.expandvars(os.path.join(
-            config.output['scripts'], io_utils.get_timestamp()
-        )))
-        if not os.path.isabs(self.dir):
-            self.dir = os.path.join(io_utils.pkg_dir(), self.dir)
+        self.dir = io_utils.expand_path(
+            os.path.join(config.output['scripts'], io_utils.get_timestamp()),
+            base_dir=io_utils.pkg_dir()
+        )
         self.jobs = [collections.defaultdict(list), collections.defaultdict(list)]
 
     def write_json(self, chunk) -> str:
@@ -112,7 +112,7 @@ class JobScheduler(ABC):
                 msg.append(f"{site}: \t{site_inputs} -> {site_stage2}")
             io_utils.log_print("\n  ".join(msg))
 
-        io_utils.log_print(f"Files will be merged using {config.merging['method']}")
+        io_utils.log_print(f"Files will be merged using {config.merging['method']['name']}")
         msg = ["Execute the merge by running:"] + script
         io_utils.log_print("\n  ".join(msg))
 
@@ -135,7 +135,7 @@ class LocalScheduler(JobScheduler):
 
         :return: Name of the generated script file
         """
-        out_dir = os.path.expanduser(os.path.expandvars(config.output['dir']))
+        out_dir = io_utils.expand_path(config.output['dir'])
         if not os.path.exists(out_dir):
             try:
                 os.makedirs(out_dir, exist_ok=True)
@@ -143,6 +143,11 @@ class LocalScheduler(JobScheduler):
             except OSError as error:
                 logger.critical("Failed to create output directory '%s': %s", out_dir, error)
                 sys.exit(1)
+
+        for dep in config.merging['method']['dependencies']:
+            file_name = os.path.basename(dep)
+            logger.debug("Adding %s to job directory", file_name)
+            shutil.copyfile(dep, os.path.join(self.dir, file_name))
 
         script_name = os.path.join(self.dir, "run.sh")
         pass_msg = [
@@ -157,7 +162,7 @@ class LocalScheduler(JobScheduler):
                     f.write(pass_msg[tier] + "\n")
                 for job in self.jobs[tier][None]:
                     cmd = ["LD_PRELOAD=$XROOTD_LIB/libXrdPosixPreload.so", "python3",
-                           os.path.join(io_utils.src_dir(), "do_merge.py"), job[0], out_dir]
+                           io_utils.find_runner("do_merge.py"), job[0], out_dir]
                     f.write(f"{' '.join(cmd)}\n")
         subprocess.run(['chmod', '+x', script_name], check=False)
         return [script_name]
@@ -180,15 +185,22 @@ class JustinScheduler(JobScheduler):
         
         :return: Path to the uploaded configuration directory
         """
+        def add_file(tar, file_path = None):
+            if file_path is None:
+                return
+            file_name = os.path.basename(file_path)
+            logger.debug("Adding %s to config tarball", file_name)
+            tar.add(file_path, file_name)
+
         io_utils.log_print("Uploading configuration files to cvmfs...")
         cfg = os.path.join(self.dir, "config.tar")
         with tarfile.open(cfg,"w") as tar:
             for site_jobs in self.jobs[0].values():
                 for job in site_jobs:
-                    logger.debug("Adding %s to config tarball", os.path.basename(job[0]))
-                    tar.add(job[0], os.path.basename(job[0]))
-            tar.add(os.path.join(io_utils.src_dir(), "do_merge.py"), "do_merge.py")
-            tar.add(os.path.join(io_utils.src_dir(), "hdf5_merge.py"), "hdf5_merge.py")
+                    add_file(tar, job[0])
+            add_file(tar, io_utils.find_runner("do_merge.py"))
+            for dep in config.merging['method']['dependencies']:
+                add_file(tar, dep)
 
         proc = subprocess.run(['justin-cvmfs-upload', cfg], capture_output=True, check=False)
         if proc.returncode != 0:
@@ -215,14 +227,18 @@ class JustinScheduler(JobScheduler):
             'justin', 'simple-workflow',
             '--description', f'"Merge {io_utils.get_timestamp()} p{tier} {site}"',
             '--monte-carlo', str(len(self.jobs[tier-1][site])),
-            '--jobscript', os.path.join(io_utils.src_dir(), "merge.jobscript"),
-            '--env', f'MERGE_CONFIG="pass{tier}_{site}"',
-            '--env', f'CONFIG_DIR="{cvmfs_dir}"',
+            '--jobscript', io_utils.find_runner("merge.jobscript"),
             '--site', site,
             '--scope', config.output['namespace'],
-            '--output-pattern', '*_merged_*',
-            '--lifetime-days', str(config.output['lifetime'])
+            '--output-pattern', f"*_merged_*{config.merging['method']['ext']}",
+            '--lifetime-days', str(config.output['lifetime']),
+            '--env', f'MERGE_CONFIG="pass{tier}_{site}"',
+            '--env', f'CONFIG_DIR="{cvmfs_dir}"'
         ]
+        if config.merging['dune_version']:
+            cmd += ['--env', f'DUNE_VERSION="{config.merging["dune_version"]}"']
+        if config.merging['dune_qualifier']:
+            cmd += ['--env', f'DUNE_QUALIFIER="{config.merging["dune_qualifier"]}"']
         return f"{' '.join(cmd)}\n"
 
     def write_script(self) -> list:

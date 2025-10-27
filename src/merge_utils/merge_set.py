@@ -86,7 +86,7 @@ class MergeSet(collections.UserDict):
         self.unreachable = {}
         self.missing = collections.defaultdict(int)
 
-        self.consistent_fields = config.validation['consistent']
+        self.consistent_fields = config.metadata['consistent']
         self.field_values = None
         self.consistent = True
 
@@ -377,19 +377,7 @@ class MergeSet(collections.UserDict):
 
     def groups(self) -> Generator[dict, None, None]:
         """Split the files into groups for merging"""
-        # Get merged metadata
-        merge_meta = meta.merged_keys(self.data, warn = True)
-
-        # Figure out the merge method if not already set
-        if config.merging['method'] == 'auto':
-            fmt = merge_meta['core.file_format']
-            for method, cfg in config.merging['methods'].items():
-                if fmt in cfg['file_format']:
-                    config.merging['method'] = method
-                    logger.info("Using merge method '%s' for file format '%s'", method, fmt)
-                    break
-
-        merge_name = meta.make_name(merge_meta)
+        merge_name = meta.make_name(self.data)
         merge_hash = self.hash
 
         # Get the group divisions
@@ -433,12 +421,12 @@ class MergeChunk(collections.UserDict):
     @property
     def name(self) -> str:
         """The name of the chunk"""
-        the_name, ext = self._name.rsplit('.', 1)
+        name = self._name
         if self.group_id >= 0:
-            the_name = f"{the_name}_f{self.group_id}"
+            name = f"{name}_f{self.group_id}"
         if self.chunk_id >= 0:
-            the_name = f"{the_name}_c{self.chunk_id}"
-        return f"{the_name}.{ext}"
+            name = f"{name}_c{self.chunk_id}"
+        return f"{name}{config.merging['method']['ext']}"
 
     @property
     def tier(self) -> int:
@@ -452,22 +440,17 @@ class MergeChunk(collections.UserDict):
         """Get the list of input files"""
         if self.chunks == 0:
             return [file.path for file in self.data.values()]
-        the_name, ext = self.name.rsplit('.', 1)
+        name, ext = self.name.rsplit('.', 1)
         if config.output['mode'] != 'local':
-            return [f"{self.namespace}:{the_name}_c{c}.{ext}" for c in range(self.chunks)]
+            return [f"{self.namespace}:{name}_c{c}.{ext}" for c in range(self.chunks)]
         output_dir = config.output['dir']
-        return [os.path.join(output_dir, f"{the_name}_c{c}.{ext}") for c in range(self.chunks)]
+        return [os.path.join(output_dir, f"{name}_c{c}.{ext}") for c in range(self.chunks)]
 
     @property
     def metadata(self) -> dict:
         """Get the metadata for the chunk"""
         md = meta.merged_keys(self.data)
-        md['merge.method'] = config.merging['method']
         md['merge.hash'] = self.merge_hash
-        if config.merging['method'] == 'lar':
-            md['merge.cfg'] = config.merging['methods']['lar']['cfg']
-        elif config.merging['method'] == 'hdf5':
-            md['merge.cfg'] = config.merging['methods']['hdf5']['cfg']
         if self.group_id >= 0:
             md['merge.group'] = self.group_id
         if self.chunk_id >= 0:
@@ -488,7 +471,7 @@ class MergeChunk(collections.UserDict):
             'metadata': self.metadata,
             'parents': self.parents,
             'inputs': self.inputs,
-            'streaming': config.sites['streaming'],
+            'settings': config.runner_settings()
         }
         return data
 
