@@ -59,68 +59,117 @@ def get_inputs(filelists: list[str] = None) -> list[str]:
 
     return inputs
 
-def read_config_file(file_path: str = None) -> dict:
+def expand_path(path: str, base_dir: str = None) -> str:
+    """
+    Expand environment variables and user home in a path.
+    If the path is relative and a base directory is provided,
+    make the path absolute using the base directory.
+
+    :param path: Path to expand
+    :param base_dir: Base directory for relative paths
+    :return: Expanded path
+    """
+    path = os.path.expanduser(os.path.expandvars(path))
+    if not os.path.isabs(path) and base_dir is not None:
+        path = os.path.join(os.path.expanduser(os.path.expandvars(base_dir)), path)
+    return os.path.abspath(path)
+
+def find_file(name: str, dirs: list[str] = None, recursive: bool = False) -> str:
+    """
+    Locate a file by name in a list of directories
+
+    :param name: File name or path to locate
+    :param dirs: List of directories to search
+    :param recursive: Check sub-directories recursively
+    :return: Full path to the located file
+    :raises FileNotFoundError: If the file does not exist
+    """
+    path = os.path.expanduser(os.path.expandvars(name))
+
+    # First, check if the path exists as given
+    if os.path.exists(path):
+        return os.path.abspath(path)
+
+    # If the path is absolute, check if it exists
+    if os.path.isabs(path):
+        raise FileNotFoundError(f"Failed to read file {path}")
+
+    # Search the provided directories
+    if dirs is None:
+        dirs = []
+    for directory in dirs:
+        test_path = os.path.expanduser(os.path.expandvars(os.path.join(directory, name)))
+        if not os.path.isabs(test_path):
+            test_path = os.path.join(pkg_dir(), test_path)
+        if os.path.exists(test_path):
+            return os.path.abspath(test_path)
+        if recursive:
+            dirs.extend([entry.path for entry in os.scandir(directory) if entry.is_dir()])
+
+    # For FCL files, also check the FHICL_FILE_PATH environment variable
+    if name.endswith(".fcl"):
+        fcl_dirs = os.getenv("FHICL_FILE_PATH")
+        if fcl_dirs is None:
+            logger.warning("FHICL_FILE_PATH environment variable is not set")
+        else:
+            for directory in fcl_dirs.split(':'):
+                test_path = os.path.expanduser(os.path.expandvars(os.path.join(directory, name)))
+                if os.path.exists(test_path):
+                    return os.path.abspath(test_path)
+
+    # If we reach this point, the file was not found
+    raise FileNotFoundError(f"Failed to read file {name}")
+
+def find_cfg(name: str) -> str:
+    """
+    Find the full path to a configuration file
+
+    :param name: Name of the configuration file
+    :return: Full path to the configuration file
+    :raises FileNotFoundError: If the file does not exist
+    """
+    return find_file(name, [os.path.join(pkg_dir(), "config")], recursive=True)
+
+def find_runner(name: str) -> str:
+    """
+    Find the full path to a runner script
+
+    :param name: Name of the runner script
+    :return: Full path to the runner script
+    :raises FileNotFoundError: If the file does not exist
+    """
+    return find_file(name, [os.path.join(pkg_dir(), "src", "runners")])
+
+def read_config_file(name: str = None) -> dict:
     """
     Read a configuration file in JSON, TOML, or YAML format
 
-    :param file_path: Path to the configuration file
+    :param name: Name of the configuration file
     :return: Dictionary containing the configuration settings
     :raises FileNotFoundError: If the file does not exist
     :raises ValueError: If the file type is not supported
     """
-    if file_path is None:
+    if name is None:
         return None
-    if not os.path.exists(file_path):
-        # See if we can find the file in the config directory
-        file_path = os.path.join(pkg_dir(), "config", file_path)
-    if not os.path.exists(file_path):
-        logger.error("Could not open %s", file_path)
-        raise FileNotFoundError(f"Could not open {file_path}")
+    path = find_cfg(name)
 
-    suffix = pathlib.Path(file_path).suffix
+    suffix = pathlib.Path(path).suffix
     if suffix in [".json"]:
-        logger.debug("Reading JSON file %s", file_path)
-        with open(file_path, encoding="utf-8") as f:
+        logger.debug("Reading JSON file %s", path)
+        with open(path, encoding="utf-8") as f:
             cfg = json.load(f)
     elif suffix in [".toml"]:
-        logger.debug("Reading TOML file %s", file_path)
-        with open(file_path, mode="rb") as f:
+        logger.debug("Reading TOML file %s", path)
+        with open(path, mode="rb") as f:
             cfg = tomllib.load(f)
     elif suffix in [".yaml", ".yml"]:
-        logger.debug("Reading YAML file %s", file_path)
-        with open(file_path, encoding="utf-8") as f:
+        logger.debug("Reading YAML file %s", path)
+        with open(path, encoding="utf-8") as f:
             cfg = yaml.safe_load(f)
     else:
         logger.error("Unknown file type: %s", suffix)
         raise ValueError(f"Unknown file type: {suffix}")
     return cfg
-
-def find_fcl(name: str) -> str:
-    """
-    Find the full path to a FCL file
-
-    :param name: Name of the FCL file
-    :return: Full path to the FCL file
-    :raises FileNotFoundError: If the file does not exist
-    """
-    # If the name is already a complete path, return it
-    if os.path.exists(name):
-        return os.path.abspath(name)
-    # Otherwise, look for the file in the config directory
-    fcl_path = os.path.join(pkg_dir(), "config", name)
-    if os.path.exists(fcl_path):
-        return fcl_path
-    # Otherwise, look in the standard locations
-    fcl_dirs = os.getenv("FHICL_FILE_PATH")
-    if fcl_dirs is None:
-        logger.warning("FHICL_FILE_PATH environment variable is not set")
-    else:
-        for fcl_dir in fcl_dirs.split(':'):
-            fcl_path = os.path.join(fcl_dir, name)
-            if os.path.exists(fcl_path):
-                return fcl_path
-    # Failed to find the file
-    raise FileNotFoundError(f"Could not find FCL file {name}")
 
 def setup_log(name: str, log_file: str = None, verbosity: int = 0) -> None:
     """Configure logging"""
