@@ -1,3 +1,6 @@
+export DUNE_VERSION=${DUNE_VERSION:-v10_12_01d00}
+export DUNE_QUALIFIER=${DUNE_QUALIFIER:-e26:prof}
+
 export MERGE_UTILS_DIR="$(dirname `readlink -f "${BASH_SOURCE[0]}"`)"
 echo "Setting MERGE_UTILS_DIR to $MERGE_UTILS_DIR"
 
@@ -29,7 +32,7 @@ elif [[ "$release" == "Scientific" ]]; then
 
     export UPS_OVERRIDE="-H Linux64bit+3.10-2.17"
     source /cvmfs/dune.opensciencegrid.org/products/dune/setup_dune.sh
-    setup dunesw v10_08_01d00 -q e26:prof
+    setup dunesw $DUNE_VERSION -q $DUNE_QUALIFIER
 
     export METACAT_AUTH_SERVER_URL=https://metacat.fnal.gov:8143/auth/dune
     export METACAT_SERVER_URL=https://metacat.fnal.gov:9443/dune_meta_prod/app 
