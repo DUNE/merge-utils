@@ -19,10 +19,6 @@ justin simple-workflow \
 
 EOF
 
-DUNE_VERSION=${DUNE_VERSION:-v09_75_00d00}
-DUNE_QUALIFIER=${DUNE_QUALIFIER:-e20:prof}
-#OUT_DIR=${OUT_DIR:.}
-
 # Try to get an unprocessed file from this stage
 did_pfn_rse=`$JUSTIN_PATH/justin-get-file`
 if [ "$did_pfn_rse" == "" ]; then
@@ -32,24 +28,36 @@ fi
 # extract job key from the did_pfn_rse string, which is of the form:
 # monte-carlo-000001-000001 000001 MONTECARLO
 jobkey=`echo $did_pfn_rse | cut -f2 -d' '`
-config="${MERGE_CONFIG}_${jobkey}.json"
-echo "Config file: $config"
 
-# Setup DUNE environment
-source /cvmfs/dune.opensciencegrid.org/products/dune/setup_dune.sh
-setup dunesw "$DUNE_VERSION" -q "$DUNE_QUALIFIER"
-
+# Get job configuration
 while [ ! -d $CONFIG_DIR ]; do
   echo "Waiting for config directory $CONFIG_DIR to be created"
   sleep 5
 done
+config="${MERGE_CONFIG}_${jobkey}.json"
+echo "Config file: $config"
 cat $CONFIG_DIR/$config
+
+# Setup DUNE environment
+#DUNE_VERSION=`grep 'dune_version' $CONFIG_DIR/$config | cut -d'"' -f4`
+#DUNE_QUALIFIER=`grep 'dune_qualifier' $CONFIG_DIR/$config | cut -d'"' -f4`
+DUNE_VERSION=${DUNE_VERSION:-v10_12_01d00}
+DUNE_QUALIFIER=${DUNE_QUALIFIER:-e26:prof}
+source /cvmfs/dune.opensciencegrid.org/products/dune/setup_dune.sh
+setup dunesw "$DUNE_VERSION" -q "$DUNE_QUALIFIER"
 
 python3 $CONFIG_DIR/do_merge.py $CONFIG_DIR/$config $OUT_DIR
 
+exitcode=$?
+if [ $exitcode -ne 0 ];
+then
+  echo "failed to merge $config $exitcode"
+  exit $exitcode
+fi
+
 echo "$jobkey" > justin-processed-pfns.txt
 
-echo "merged $jobkey"
-echo "merged $jobkey" >merge-`date +%s.%N.txt`
+echo "merged $config"
+echo "merged $config" >merge-`date +%s.%N.txt`
 
 exit 0

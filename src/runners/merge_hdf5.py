@@ -1,3 +1,5 @@
+"""Merge multiple HDF5 files into a single HDF5 file."""
+
 import sys
 import re
 import os
