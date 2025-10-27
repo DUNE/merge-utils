@@ -16,7 +16,11 @@ output:
     #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"
     grandparents: False # List the parents of the input files as the parents of the merged file
     lifetime: 7      # Lifetime of output files (in days)
-    
+
+metadata:
+    optional:         # These metadata keys are optional (overrides required and conditional keys)
+      - "dune_mc.geometry_version"
+      - "dune_mc.gen_fcl_filename"
 
 validation:
     batch_size: 100   # Number of files to query metacat about at once
@@ -29,9 +33,6 @@ validation:
         inconsistent: False # Skip files with inconsistent metadata
     checksums:
       - "adler32"     # Adler32 should be the default checksum
-    optional:         # These metadata keys are optional (overrides required and conditional keys)
-      - "dune_mc.geometry_version"
-      - "dune_mc.gen_fcl_filename"
 
 sites:
     justin_url: "https://justin-ui-fnal.dune.hep.ac.uk"
@@ -47,34 +48,41 @@ sites:
     streaming: True                   # Stream files from remote sites instead of making a local copy
 
 merging:
-    target_mode: size   # Options: size, count
-    target_size: 10     # Target size (in GB) or number of files
-    equalize: True      # Try to equalize the size of the merged files
-    chunk_min: 2        # Minimum number of files to merge at once
-    chunk_max: 1000     # Maxiumum number of files to merge at once
-    method: auto        # Can be auto or a specific method from the list below
+    target_mode: size     # Options: size, count
+    target_size: 10       # Target size (in GB) or number of files
+    equalize: True        # Try to equalize the size of the merged files
+    chunk_min: 2          # Minimum number of files to merge at once
+    chunk_max: 1000       # Maxiumum number of files to merge at once
+    dune_version: ~       # Optionally specify DUNE software version, defaults to DUNE_VERSION env var
+    dune_qualifier: ~     # Optionally specify DUNE software qualifier, defaults to DUNE_QUALIFIER env var
+    method:
+        name: auto        # Can be auto, a specific default method, or the path to a custom script
+        cmd: ~            # Optionally specify merging command, eg. '{script} {cfg} {output} {inputs}'
+        ext: ~            # Optionally override the output file extension
+        cfg: ~            # Optionally specify a config file for merging
+        script: ~         # Optionally specify a custom merging script
+        dependencies: []  # Optionally specify additional files required for merging
+        metadata: {}      # Optionally alter metadata of merged files (same as metadata.overrides)
+    # Default settings for built-in merging methods, matched using 'cond' in reverse order
     methods:
-        "hadd":
-            file_format:
-              - "root"
-              - "rootntuple"
-              - "tfile"
-            ext: ".root"
-        "lar":
-            file_format:
-              - "artroot"
-            ext: ".root"
-            cfg: "artcat.fcl"
-        "hdf5":
-            file_format:
-              - "hdf5"
-            ext: ".hdf5"
-            cfg: "hdf5.yaml"
-        "tar":
-            file_format:
-              - "binary"
-              - "tar"
-              - "unknown"
-            output_format: "tar"
-            ext: ".tar"
-    
+      - name: "tar"
+        script: "merge_tar.py"
+        ext: ".tar"
+        metadata:
+            core.file_format: "tar"
+      - name: "hadd"
+        cond: "'{core.file_format}' in ['root', 'rootntuple', 'tfile']"
+        cmd: "hadd -f {output} {inputs}"
+        ext: ".root"
+      - name: "lar"
+        cond: "'{core.file_format}' in ['artroot']"
+        cmd: "lar -c {cfg} -o {output} {inputs}"
+        ext: ".root"
+        cfg: "artcat.fcl"
+      - name: "hdf5"
+        cond: "'{core.file_format}' in ['hdf5']"
+        script: "merge_hdf5.py"
+        ext: ".hdf5"
+        cfg: "hdf5.yaml"
+      
+

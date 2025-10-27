@@ -2,12 +2,14 @@
 
 import logging
 import json
+import os
 
 from merge_utils import io_utils
 
 DEFAULT_CONFIG = ["defaults/metadata.yaml", "defaults/defaults.yaml"]
 
 # Configuration dictionaries
+metadata: dict = {}
 inputs: dict = {}
 output: dict = {}
 validation: dict = {}
@@ -84,11 +86,23 @@ def update(cfg: dict) -> None:
     :param cfg: Dictionary containing new configuration values.
     :return: None
     """
+    update_dict(metadata, cfg.get("metadata", {}))
     update_dict(inputs, cfg.get("inputs", {}))
     update_dict(output, cfg.get("output", {}))
     update_dict(validation, cfg.get("validation", {}))
     update_dict(sites, cfg.get("sites", {}))
     update_dict(merging, cfg.get("merging", {}))
+
+def check_environment() -> None:
+    """
+    Check environment variables for default key settings
+
+    :return: None
+    """
+    if 'dune_version' not in merging or merging['dune_version'] is None:
+        merging['dune_version'] = os.getenv('DUNE_VERSION')
+    if 'dune_qualifier' not in merging or merging['dune_qualifier'] is None:
+        merging['dune_qualifier'] = os.getenv('DUNE_QUALIFIER')
 
 def load(files: list = None) -> None:
     """
@@ -111,11 +125,24 @@ def load(files: list = None) -> None:
         logger.info("Loaded configuration file %s", file)
         update(cfg)
 
-    logger.debug(
-        "Final configuration:\ninputs: %s\noutput: %s\nvalidation: %s\nsites: %s\nmerging: %s",
+    check_environment()
+
+    logger.info(
+        "Final configuration:\nmetadata: %s\ninputs: %s\noutput: %s\nvalidation: %s\nsites: %s\nmerging: %s",
+        json.dumps(metadata, indent=2),
         json.dumps(inputs, indent=2),
         json.dumps(output, indent=2),
         json.dumps(validation, indent=2),
         json.dumps(sites, indent=2),
         json.dumps(merging, indent=2)
     )
+
+def runner_settings() -> dict:
+    """
+    Get the merging settings for the runner scripts.
+    
+    :return: Dictionary of merging settings.
+    """
+    return {
+        'streaming': sites['streaming']
+    }

@@ -1,4 +1,4 @@
-validation:
+metadata:
     fixes:  # Fix common issues with the metadata
         keys:       # Misspelled keys
             "DUNE.requestid": "dune.requestid"
@@ -177,11 +177,7 @@ validation:
       - "core.application.version"  # Not checked in old merging
       - "dune.output_status"
     # - "core.runs"
-    group:        # These metadata keys must be merged as separate groups
-      - "core.runs"
-
-merging:
-    metadata:   # Special merging behavior for metadata keys, options are:
+    merging:   # Special merging behavior for metadata keys, options are:
         # unique   only save key if all values are the same
         # all      save a list of all values
         # min      save the minimum value
@@ -202,10 +198,8 @@ merging:
         "core.end_time":            skip
         "Offline.options":          skip
         "Offline.machine":          skip
-        overrides: # Set keys to specific values
-            "retention.status":     "active"
-
-output:
+    overrides: # Set keys to specific values
+        "retention.status":         "active"
     abbreviations:  # Try to shorten long output file names
         "core.run_type":
             "protodune-sp":             "pd-sp"
