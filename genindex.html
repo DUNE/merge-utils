@@ -41,6 +41,7 @@
  <a href="#A"><strong>A</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
@@ -102,7 +103,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.check_consistency">check_consistency() (merge_utils.merge_set.MergeSet method)</a>
 </li>
+      <li><a href="config.html#config.check_environment">check_environment() (in module config)</a>
+</li>
       <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.check_errors">check_errors() (merge_utils.merge_set.MergeSet method)</a>
+</li>
+      <li><a href="meta.html#meta.check_method">check_method() (in module meta)</a>
 </li>
       <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.check_missing">check_missing() (merge_utils.merge_set.MergeSet method)</a>
 </li>
@@ -128,8 +133,6 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioFinder.checksum">checksum() (merge_utils.rucio_utils.RucioFinder method)</a>
-</li>
-      <li><a href="do_merge.html#do_merge.checksums">checksums() (in module do_merge)</a>
 </li>
       <li><a href="merge_set.html#merge_utils.merge_set.MergeChunk.chunk">chunk() (merge_utils.merge_set.MergeChunk method)</a>
 </li>
@@ -166,13 +169,6 @@
 </li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSE.distance">distance() (merge_utils.merge_rse.MergeRSE method)</a>
 </li>
-      <li>
-    do_merge
-
-      <ul>
-        <li><a href="do_merge.html#module-do_merge">module</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.dupes">dupes (merge_utils.merge_set.MergeSet property)</a>
@@ -181,6 +177,18 @@
         <li><a href="retriever.html#retriever.MetaRetriever.dupes">(retriever.MetaRetriever property)</a>
 </li>
       </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="meta.html#meta.MetaNameDict.eval">eval() (meta.MetaNameDict method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="io_utils.html#merge_utils.io_utils.expand_path">expand_path() (in module merge_utils.io_utils)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -195,13 +203,19 @@
         <li><a href="retriever.html#retriever.PathFinder.files">(retriever.PathFinder property)</a>
 </li>
       </ul></li>
+      <li><a href="io_utils.html#merge_utils.io_utils.find_cfg">find_cfg() (in module merge_utils.io_utils)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="io_utils.html#merge_utils.io_utils.find_fcl">find_fcl() (in module merge_utils.io_utils)</a>
+      <li><a href="io_utils.html#merge_utils.io_utils.find_file">find_file() (in module merge_utils.io_utils)</a>
+</li>
+      <li><a href="io_utils.html#merge_utils.io_utils.find_runner">find_runner() (in module merge_utils.io_utils)</a>
 </li>
       <li><a href="meta.html#meta.fix">fix() (in module meta)</a>
 </li>
       <li><a href="merge_set.html#merge_utils.merge_set.MergeFile.format">format (merge_utils.merge_set.MergeFile property)</a>
+</li>
+      <li><a href="meta.html#meta.MetaNameDict.format">format() (meta.MetaNameDict method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -287,14 +301,12 @@
 </li>
       <li><a href="config.html#config.load">load() (in module config)</a>
 </li>
-      <li><a href="do_merge.html#do_merge.local_copy">local_copy() (in module do_merge)</a>
-</li>
       <li><a href="local.html#merge_utils.local.LocalMetaRetriever">LocalMetaRetriever (class in merge_utils.local)</a>
+</li>
+      <li><a href="local.html#merge_utils.local.LocalPathFinder">LocalPathFinder (class in merge_utils.local)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="local.html#merge_utils.local.LocalPathFinder">LocalPathFinder (class in merge_utils.local)</a>
-</li>
       <li><a href="scheduler.html#scheduler.LocalScheduler">LocalScheduler (class in scheduler)</a>
 </li>
       <li><a href="io_utils.html#merge_utils.io_utils.log_dict">log_dict() (in module merge_utils.io_utils)</a>
@@ -311,23 +323,9 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="do_merge.html#do_merge.main">main() (in module do_merge)</a>
-
-      <ul>
-        <li><a href="scripts.html#merge_utils.__main__.main">(in module merge_utils.__main__)</a>
+      <li><a href="scripts.html#merge_utils.__main__.main">main() (in module merge_utils.__main__)</a>
 </li>
-      </ul></li>
       <li><a href="meta.html#meta.make_name">make_name() (in module meta)</a>
-</li>
-      <li><a href="do_merge.html#do_merge.merge">merge() (in module do_merge)</a>
-</li>
-      <li><a href="do_merge.html#do_merge.merge_hadd">merge_hadd() (in module do_merge)</a>
-</li>
-      <li><a href="do_merge.html#do_merge.merge_hdf5">merge_hdf5() (in module do_merge)</a>
-</li>
-      <li><a href="do_merge.html#do_merge.merge_lar">merge_lar() (in module do_merge)</a>
-</li>
-      <li><a href="do_merge.html#do_merge.merge_tar">merge_tar() (in module do_merge)</a>
 </li>
       <li>
     merge_utils.__main__
@@ -401,14 +399,14 @@
 </li>
       <li><a href="meta.html#meta.MergeMetaSubset">MergeMetaSubset (class in meta)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="meta.html#meta.MergeMetaSum">MergeMetaSum (class in meta)</a>
 </li>
       <li><a href="meta.html#meta.MergeMetaUnion">MergeMetaUnion (class in meta)</a>
 </li>
       <li><a href="meta.html#meta.MergeMetaUnique">MergeMetaUnique (class in meta)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSE">MergeRSE (class in merge_utils.merge_rse)</a>
 </li>
       <li><a href="merge_rse.html#merge_utils.merge_rse.MergeRSEs">MergeRSEs (class in merge_utils.merge_rse)</a>
@@ -450,8 +448,6 @@
         <li><a href="CheckConfiguration.html#module-CheckConfiguration">CheckConfiguration</a>
 </li>
         <li><a href="config.html#module-config">config</a>
-</li>
-        <li><a href="do_merge.html#module-do_merge">do_merge</a>
 </li>
         <li><a href="scripts.html#module-merge_utils.__main__">merge_utils.__main__</a>
 </li>
@@ -553,10 +549,10 @@
         <li><a href="retriever.html#module-retriever">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioFinder">RucioFinder (class in merge_utils.rucio_utils)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="rucio_utils.html#merge_utils.rucio_utils.RucioFinder.run">run() (merge_utils.rucio_utils.RucioFinder method)</a>
 
       <ul>
@@ -565,6 +561,8 @@
         <li><a href="scheduler.html#scheduler.JobScheduler.run">(scheduler.JobScheduler method)</a>
 </li>
       </ul></li>
+      <li><a href="config.html#config.runner_settings">runner_settings() (in module config)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -580,10 +578,18 @@
       </ul></li>
       <li><a href="local.html#merge_utils.local.search">search() (in module merge_utils.local)</a>
 </li>
+      <li><a href="meta.html#meta.set_extension">set_extension() (in module meta)</a>
+</li>
       <li><a href="io_utils.html#merge_utils.io_utils.set_log_level">set_log_level() (in module merge_utils.io_utils)</a>
+</li>
+      <li><a href="meta.html#meta.set_method">set_method() (in module meta)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="meta.html#meta.set_method_auto">set_method_auto() (in module meta)</a>
+</li>
+      <li><a href="meta.html#meta.set_method_custom">set_method_custom() (in module meta)</a>
+</li>
       <li><a href="merge_set.html#merge_utils.merge_set.MergeSet.set_unreachable">set_unreachable() (merge_utils.merge_set.MergeSet method)</a>
 </li>
       <li><a href="io_utils.html#merge_utils.io_utils.setup_log">setup_log() (in module merge_utils.io_utils)</a>

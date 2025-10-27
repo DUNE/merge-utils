@@ -219,6 +219,45 @@
 <dd><p>Class to read metadata values.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MetaNameDict.eval">
+<span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">condition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/meta.html#MetaNameDict.eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict.eval" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate a condition using the metadata dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>condition</strong> – condition string to evaluate</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>evaluated value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MetaNameDict.format">
+<span class="sig-name descname"><span class="pre">format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/meta.html#MetaNameDict.format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict.format" title="Link to this definition">¶</a></dt>
+<dd><p>Format a string using the metadata dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>template</strong> – template string</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>formatted string</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="meta.check_method">
+<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">check_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/meta.html#check_method"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.check_method" title="Link to this definition">¶</a></dt>
+<dd><p>Check and set the merging method based on the input file metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>files</strong> – set of files to merge</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -251,11 +290,11 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="meta.make_name">
-<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">make_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/meta.html#make_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.make_name" title="Link to this definition">¶</a></dt>
-<dd><p>Create a name for the merged file based on the metadata.</p>
+<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">make_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/meta.html#make_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.make_name" title="Link to this definition">¶</a></dt>
+<dd><p>Update merging method and create a name for the merged files.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>metadata</strong> – metadata dictionary</p>
+<dd class="field-odd"><p><strong>files</strong> – set of files to merge</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>merged file name</p>
@@ -292,6 +331,48 @@
 <dd class="field-even"><p>set of parents</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="meta.set_extension">
+<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">set_extension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/meta.html#set_extension"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.set_extension" title="Link to this definition">¶</a></dt>
+<dd><p>Get the file extension for the merged file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>files</strong> – set of files to merge</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>file extension</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="meta.set_method">
+<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">set_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/meta.html#set_method"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.set_method" title="Link to this definition">¶</a></dt>
+<dd><p>Set merging method parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>method</strong> – merging method dictionary</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="meta.set_method_auto">
+<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">set_method_auto</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/meta.html#set_method_auto"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.set_method_auto" title="Link to this definition">¶</a></dt>
+<dd><p>Auto-select merging method based on metadata conditions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>metadata</strong> – metadata dictionary</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="meta.set_method_custom">
+<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">set_method_custom</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/meta.html#set_method_custom"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.set_method_custom" title="Link to this definition">¶</a></dt>
+<dd><p>Set merging method parameters for a custom script.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -370,13 +451,20 @@
 </li>
 <li><a class="reference internal" href="#meta.MetaNameDict"><code class="docutils literal notranslate"><span class="pre">MetaNameDict</span></code></a><ul>
 <li><a class="reference internal" href="#meta.MetaNameDict.MetaNameReader"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.MetaNameReader</span></code></a></li>
+<li><a class="reference internal" href="#meta.MetaNameDict.eval"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.eval()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MetaNameDict.format"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.format()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#meta.check_method"><code class="docutils literal notranslate"><span class="pre">check_method()</span></code></a></li>
 <li><a class="reference internal" href="#meta.check_required"><code class="docutils literal notranslate"><span class="pre">check_required()</span></code></a></li>
 <li><a class="reference internal" href="#meta.fix"><code class="docutils literal notranslate"><span class="pre">fix()</span></code></a></li>
 <li><a class="reference internal" href="#meta.make_name"><code class="docutils literal notranslate"><span class="pre">make_name()</span></code></a></li>
 <li><a class="reference internal" href="#meta.merged_keys"><code class="docutils literal notranslate"><span class="pre">merged_keys()</span></code></a></li>
 <li><a class="reference internal" href="#meta.parents"><code class="docutils literal notranslate"><span class="pre">parents()</span></code></a></li>
+<li><a class="reference internal" href="#meta.set_extension"><code class="docutils literal notranslate"><span class="pre">set_extension()</span></code></a></li>
+<li><a class="reference internal" href="#meta.set_method"><code class="docutils literal notranslate"><span class="pre">set_method()</span></code></a></li>
+<li><a class="reference internal" href="#meta.set_method_auto"><code class="docutils literal notranslate"><span class="pre">set_method_auto()</span></code></a></li>
+<li><a class="reference internal" href="#meta.set_method_custom"><code class="docutils literal notranslate"><span class="pre">set_method_custom()</span></code></a></li>
 <li><a class="reference internal" href="#meta.validate"><code class="docutils literal notranslate"><span class="pre">validate()</span></code></a></li>
 </ul>
 </li>

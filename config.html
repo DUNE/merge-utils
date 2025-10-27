@@ -47,6 +47,17 @@
 <span id="id1"></span><h1>config<a class="headerlink" href="#config" title="Link to this heading">¶</a></h1>
 <p id="module-config">Module for configuration settings.</p>
 <dl class="py function">
+<dt class="sig sig-object py" id="config.check_environment">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">check_environment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#check_environment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.check_environment" title="Link to this definition">¶</a></dt>
+<dd><p>Check environment variables for default key settings</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="config.load">
 <span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.load" title="Link to this definition">¶</a></dt>
 <dd><p>Load the specified configuration files.
@@ -57,6 +68,17 @@ Missing keys will be filled in with the defaults in DEFAULT_CONFIG.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config.runner_settings">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">runner_settings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/config.html#runner_settings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.runner_settings" title="Link to this definition">¶</a></dt>
+<dd><p>Get the merging settings for the runner scripts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary of merging settings.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -127,7 +149,9 @@ Strings beginning with ‘~’ are removed from old_list instead.</p>
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">config</a><ul>
+<li><a class="reference internal" href="#config.check_environment"><code class="docutils literal notranslate"><span class="pre">check_environment()</span></code></a></li>
 <li><a class="reference internal" href="#config.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
+<li><a class="reference internal" href="#config.runner_settings"><code class="docutils literal notranslate"><span class="pre">runner_settings()</span></code></a></li>
 <li><a class="reference internal" href="#config.update"><code class="docutils literal notranslate"><span class="pre">update()</span></code></a></li>
 <li><a class="reference internal" href="#config.update_dict"><code class="docutils literal notranslate"><span class="pre">update_dict()</span></code></a></li>
 <li><a class="reference internal" href="#config.update_list"><code class="docutils literal notranslate"><span class="pre">update_list()</span></code></a></li>
