@@ -1,0 +1,18 @@
+{   "comment":"example",
+    "output":{
+        "name": "{dune_mc.gen_fcl_filename}_{dune.campaign}_{dune.config_file}_{core.application.name}_{core.application.version}_hists.root",
+        "namespace": "usertests"
+    },
+
+    "metadata":{
+        "required":[ "~core.runs"]},
+    "merging":{
+        "method":{
+        "name": "lar",
+        "cfg": "triggerana_dune10kt_1x2x2.fcl",
+        "metadata": {"core.data_tier":"root-tuple"}
+
+        }
+    }
+}
+  
