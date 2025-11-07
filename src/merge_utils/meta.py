@@ -474,7 +474,7 @@ def set_method(method: dict) -> None:
                        "\n  ".join(config.merging['method']['dependencies']))
     config.merging['method']['dependencies'].extend(method.get('dependencies', []))
     if config.merging['method']['metadata']:
-        logger.warning("Explicitly setting merge.metadata:\n  %s",
+        logger.info("Explicitly setting merge.metadata:\n  %s",
                        config.merging['method']['metadata'])
     config.merging['method']['metadata'].update(method.get('metadata', {}))
 
@@ -544,7 +544,7 @@ def check_method(files: dict) -> None:
     config.merging['method']['dependencies'] = list(dependencies)
 
     # Move metadata overrides to the metadata configuration dictionary
-    config.metadata['overrides'].update(config.merging.pop('metadata', {}))
+    config.metadata['overrides'].update(config.merging['method'].pop('metadata', {}))
 
     # Check for issues with the merging command
     cmd = config.merging['method']['cmd']

@@ -1,4 +1,4 @@
-export DUNE_VERSION=${DUNE_VERSION:-v10_12_01d00}
+export DUNE_VERSION=${DUNE_VERSION:-v10_12_01d01}
 export DUNE_QUALIFIER=${DUNE_QUALIFIER:-e26:prof}
 
 export MERGE_UTILS_DIR="$(dirname `readlink -f "${BASH_SOURCE[0]}"`)"
