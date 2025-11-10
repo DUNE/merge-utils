@@ -127,15 +127,16 @@ def load(files: list = None) -> None:
 
     check_environment()
 
-    logger.info(
-        "Final configuration:\nmetadata: %s\ninputs: %s\noutput: %s\nvalidation: %s\nsites: %s\nmerging: %s",
-        json.dumps(metadata, indent=2),
-        json.dumps(inputs, indent=2),
-        json.dumps(output, indent=2),
-        json.dumps(validation, indent=2),
-        json.dumps(sites, indent=2),
-        json.dumps(merging, indent=2)
-    )
+    msg = [
+        "Final merged configuration:",
+        f"metadata: {json.dumps(metadata, indent=2)}",
+        f"inputs: {json.dumps(inputs, indent=2)}",
+        f"output: {json.dumps(output, indent=2)}",
+        f"validation: {json.dumps(validation, indent=2)}",
+        f"sites: {json.dumps(sites, indent=2)}",
+        f"merging: {json.dumps(merging, indent=2)}"
+    ]
+    logger.info("\n".join(msg))
 
 def runner_settings() -> dict:
     """
