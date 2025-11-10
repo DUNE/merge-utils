@@ -408,25 +408,24 @@ class MergeSet(collections.UserDict):
 
 class MergeChunk(collections.UserDict):
     """Class to keep track of a chunk of files for merging"""
-    def __init__(self, name: str, merge_hash: str, group: int = -1):
+    def __init__(self, merge_hash: str, group: int = -1):
         super().__init__()
-        self._name = name
         self.namespace = config.output['namespace']
         self.merge_hash = merge_hash
         self.site = None
         self.group_id = group
         self.chunk_id = -1
         self.chunks = 0
+        self.output_id = -1
 
-    @property
-    def name(self) -> str:
+    def make_name(self, name: str) -> str:
         """The name of the chunk"""
-        name = self._name
+        name, ext = os.path.splitext(name)
         if self.group_id >= 0:
             name = f"{name}_f{self.group_id}"
         if self.chunk_id >= 0:
             name = f"{name}_c{self.chunk_id}"
-        return f"{name}{config.merging['method']['ext']}"
+        return f"{name}{ext}"
 
     @property
     def tier(self) -> int:
@@ -438,6 +437,8 @@ class MergeChunk(collections.UserDict):
     @property
     def inputs(self) -> list[str]:
         """Get the list of input files"""
+
+        
         if self.chunks == 0:
             return [file.path for file in self.data.values()]
         name, ext = self.name.rsplit('.', 1)
@@ -445,6 +446,26 @@ class MergeChunk(collections.UserDict):
             return [f"{self.namespace}:{name}_c{c}.{ext}" for c in range(self.chunks)]
         output_dir = config.output['dir']
         return [os.path.join(output_dir, f"{name}_c{c}.{ext}") for c in range(self.chunks)]
+    
+    def get_output(self, spec: dict) -> dict:
+        """
+        Take an output specification and concretize it for this chunk.
+
+        :param spec: output specification dictionary
+        :return: concretized output dictionary
+        """
+        output = {'name': self.make_name(spec['name'])}
+        for key in ['metadata', 'rename']:
+            if key in spec:
+                output[key] = spec[key]
+        return output
+
+    @property
+    def outputs(self) -> list[dict]:
+        """Get the list of output files"""
+        if self.tier == 1:
+            return [self.get_output(spec) for spec in config.merging['method']['outputs']]
+        return [self.get_output(config.merging['method']['outputs'][self.output_id])]
 
     @property
     def metadata(self) -> dict:
