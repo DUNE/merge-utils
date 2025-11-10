@@ -440,7 +440,7 @@ def set_method_auto(metadata: dict) -> None:
     # Set merging method parameters
     config.merging['method']['name'] = method['name']
     explicit = False
-    for key in ['script', 'cmd', 'ext', 'cfg']:
+    for key in ['script', 'cmd', 'cfg']:
         if key in config.merging['method'] and config.merging['method'][key] is not None:
             logger.warning("Explicit value for merge.%s overrides %s default", key, method['name'])
             explicit = True
@@ -451,11 +451,11 @@ def set_method_auto(metadata: dict) -> None:
                        "\n  ".join(config.merging['method']['dependencies']))
         explicit = True
     config.merging['method']['dependencies'].extend(method.get('dependencies', []))
-    if config.merging['method']['metadata']:
-        logger.warning("Explicitly setting merge.metadata:\n  %s",
-                       config.merging['method']['metadata'])
+    if config.merging['method']['outputs']:
+        logger.warning("Explicit list of merge.outputs overrides %s default", method['name'])
         explicit = True
-    config.merging['method']['metadata'].update(method.get('metadata', {}))
+    else:
+        config.merging['method']['outputs'] = method.get('outputs', [])
     if explicit:
         logger.warning("Consider specifying an explicity merging method instead of using 'auto'!")
 
@@ -466,7 +466,7 @@ def set_method(method: dict) -> None:
     :param method: merging method dictionary
     """
     logger.info("Using built-in merging method '%s'", method['name'])
-    for key in ['script', 'cmd', 'ext', 'cfg']:
+    for key in ['script', 'cmd', 'cfg']:
         if key in config.merging['method'] and config.merging['method'][key] is not None:
             logger.info("Explicit value for merge.%s overrides %s default", key, method['name'])
         else:
@@ -475,10 +475,10 @@ def set_method(method: dict) -> None:
         logger.info("Explicity adding merge.dependencies:\n  %s",
                        "\n  ".join(config.merging['method']['dependencies']))
     config.merging['method']['dependencies'].extend(method.get('dependencies', []))
-    if config.merging['method']['metadata']:
-        logger.info("Explicitly setting merge.metadata:\n  %s",
-                       config.merging['method']['metadata'])
-    config.merging['method']['metadata'].update(method.get('metadata', {}))
+    if config.merging['method']['outputs']:
+        logger.info("Explicit list of merge.outputs overrides %s default", method['name'])
+    else:
+        config.merging['method']['outputs'] = method.get('outputs', [])
 
 def set_method_custom() -> None:
     """
@@ -493,19 +493,17 @@ def set_method_custom() -> None:
         config.merging['method']['name'] = os.path.basename(name)
     logger.info("Using custom merging method: %s", name)
 
-    config.merging['method'].setdefault('ext', None)
     config.merging['method'].setdefault('cfg', None)
     config.merging['method'].setdefault('dependencies', [])
-    config.merging['method'].setdefault('metadata', {})
+    config.merging['method'].setdefault('outputs', [])
 
-def set_extension(files: dict) -> None:
+def auto_output(files: dict) -> None:
     """
-    Get the file extension for the merged file.
+    Auto-generate an output file name with the same extension as the inputs, if needed.
 
     :param files: set of files to merge
-    :return: file extension
     """
-    if config.merging['method']['ext']:
+    if config.merging['method']['outputs']:
         return
     extensions = set()
     for file in files:
@@ -514,8 +512,29 @@ def set_extension(files: dict) -> None:
         logger.critical("Cannot determine extension for merged files!")
         sys.exit(1)
     ext = extensions.pop()
-    config.merging['method']['ext'] = ext
+    config.merging['method']['outputs'] = [{'name': f"{{name}}_merged{ext}"}]
     logger.info("Auto-detected file extension '%s' from input files", ext)
+
+def log_method() -> None:
+    """
+    Log the final merging method configuration.
+    """
+    msg = [f"Final settings for merging method '{config.merging['method']['name']}':"]
+    for key in ['cmd', 'script', 'cfg']:
+        msg.append(f"{key}: {config.merging['method'][key]}")
+    msg.append("dependencies:")
+    msg.extend([f"  {dep}" for dep in config.merging['method']['dependencies']])
+    msg.append("outputs:")
+    for output in config.merging['method']['outputs']:
+        if 'rename' in output:
+            msg.append(f"  {output['name']} (renamed from {output['rename']})")
+        else:
+            msg.append(f"  {output['name']}")
+        if 'metadata' in output:
+            msg.extend([f"    {k}: {v}" for k, v in output['metadata'].items()])
+        if 'method' in output:
+            msg.append(f"    method: {output['method']}")
+    logger.info("\n  ".join(msg))
 
 def check_method(files: dict) -> None:
     """
@@ -535,6 +554,9 @@ def check_method(files: dict) -> None:
         else:
             set_method_custom()
 
+    # Set the output file name if not provided
+    auto_output(files)
+
     # Convert dependencies to a unique set of full paths
     dependencies = set()
     if config.merging['method']['script']:
@@ -545,9 +567,6 @@ def check_method(files: dict) -> None:
         dependencies.add(io_utils.find_file(dep, ["config", "src"], recursive=True))
     config.merging['method']['dependencies'] = list(dependencies)
 
-    # Move metadata overrides to the metadata configuration dictionary
-    config.metadata['overrides'].update(config.merging['method'].pop('metadata', {}))
-
     # Check for issues with the merging command
     cmd = config.merging['method']['cmd']
     if cmd:
@@ -555,25 +574,18 @@ def check_method(files: dict) -> None:
             logger.warning("Merging command does not call provided '{script}'")
         if config.merging['method']['cfg'] and '{cfg}' not in cmd:
             logger.warning("Merging command does not use provided '{cfg}'")
-        if '{output}' not in cmd:
-            logger.critical("Merging command does not use required '{output}'")
-            sys.exit(1)
         if '{inputs}' not in cmd:
-            logger.critical("Merging command does not use required '{inputs}'")
+            logger.critical("Merging command does not specify '{inputs}'")
             sys.exit(1)
-
-    # Figure out file extension if not provided
-    set_extension(files)
+        n_out = sum(1 for output in config.merging['method']['outputs'] if 'rename' not in output)
+        if n_out > 0 and '{output' not in cmd:
+            logger.critical("Merging command does not specify '{output}' (or '{outputs[#]}')")
+            sys.exit(1)
 
     # Log final merging method configuration
-    msg = [f"Final settings for merging method '{config.merging['method']['name']}':"]
-    for key in ['cmd', 'script', 'cfg', 'ext']:
-        msg.append(f"{key}: {config.merging['method'][key]}")
-    msg.append("dependencies:")
-    msg.extend([f"  {dep}" for dep in config.merging['method']['dependencies']])
-    logger.info("\n  ".join(msg))
+    log_method()
 
-def make_name(files: dict) -> str:
+def make_names(files: dict) -> str:
     """
     Update merging method and create a name for the merged files.
 
@@ -582,5 +594,15 @@ def make_name(files: dict) -> str:
     """
     check_method(files)
     metadata = merged_keys(files, warn=True) # recalculate with correct method settings
-    name = MetaNameDict(metadata).format(config.output['name'])
-    return f"{name}_merged_{io_utils.get_timestamp()}"
+    name_dict = MetaNameDict(metadata)
+    name = name_dict.format(config.output['name'])
+    config.output['name'] = name
+    metadata['name'] = name
+    for output in config.merging['method']['outputs']:
+        name, ext = os.path.splitext(name_dict.format(output['name']))
+        output['name'] = f"{name}_{io_utils.get_timestamp()}{ext}"
+    io_utils.log_list(
+        "Output file name{s}:",
+        [output['name'] for output in config.merging['method']['outputs']],
+        logging.INFO
+    )
