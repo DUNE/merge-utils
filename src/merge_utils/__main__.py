@@ -94,9 +94,6 @@ def main():
         config.inputs['skip'] = args.skip
         config.inputs['limit'] = args.limit
         
-        
-        
-    
         query = "%s ordered skip %d limit %d"%(inputs[0],args.skip,args.limit)
         metadata = MetaCatRetriever(query=query)
         config.metadata['overrides']["merge.skip"] = args.skip
