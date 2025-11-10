@@ -1,0 +1,19 @@
+{   "comment":"example",
+    "output":{
+        "name": "{dune_mc.gen_fcl_filename}_{dune.campaign}_{dune.config_file}_{core.application.name}_{core.application.version}_{merge.cfg}_hists",
+        "namespace": "usertests","dir": "/pnfs/dune/scratch/users/${USER}/merge_test/Nov9/stage2"
+    },
+
+    "metadata":{
+        "required":[ "~core.runs"]},
+    "merging":{
+        "method":{
+            "name": "hadd",
+            "cfg": "triggerana_dune10kt_1x2x2.fcl",
+            "metadata": {"core.data_tier":"root-tuple"},
+            "target_mode": "size",
+            "target_size": 10 
+        }
+    }
+}
+  

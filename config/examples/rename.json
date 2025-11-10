@@ -1,0 +1,18 @@
+{    
+    "rename":{
+        "comment": "instructions for renaming output file from art and assigning a new data_tier",
+        "<localname>":{
+                "metadata":{
+                "core.data_tier":"<new_tier>"
+                },
+            "name":"<newname>"
+        },
+            
+        "<anotherlocalname>": {
+            "metadata": {
+                "core.data_tier": "<another_new_tier>"
+            },
+            "name": "<another newname>"
+        }
+    }
+}
