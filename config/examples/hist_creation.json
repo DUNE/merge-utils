@@ -1,6 +1,6 @@
 {   "comment":"example",
     "output":{
-        "name": "{dune_mc.gen_fcl_filename}_{dune.campaign}_{dune.config_file}_{core.application.name}_{core.application.version}_{merge.cfg}_s{merge.skip}_l{merge.limit}_hists",
+        "name": "{dune_mc.gen_fcl_filename}_{dune.campaign}_{dune.config_file}_{core.application.name}_{core.application.version}_{merge.cfg}_s{merge.skip}_l{merge.limit}_{merge.tag}_hists",
         "namespace": "usertests",
         "dir": "/pnfs/dune/scratch/users/${USER}/merge_test/Nov10"
     },
