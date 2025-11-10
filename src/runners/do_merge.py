@@ -165,7 +165,7 @@ def merge(config: dict, script_dir: str, out_dir: str) -> None:
     out_paths = [os.path.join(out_dir, output['name']) for output in outputs]
     cmd = settings['cmd'].format(
         inputs=" ".join(inputs),
-        outputs=" ".join(out_paths),
+        outputs=out_paths,
         output=out_paths[0]
     )
     print(f"Merging {len(inputs)} files into {outputs[0]['name']} using method {settings['name']}")
