@@ -29,7 +29,7 @@ def main():
                           help='a directory to add to search locations')
     #in_group.add_argument('inputs', nargs=argparse.REMAINDER, help='remaining command line inputs')
     in_group.add_argument('inputs', nargs='*', help='remaining command line inputs')
-    parser.add_argument("--tag",type=str, help="tag for output ",default=1000)
+    parser.add_argument("--tag",type=str, help="tag for output ",default="test")
     parser.add_argument("--limit",type=int, help="number of files to pull from query ",default=1000)
     parser.add_argument("--skip",type=int, help="number of files to skip before doing nfiles",default=0)
     out_group = parser.add_argument_group('output arguments')
