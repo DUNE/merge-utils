@@ -93,9 +93,10 @@ def main():
             sys.exit(1)
         config.inputs['skip'] = args.skip
         config.inputs['limit'] = args.limit
-        metadata = MetaCatRetriever(query="%s ordered skip %d limit %d"%(inputs[0],args.skip,args.limit))
-        config.merging.metadata["merge.skip"] = args.skip
-        config.merging.metadata["merge.limit"] = args.limit
+        query = "%s ordered skip %d limit %d"%(inputs[0],args.skip,args.limit)
+        metadata = MetaCatRetriever(query=query)
+        config.merging['metadata']["merge.skip"] = args.skip
+        config.merging['metadata']["merge.limit"] = args.limit
     elif input_mode == 'dids':
         from merge_utils.metacat_utils import MetaCatRetriever #pylint: disable=import-outside-toplevel
         metadata = MetaCatRetriever(dids=inputs)
