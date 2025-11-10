@@ -230,7 +230,6 @@ class JustinScheduler(JobScheduler):
             '--jobscript', io_utils.find_runner("merge.jobscript"),
             '--site', site,
             '--scope', config.output['namespace'],
-            '--output-pattern', f"*_merged_*{config.merging['method']['ext']}",
             '--lifetime-days', str(config.output['lifetime']),
             '--env', f'MERGE_CONFIG="pass{tier}_{site}"',
             '--env', f'CONFIG_DIR="{cvmfs_dir}"'
@@ -239,6 +238,9 @@ class JustinScheduler(JobScheduler):
             cmd += ['--env', f'DUNE_VERSION="{config.merging["dune_version"]}"']
         if config.merging['dune_qualifier']:
             cmd += ['--env', f'DUNE_QUALIFIER="{config.merging["dune_qualifier"]}"']
+        for output in config.merging['method']['outputs']:
+            name, ext = os.path.splitext(output['name'])
+            cmd += ['--output-pattern', f"{name}*{ext}"]
         return f"{' '.join(cmd)}\n"
 
     def write_script(self) -> list:
