@@ -58,31 +58,34 @@ merging:
     method:
         name: auto        # Can be auto, a specific default method, or the path to a custom script
         cmd: ~            # Optionally specify merging command, eg. '{script} {cfg} {output} {inputs}'
-        ext: ~            # Optionally override the output file extension
         cfg: ~            # Optionally specify a config file for merging
         script: ~         # Optionally specify a custom merging script
+        outputs: []       # List of output files produced by the merging method      
         dependencies: []  # Optionally specify additional files required for merging
-        metadata: {}      # Optionally alter metadata of merged files (same as metadata.overrides)
     # Default settings for built-in merging methods, matched using 'cond' in reverse order
     methods:
       - name: "tar"
         script: "merge_tar.py"
-        ext: ".tar"
-        metadata:
-            core.file_format: "tar"
+        outputs:
+          - name: "{name}_merged.tar"
+            metadata:
+                core.file_format: "tar"
       - name: "hadd"
         cond: "'{core.file_format}' in ['root', 'rootntuple', 'tfile']"
         cmd: "hadd -f {output} {inputs}"
-        ext: ".root"
+        outputs:
+          - name: "{name}_merged.root"
       - name: "lar"
         cond: "'{core.file_format}' in ['artroot']"
         cmd: "lar -c {cfg} -o {output} {inputs}"
-        ext: ".root"
         cfg: "artcat.fcl"
+        outputs:
+          - name: "{name}_merged.root"
       - name: "hdf5"
         cond: "'{core.file_format}' in ['hdf5']"
         script: "merge_hdf5.py"
-        ext: ".hdf5"
         cfg: "hdf5.yaml"
+        outputs:
+          - name: "{name}_merged.hdf5"
       
 
