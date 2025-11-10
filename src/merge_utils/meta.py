@@ -52,6 +52,8 @@ class MetaNameDict:
             return config.metadata['abbreviations'].get(f"{self._key}[{name}]", {}).get(val2, val2)
 
     def __getitem__(self, name):
+        if name.startswith('$'):
+            return os.getenv(name[1:], name[1:])
         return MetaNameDict.MetaNameReader(self._dict, name)
 
     def format(self, template: str) -> str:
