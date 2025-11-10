@@ -1,8 +1,8 @@
 {   "comment":"example",
     "output":{
-        "name": "{dune_mc.gen_fcl_filename}_{dune.campaign}_{dune.config_file}_{core.application.name}_{core.application.version}_hists.root",
+        "name": "{dune_mc.gen_fcl_filename}_{dune.campaign}_{dune.config_file}_{core.application.name}_{core.application.version}_{merge.cfg}_hists",
         "namespace": "usertests",
-        "rename":{"triggerAna.ntuple.root": "{dune_mc.gen_fcl_filename}_{dune.campaign}_{dune.config_file}_{core.application.name}_{core.application.version}_hists.root"}
+        "dir": "/pnfs/dune/scratch/users/${USER}/merge_test/Nov10"
     },
 
     "metadata":{
