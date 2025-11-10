@@ -3,6 +3,7 @@
 import sys
 import os
 import json
+import copy
 import subprocess
 import socket
 from datetime import datetime, timezone
@@ -20,6 +21,8 @@ def checksums(filename: str) -> dict:
 
 def renew_token():
     """Try to renew the token if on interactive gpvm at fnal""" 
+    if "dunegpvm" not in socket.gethostname():
+        return
     cmd = "htgettoken -i dune --vaultserver htvaultprod.fnal.gov -r interactive --nooidc"
     print(f"Renewing token with command: {cmd}")
     ret = subprocess.run(cmd.split(' '), check=False)
@@ -66,83 +69,116 @@ def local_copy(inputs: list[str], outdir: str) -> list[str]:
     print(f"Copied {len(tmp_files)} files")
     return tmp_files
 
-def clear_outputs(output: str) -> None:
-    """Remove existing output files if they exist"""
+def get_outputs(config: dict) -> list[dict]:
+    """Get the output file list from the config, renaming existing files if needed"""
+    outputs = config.pop('outputs')
+    if len(outputs) == 0:
+        print("ERROR: No output files specified!")
+        sys.exit(1)
+    # Rename existing output files
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-    if os.path.exists(output):
-        oldname = output+"_"+timestamp+".bak"
-        os.rename(output,oldname)
-        print(f"WARNING: Output file {output} already exists, renaming to {oldname}")
-    json_name = output + '.json'
-    if os.path.exists(json_name):
-        oldname = json_name+"_"+timestamp+".bak"
-        os.rename(json_name,oldname)
-        print(f"WARNING: JSON file {json_name} already exists, renaming to {oldname}")
+    for output in outputs:
+        file_name = output.name
+        if os.path.exists(file_name):
+            oldname = file_name+"_"+timestamp+".bak"
+            os.rename(file_name,oldname)
+            print(f"WARNING: Output file {file_name} already exists, renaming to {oldname}")
+        json_name = output.name + '.json'
+        if os.path.exists(json_name):
+            oldname = json_name+"_"+timestamp+".bak"
+            os.rename(json_name,oldname)
+            print(f"WARNING: JSON file {json_name} already exists, renaming to {oldname}")
+    return outputs
 
-def get_method(metadata: dict, script_dir: str) -> dict:
-    """Get the merging method from metadata"""
-    method = {'name': metadata['merge.method']}
-    if 'merge.cfg' in metadata:
-        method['cfg'] = os.path.join(script_dir, metadata['merge.cfg'])
-    if 'merge.script' in metadata:
-        method['script'] = os.path.join(script_dir, metadata['merge.script'])
-    if 'merge.cmd' in metadata:
-        method['cmd'] = metadata['merge.cmd'].format(
-            script=method.get('script', ''),
-            cfg=method.get('cfg', ''),
-            output="{output}",
-            inputs="{inputs}"
+def get_settings(config: dict, script_dir: str) -> dict:
+    """Get the merging settings from the config"""
+    settings = config.pop('settings', {})
+    settings.setdefault('streaming', False)
+    # Merge method settings
+    if 'cfg' in settings:
+        settings['cfg'] = os.path.join(script_dir, settings['cfg'])
+    if 'script' in settings:
+        settings['script'] = os.path.join(script_dir, settings['script'])
+    if 'cmd' in settings:
+        settings['cmd'] = settings['cmd'].format(
+            script=settings.get('script', ''),
+            cfg=settings.get('cfg', ''),
+            inputs="{inputs}",
+            outputs="{outputs}",
+            output="{output}"
         )
-    elif 'script' in method:
+    elif 'script' in settings:
         # Default command if script is provided but no cmd
-        cmd = method['script']
+        cmd = settings['script']
         if cmd.endswith('.py'):
             cmd = "python3 " + cmd
-        if 'cfg' in method:
-            cmd += " " + method['cfg']
+        if 'cfg' in settings:
+            cmd += " " + settings['cfg']
         cmd += " {output} {inputs}"
-        method['cmd'] = cmd
+        settings['cmd'] = cmd
     else:
         print("ERROR: No merging command or script specified!")
         sys.exit(1)
-    return method
+
+    return settings
+
+def write_metadata(outputs: list[dict], out_dir: str, config: dict) -> None:
+    """Write file metadata to JSON files"""
+    for output in outputs:
+        # Apply per-file metadata overrides
+        metadata = copy.deepcopy(config)
+        metadata['metadata'].update(output.get('metadata', {}))
+        metadata['name'] = output['name']
+        # Rename default output files if needed
+        path = os.path.join(out_dir, output['name'])
+        if 'rename' in output:
+            old_path = output['rename']
+            if os.path.exists(old_path):
+                os.rename(old_path, path)
+            else:
+                print(f"ERROR: Expected output file {output['rename']} not found!")
+                sys.exit(1)
+        elif not os.path.exists(path):
+            print(f"ERROR: Output file {output['name']} not found!")
+            sys.exit(1)
+        # Check output file attributes
+        metadata['size'] = os.path.getsize(path)
+        metadata['checksums'] = checksums(path)
+        # Write metadata to JSON file
+        with open(path+'.json', 'w', encoding="utf-8") as fjson:
+            fjson.write(json.dumps(metadata, indent=2))
 
 def merge(config: dict, script_dir: str, out_dir: str) -> None:
     """Merge the input files into a single output file"""
-    method = get_method(config['metadata'], script_dir)
-    output = os.path.join(out_dir, config['name'])
+    settings = get_settings(config, script_dir)
     inputs = config.pop('inputs')
-    settings = config.pop('settings', {})
-    streaming = settings.get('streaming', False)
+    outputs = get_outputs(config)
 
-    # Renew token if on interactive gpvm at fnal
-    if "dunegpvm" in socket.gethostname():
-        renew_token()
+    renew_token()
 
     # Make local copies of the input files if not streaming
     tmp_files = []
-    if not streaming:
+    if not settings['streaming']:
         tmp_files = local_copy(inputs, out_dir)
 
-    clear_outputs(output)
-
     # Merge the input files based on the specified method
-    cmd = method['cmd'].format(output=output, inputs=" ".join(inputs))
-    print(f"Merging {len(inputs)} files into {output} using method {method['name']}")
+    out_paths = [os.path.join(out_dir, output['name']) for output in outputs]
+    cmd = settings['cmd'].format(
+        inputs=" ".join(inputs),
+        outputs=" ".join(out_paths),
+        output=out_paths[0]
+    )
+    print(f"Merging {len(inputs)} files into {outputs[0]['name']} using method {settings['name']}")
     print(cmd)
     ret = subprocess.run(cmd, shell=True, check=False)
     if ret.returncode != 0:
         print(f"ERROR: Merging failed with return code {ret.returncode}")
         sys.exit(ret.returncode)
 
-    # Write metadata to a JSON file
-    config['size'] = os.path.getsize(output)
-    config['checksums'] = checksums(output)
-    with open(output+'.json', 'w', encoding="utf-8") as fjson:
-        fjson.write(json.dumps(config, indent=2))
+    write_metadata(outputs, out_dir, config)
 
     # Clean up temporary files
-    if not streaming and len(tmp_files) > 0:
+    if len(tmp_files) > 0:
         print("Deleting local input file copies")
         for file in tmp_files:
             os.remove(file)
