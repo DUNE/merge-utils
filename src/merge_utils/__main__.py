@@ -93,6 +93,8 @@ def main():
             sys.exit(1)
         config.inputs['skip'] = args.skip
         config.inputs['limit'] = args.limit
+        if 'metadata' not in config.merging:
+            config.merging['metadata'] = {} 
         query = "%s ordered skip %d limit %d"%(inputs[0],args.skip,args.limit)
         metadata = MetaCatRetriever(query=query)
         config.merging['metadata']["merge.skip"] = args.skip
