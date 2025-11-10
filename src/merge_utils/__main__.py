@@ -30,6 +30,8 @@ def main():
     #in_group.add_argument('inputs', nargs=argparse.REMAINDER, help='remaining command line inputs')
     in_group.add_argument('inputs', nargs='*', help='remaining command line inputs')
 
+    parser.add_argument("--limit",type=int, help="number of files to pull from query ",default=1000)
+    parser.add_argument("--skip",type=int, help="number of files to skip before doing nfiles",default=0)
     out_group = parser.add_argument_group('output arguments')
     out_group.add_argument('--validate', action='store_true',
                            help='only validate metadata instead of merging')
@@ -87,9 +89,13 @@ def main():
     elif input_mode == 'query':
         from merge_utils.metacat_utils import MetaCatRetriever #pylint: disable=import-outside-toplevel
         if len(inputs) != 1:
-            logger.critical("Query mode currently only supports a single MetaCat query.")
+            logger.critical("Query mode currently only supports a single MetaCat query. Put quotes areount it? ")
             sys.exit(1)
-        metadata = MetaCatRetriever(query=inputs[0])
+        config.inputs['skip'] = args.skip
+        config.inputs['limit'] = args.limit
+        metadata = MetaCatRetriever(query="%s ordered skip %d limit %d"%(inputs[0],args.skip,args.limit))
+        config.merging.metadata["merge.skip"] = args.skip
+        config.merging.metadata["merge.limit"] = args.limit
     elif input_mode == 'dids':
         from merge_utils.metacat_utils import MetaCatRetriever #pylint: disable=import-outside-toplevel
         metadata = MetaCatRetriever(dids=inputs)
