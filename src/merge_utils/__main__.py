@@ -96,9 +96,12 @@ def main():
         
         config.inputs['skip'] = args.skip
         config.inputs['limit'] = args.limit
-        
-        query = "%s and dune.output_status=confirmed ordered skip %d limit %d"%(inputs[0],args.skip,args.limit)
+        if "with" not in query:
+            query = "%s with dune.output_status=confirmed ordered skip %d limit %d"%(inputs[0],args.skip,args.limit)
+        else:
+            query = "%s and dune.output_status=confirmed ordered skip %d limit %d"%(inputs[0],args.skip,args.limit)
         metadata = MetaCatRetriever(query=query)
+        print ("query was": query)
         config.metadata['overrides']["merge.skip"] = args.skip
         config.metadata['overrides']["merge.limit"] = args.limit
         
