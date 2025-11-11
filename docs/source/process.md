@@ -58,7 +58,7 @@ wait for the jobs to finish
 check the outputs  - claims they are all there. 
 
 ~~~
-(.venv_sl7) Apptainer> metacat  query  -s "files where merge.tag=full"
+metacat  query  -s "files where merge.tag=full"
 ~~~
 {: ..language-bash}
 
@@ -101,3 +101,7 @@ We can look in metadata but metacat doesn't provide an event count in the summar
 "core.event_count": 277450
 ~~~
 {: ..language-bash}
+
+## try reading the output
+
+`root://fndca1.fnal.gov:1094//pnfs/fnal.gov/usr/dune/scratch/users/schellma/merge_test/Full/stage2/20251111T000638/prodmarley_nue_flat_es_dune10kt_1x2x2.fcl_trg_mc_2025a_detsim_dune10kt_1x2x2_notpcsigproc.fcl_detsim_v10_06_00d01_triggerana_dune10kt_1x2x2.fcl_s0_l1000_fullstage2_hists_merged_20251111T000639.root`

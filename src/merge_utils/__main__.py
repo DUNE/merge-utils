@@ -83,6 +83,8 @@ def main():
     # Determine input mode and retrieve metadata
     paths = None
     metadata = None
+    if args.tag:
+        config.metadata['overrides']["merge.tag"] = args.tag
     if input_mode == 'files':
         paths = local.get_local_files(inputs, dirs)
         metadata = paths.meta
@@ -95,11 +97,11 @@ def main():
         config.inputs['skip'] = args.skip
         config.inputs['limit'] = args.limit
         
-        query = "%s ordered skip %d limit %d"%(inputs[0],args.skip,args.limit)
+        query = "%s and dune.output_status=confirmed ordered skip %d limit %d"%(inputs[0],args.skip,args.limit)
         metadata = MetaCatRetriever(query=query)
         config.metadata['overrides']["merge.skip"] = args.skip
         config.metadata['overrides']["merge.limit"] = args.limit
-        config.metadata['overrides']["merge.tag"] = args.tag
+        
     elif input_mode == 'dids':
         from merge_utils.metacat_utils import MetaCatRetriever #pylint: disable=import-outside-toplevel
         metadata = MetaCatRetriever(dids=inputs)
