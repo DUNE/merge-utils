@@ -5,7 +5,7 @@ import sys
 import logging
 import collections
 
-from merge_utils import config, io_utils
+from merge_utils import config, io_utils, __version__
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +54,8 @@ class MetaNameDict:
     def __getitem__(self, name):
         if name.startswith('$'):
             return os.getenv(name[1:], name[1:])
+        if name == "TIMESTAMP":
+            return config.timestamp
         return MetaNameDict.MetaNameReader(self._dict, name)
 
     def format(self, template: str) -> str:
@@ -349,6 +351,29 @@ MERGE_META_CLASSES = {
     #'skip': MergeMetaOverride,
 }
 
+def merge_cfg_keys() -> dict:
+    """
+    Get special merging configuration keys from the global config.
+    
+    :return: dictionary of merging configuration keys
+    """
+    keys = {
+        'version': __version__,
+        'method': config.merging['method']['name'],
+        'timestamp': config.timestamp
+    }
+    for key in ['cmd', 'script', 'cfg']:
+        val = config.merging['method'].get(key)
+        if val is not None:
+            if key in ['script', 'cfg']:
+                val = os.path.basename(val)
+            keys[key] = val
+    for key in ['skip', 'limit', 'tag', 'comment']:
+        val = config.inputs.get(key)
+        if val is not None:
+            keys[key] = val
+    return keys
+
 def merged_keys(files: dict, warn: bool = False) -> dict:
     """
     Merge metadata from multiple files into a single dictionary.
@@ -369,14 +394,8 @@ def merged_keys(files: dict, warn: bool = False) -> dict:
             metadata[key] = MergeMetaOverride()
     for key, value in config.metadata['overrides'].items():
         metadata[key] = MergeMetaOverride(value)
-
-    metadata['merge.method'] = MergeMetaOverride(config.merging['method']['name'])
-    for key in ['cmd', 'script', 'cfg']:
-        val = config.merging['method'][key]
-        if val is not None:
-            if key in ['script', 'cfg']:
-                val = os.path.basename(val)
-            metadata[f'merge.{key}'] = MergeMetaOverride(val)
+    for key, value in merge_cfg_keys().items():
+        metadata[f"merge.{key}"] = MergeMetaOverride(value)
 
     for file in files.values():
         for key, value in file.metadata.items():
@@ -594,13 +613,18 @@ def make_names(files: dict) -> str:
     """
     check_method(files)
     metadata = merged_keys(files, warn=True) # recalculate with correct method settings
+    # Set output namespaces if they are not given
+    if not config.output.get('namespace'):
+        config.output['namespace'] = next(iter(files.values())).namespace
+    if not config.output['scratch'].get('namespace'):
+        config.output['scratch']['namespace'] = config.output['namespace']
     name_dict = MetaNameDict(metadata)
     name = name_dict.format(config.output['name'])
     config.output['name'] = name
     metadata['name'] = name
     for output in config.merging['method']['outputs']:
         name, ext = os.path.splitext(name_dict.format(output['name']))
-        output['name'] = f"{name}_{io_utils.get_timestamp()}{ext}"
+        output['name'] = f"{name}_{config.timestamp}{ext}"
     io_utils.log_list(
         "Output file name{s}:",
         [output['name'] for output in config.merging['method']['outputs']],
