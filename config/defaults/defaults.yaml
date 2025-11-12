@@ -6,16 +6,25 @@ inputs:
     namespace: "usertests"  # Default namespace for local input files
     inputs: []              # List of inputs
     search_dirs: []         # List of directories to search for metadata files
+    skip: ~                 # Skip a number of input files, overridden by '--skip #'
+    limit: ~                # Limit the number of input files, overridden by '--limit #'
+    tag: ~                  # Specify a tag to identify outputs, overridden by '--tag TAG'
+    comment: ~              # Add a comment to output metadata, overridden by '--comment COMMENT'
 
 output:
     scripts: "tmp"    # Directory for generated job scripts (relative to package dir)
     mode: justin      # Options: dids, replicas, pfns, local, justin
-    dir: "/pnfs/dune/scratch/users/${USER}/merge_test" # Directory for output merged files
     namespace: "usertests" # Optionally specify a namespace different from the parents
     name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
     #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"
     grandparents: False # List the parents of the input files as the parents of the merged file
+    dir: "/pnfs/dune/scratch/users/${USER}/merge_test" # Directory for local output files
     lifetime: 7      # Lifetime of output files (in days)
+    scratch:  # Settings for temporary files from 2-stage merging
+        namespace: "usertests" # Optionally specify a namespace different from the parents
+        lifetime: 7      # Lifetime of output files (in days)
+        
+
 
 metadata:
     optional:         # These metadata keys are optional (overrides required and conditional keys)
