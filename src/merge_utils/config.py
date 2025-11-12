@@ -3,6 +3,7 @@
 import logging
 import json
 import os
+from datetime import datetime, timezone
 
 from merge_utils import io_utils
 
@@ -15,8 +16,7 @@ output: dict = {}
 validation: dict = {}
 sites: dict = {}
 merging: dict = {}
-
-initialized: bool = False
+timestamp: str = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
 
 logger = logging.getLogger(__name__)
 
@@ -137,13 +137,3 @@ def load(files: list = None) -> None:
         f"merging: {json.dumps(merging, indent=2)}"
     ]
     logger.info("\n".join(msg))
-
-def runner_settings() -> dict:
-    """
-    Get the merging settings for the runner scripts.
-    
-    :return: Dictionary of merging settings.
-    """
-    return {
-        'streaming': sites['streaming']
-    }
