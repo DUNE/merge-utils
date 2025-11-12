@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import os
+import sys
 import collections
 import logging
 import subprocess
@@ -377,7 +378,7 @@ class MergeSet(collections.UserDict):
 
     def groups(self) -> Generator[dict, None, None]:
         """Split the files into groups for merging"""
-        merge_name = meta.make_name(self.data)
+        meta.make_names(self.data)
         merge_hash = self.hash
 
         # Get the group divisions
@@ -393,7 +394,7 @@ class MergeSet(collections.UserDict):
 
         # Actually output the groups
         group_id = 0
-        group = MergeChunk(merge_name, merge_hash)
+        group = MergeChunk(merge_hash)
         if len(divs) > 1:
             group.group_id = group_id
         for i, file in enumerate(self.files):
@@ -403,14 +404,13 @@ class MergeSet(collections.UserDict):
                 logger.debug("Yielding group %d with %d files", group_id, len(group))
                 yield group
                 group_id += 1
-                group = MergeChunk(merge_name, merge_hash, group=group_id)
+                group = MergeChunk(merge_hash, group=group_id)
 
 
 class MergeChunk(collections.UserDict):
     """Class to keep track of a chunk of files for merging"""
     def __init__(self, merge_hash: str, group: int = -1):
         super().__init__()
-        self.namespace = config.output['namespace']
         self.merge_hash = merge_hash
         self.site = None
         self.group_id = group
@@ -418,14 +418,12 @@ class MergeChunk(collections.UserDict):
         self.chunks = 0
         self.output_id = -1
 
-    def make_name(self, name: str) -> str:
-        """The name of the chunk"""
-        name, ext = os.path.splitext(name)
-        if self.group_id >= 0:
-            name = f"{name}_f{self.group_id}"
+    @property
+    def namespace(self) -> str:
+        """Get the namespace for the chunk"""
         if self.chunk_id >= 0:
-            name = f"{name}_c{self.chunk_id}"
-        return f"{name}{ext}"
+            return config.output['scratch']['namespace']
+        return config.output['namespace']
 
     @property
     def tier(self) -> int:
@@ -434,19 +432,34 @@ class MergeChunk(collections.UserDict):
             return 1
         return 2
 
+    def make_name(self, name: str, group: int = None, chunk: int = None) -> str:
+        """The name of the chunk"""
+        name, ext = os.path.splitext(name)
+        if group is None:
+            group = self.group_id
+        if group >= 0:
+            name = f"{name}_f{group}"
+        if chunk is None:
+            chunk = self.chunk_id
+        if chunk >= 0:
+            name = f"{name}_c{chunk}"
+        return f"{name}{ext}"
+
     @property
     def inputs(self) -> list[str]:
         """Get the list of input files"""
-
-        
-        if self.chunks == 0:
+        # Tier 1 uses the original input files
+        if self.tier == 1:
             return [file.path for file in self.data.values()]
-        name, ext = self.name.rsplit('.', 1)
+        # Tier 2 uses the outputs from tier 1
+        name_spec = config.merging['method']['outputs'][self.output_id]['name']
+        inputs = [f"{self.make_name(name_spec, chunk=c)}" for c in range(self.chunks)]
         if config.output['mode'] != 'local':
-            return [f"{self.namespace}:{name}_c{c}.{ext}" for c in range(self.chunks)]
+            namespace = config.output['scratch']['namespace']
+            return [f"{namespace}:{name}" for name in inputs]
         output_dir = config.output['dir']
-        return [os.path.join(output_dir, f"{name}_c{c}.{ext}") for c in range(self.chunks)]
-    
+        return [os.path.join(output_dir, name) for name in inputs]
+
     def get_output(self, spec: dict) -> dict:
         """
         Take an output specification and concretize it for this chunk.
@@ -463,8 +476,10 @@ class MergeChunk(collections.UserDict):
     @property
     def outputs(self) -> list[dict]:
         """Get the list of output files"""
+        # Tier 1 uses the original output specifications
         if self.tier == 1:
             return [self.get_output(spec) for spec in config.merging['method']['outputs']]
+        # Tier 2 merges each output stream separately
         return [self.get_output(config.merging['method']['outputs'][self.output_id])]
 
     @property
@@ -484,31 +499,61 @@ class MergeChunk(collections.UserDict):
         return meta.parents(self.data)
 
     @property
+    def settings(self) -> dict:
+        """Get the merging settings for the chunk"""
+        # Tier 1 uses the main merging method
+        spec = config.merging['method']
+        # Tier 2 may use a different method per output
+        if self.tier == 2:
+            method = spec['outputs'][self.output_id].get('method', None)
+            if method:
+                methods = [m for m in config.merging['methods'] if m['name'] == method]
+                if len(methods) == 0:
+                    logger.critical("Unknown merging method: %s", method)
+                    sys.exit(1)
+                spec = methods[-1]
+        # Build the settings dictionary from the spec
+        settings = {'streaming': config.sites['streaming']}
+        for key in ['cfg', 'script', 'cmd']:
+            if key in spec:
+                settings[key] = spec[key]
+        return settings
+
+    @property
     def json(self) -> dict:
         """Get the chunk metadata as a JSON-compatible dictionary"""
         data = {
-            'name': self.name,
             'namespace': self.namespace,
             'metadata': self.metadata,
             'parents': self.parents,
             'inputs': self.inputs,
-            'settings': config.runner_settings()
+            'outputs': self.outputs,
+            'settings': self.settings
         }
         return data
 
     def add(self, file: MergeFile) -> None:
         """Add a file to the chunk"""
         self.data[file.did] = file
-        if self.namespace is None:
-            self.namespace = file.namespace
 
     def chunk(self) -> MergeChunk:
         """Create a subset of the chunk with the same metadata"""
-        chunk = MergeChunk(self._name, self.merge_hash, self.group_id)
+        chunk = MergeChunk(self.merge_hash, self.group_id)
         chunk.site = self.site
         chunk.chunk_id = self.chunks
         self.chunks += 1
         return chunk
+
+    def tier2_chunks(self) -> Generator[MergeChunk, None, None]:
+        """Split the chunk into tier 2 chunks for each output stream"""
+        for output_id in range(len(config.merging['method']['outputs'])):
+            chunk = MergeChunk(self.merge_hash, self.group_id)
+            chunk.site = self.site
+            chunk.chunk_id = self.chunk_id
+            chunk.chunks = self.chunks
+            chunk.output_id = output_id
+            chunk.data = self.data
+            yield chunk
 
 
 def check_remote_path(path: str, timeout: float = 5) -> bool:

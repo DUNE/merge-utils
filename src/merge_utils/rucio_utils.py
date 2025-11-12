@@ -152,14 +152,13 @@ class RucioFinder (PathFinder):
                 chunk = group.chunk()
                 chunk.site = site
                 for did in pfns[site]:
-                    if len(chunk) + 1 > target_size:
+                    if len(chunk) >= target_size:
                         yield chunk
                         chunk = group.chunk()
                         chunk.site = site
                     chunk.add(group[did])
-                if chunk:
-                    yield chunk
-            
+                yield chunk
+
             if not group.site:
                 group.site = config.sites['default']
-            yield group
+            yield from group.tier2_chunks()
