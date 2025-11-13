@@ -368,7 +368,7 @@ def merge_cfg_keys() -> dict:
             if key in ['script', 'cfg']:
                 val = os.path.basename(val)
             keys[key] = val
-    for key in ['skip', 'limit', 'tag', 'comment']:
+    for key in ['skip', 'limit', 'tag', 'comment', 'query', 'dataset']:
         val = config.inputs.get(key)
         if val is not None:
             keys[key] = val

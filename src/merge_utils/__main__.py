@@ -15,18 +15,24 @@ def main():
         description='Command line interface for merge_utils')
     parser.add_argument('-c', '--config', action='append', metavar='CFG',
                         help='a configuration file')
+    parser.add_argument('-t', '--tag', type=str, help='tag to help identify this run')
+    parser.add_argument('--comment', type=str, help='a comment describing the workflow')
     parser.add_argument('-v', '--verbose', action='count', default=0,
                         help='print more verbose output (e.g. -vvv for debug output)')
     parser.add_argument('--log', help='specify a custom log file path')
 
     in_group = parser.add_argument_group('input arguments')
     in_group.add_argument('input_mode', nargs='?', default=None, metavar='MODE',
-                          choices=['query', 'dids', 'files'],
+                          choices=['query', 'dids', 'files', 'dataset'],
                           help='input mode (query, dids, files, dir)')
     in_group.add_argument('-f', '--file', action='append',
                           help='a text file with a list of input files')
     in_group.add_argument('-d', '--dir', action='append',
                           help='a directory to add to search locations')
+    in_group.add_argument('--skip', type=int,
+                          help='skip a number of files before processing the remainder')
+    in_group.add_argument('--limit', type=int,
+                          help='maximum number of files to process (after skip)')
     #in_group.add_argument('inputs', nargs=argparse.REMAINDER, help='remaining command line inputs')
     in_group.add_argument('inputs', nargs='*', help='remaining command line inputs')
 
@@ -35,6 +41,8 @@ def main():
                            help='only validate metadata instead of merging')
     out_group.add_argument('--list', choices=['dids', 'replicas', 'pfns'], metavar='OPT',
                            help='list (dids, replicas, pfns) instead of merging')
+    out_group.add_argument('-m', '--method', type=str, metavar='MTD',
+                           help='explicitly specify the merge method to use')
     out_group.add_argument('-l', '--local', action='store_true',
                            help='run merge locally instead of submitting to JustIN')
 
@@ -59,6 +67,17 @@ def main():
     input_mode = config.inputs['mode']
     logger.info("Input mode: %s", input_mode)
 
+    if args.tag:
+        config.inputs['tag'] = args.tag
+    if args.comment:
+        config.inputs['comment'] = args.comment
+    if args.skip is not None:
+        config.inputs['skip'] = args.skip
+    if args.limit is not None:
+        config.inputs['limit'] = args.limit
+    if args.method:
+        config.merging['method']['name'] = args.method
+
     # Collect inputs
     inputs = config.inputs['inputs'] or []
     io_utils.log_nonzero("Found {n} input{s} from config files", len(inputs))
@@ -82,6 +101,10 @@ def main():
     paths = None
     metadata = None
     if input_mode == 'files':
+        if config.inputs['skip'] is not None or config.inputs['limit'] is not None:
+            skip = config.inputs['skip'] or 0
+            limit = config.inputs['limit'] or len(inputs)
+            inputs = inputs[skip:skip+limit]
         paths = local.get_local_files(inputs, dirs)
         metadata = paths.meta
     elif input_mode == 'query':
@@ -89,9 +112,34 @@ def main():
         if len(inputs) != 1:
             logger.critical("Query mode currently only supports a single MetaCat query.")
             sys.exit(1)
-        metadata = MetaCatRetriever(query=inputs[0])
+        query = inputs[0]
+        config.inputs['query'] = query
+        if 'ordered' in query or 'skip' in query or 'limit' in query:
+            logger.warning("Consider using command line options instead of including 'ordered', 'skip', or 'limit' in the query.")
+        query += " ordered"
+        if config.inputs['skip'] is not None:
+            query += f" skip {config.inputs['skip']}"
+        if config.inputs['limit'] is not None:
+            query += f" limit {config.inputs['limit']}"
+        metadata = MetaCatRetriever(query=query)
+    elif input_mode == 'dataset':
+        from merge_utils.metacat_utils import MetaCatRetriever #pylint: disable=import-outside-toplevel
+        if len(inputs) != 1:
+            logger.critical("Dataset mode currently only supports a single dataset name.")
+            sys.exit(1)
+        config.inputs['dataset'] = inputs[0]
+        query = f"files from {inputs[0]} ordered"
+        if config.inputs['skip'] is not None:
+            query += f" skip {config.inputs['skip']}"
+        if config.inputs['limit'] is not None:
+            query += f" limit {config.inputs['limit']}"
+        metadata = MetaCatRetriever(query=query)
     elif input_mode == 'dids':
         from merge_utils.metacat_utils import MetaCatRetriever #pylint: disable=import-outside-toplevel
+        if config.inputs['skip'] is not None or config.inputs['limit'] is not None:
+            skip = config.inputs['skip'] or 0
+            limit = config.inputs['limit'] or len(inputs)
+            inputs = inputs[skip:skip+limit]
         metadata = MetaCatRetriever(dids=inputs)
     else:
         logger.critical("Unknown input mode: %s", input_mode)
