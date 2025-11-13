@@ -82,6 +82,7 @@ class JobScheduler(ABC):
 
         n_inputs = 0
         n_stage1 = 0
+        n_stage2 = 0
         n_outputs = 0
         msg = [""]
         for site, site_jobs in self.jobs[0].items():
@@ -94,12 +95,13 @@ class JobScheduler(ABC):
             if site is None:
                 site = "local"
             msg.append(f"{site}: \t{site_inputs} -> {site_stage1}")
-        n_stage2 = sum(len(site_jobs) for site_jobs in self.jobs[1].values())
+        for site, site_jobs in self.jobs[0].items():
+            n_stage2 += sum(1 for job in site_jobs if job[1].output_id == 0)
         n_outputs += n_stage2
 
         script = self.write_script()
 
-        msg[0] = f"Merging {n_inputs} input files into {n_outputs} merged files:"
+        msg[0] = f"Merging {n_inputs} input files into {n_outputs} groups"
         io_utils.log_print("\n  ".join(msg))
         if len(script) > 1:
             if len(self.jobs[0]) > 1:
@@ -161,8 +163,9 @@ class LocalScheduler(JobScheduler):
                 if self.jobs[1]:
                     f.write(pass_msg[tier] + "\n")
                 for job in self.jobs[tier][None]:
-                    cmd = ["LD_PRELOAD=$XROOTD_LIB/libXrdPosixPreload.so", "python3",
-                           io_utils.find_runner("do_merge.py"), job[0], out_dir]
+                    #cmd = ["LD_PRELOAD=$XROOTD_LIB/libXrdPosixPreload.so", "python3",
+                    #       io_utils.find_runner("do_merge.py"), job[0], out_dir]
+                    cmd = ["python3", io_utils.find_runner("do_merge.py"), job[0], out_dir]
                     f.write(f"{' '.join(cmd)}\n")
         subprocess.run(['chmod', '+x', script_name], check=False)
         return [script_name]
