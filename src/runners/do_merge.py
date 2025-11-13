@@ -167,6 +167,8 @@ def merge(config: dict, script_dir: str, out_dir: str) -> None:
     )
     print(f"Merging {len(inputs)} files into {outputs[0]['name']} using method {settings['method']}")
     print(cmd)
+    if settings['streaming']:
+        cmd = "LD_PRELOAD=$XROOTD_LIB/libXrdPosixPreload.so " + cmd
     ret = subprocess.run(cmd, shell=True, check=False)
     if ret.returncode != 0:
         print(f"ERROR: Merging failed with return code {ret.returncode}")
