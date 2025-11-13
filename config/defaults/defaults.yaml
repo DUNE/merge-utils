@@ -37,7 +37,7 @@ validation:
     skip:             # Continue processing files even if some fail validation
         missing:      False # Skip files with missing metadata
         duplicate:    False # Skip duplicated files
-        unreachable:  True # Skip files that are not accessible
+        unreachable:  False # Skip files that are not accessible
         invalid:      False # Skip files with invalid metadata
         inconsistent: False # Skip files with inconsistent metadata
     checksums:
