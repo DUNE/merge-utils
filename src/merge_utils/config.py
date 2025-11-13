@@ -20,6 +20,13 @@ timestamp: str = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
 
 logger = logging.getLogger(__name__)
 
+def uuid() -> str:
+    """Generate a unique identifier based on the job tag and timestamp."""
+    tag = inputs.get('tag')
+    if tag:
+        return f"{tag}_{timestamp}"
+    return timestamp
+
 def update_list(old_list: list, new_list: list) -> None:
     """
     Append values from new_list to old_list.

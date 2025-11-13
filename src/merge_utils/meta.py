@@ -56,6 +56,8 @@ class MetaNameDict:
             return os.getenv(name[1:], name[1:])
         if name == "TIMESTAMP":
             return config.timestamp
+        if name == "UUID":
+            return config.uuid()
         return MetaNameDict.MetaNameReader(self._dict, name)
 
     def format(self, template: str) -> str:
@@ -655,8 +657,9 @@ def make_names(files: dict) -> str:
     config.output['name'] = name
     metadata['name'] = name
     for output in config.merging['method']['outputs']:
-        name, ext = os.path.splitext(name_dict.format(output['name']))
-        output['name'] = f"{name}_{config.timestamp}{ext}"
+        #name, ext = os.path.splitext(name_dict.format(output['name']))
+        #output['name'] = f"{name}_{config.timestamp}{ext}"
+        output['name'] = name_dict.format(output['name'])
     io_utils.log_list(
         "Output file name{s}:",
         [output['name'] for output in config.merging['method']['outputs']],

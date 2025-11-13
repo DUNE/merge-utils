@@ -16,7 +16,7 @@
             "cfg": "triggerana_dune10kt_1x2x2.fcl",
             "outputs": [
                 {
-                    "name": "{name}_ntuple.root",
+                    "name": "{name}_ntuple_{UUID}.root",
                     "rename": "triggerAna.ntuple.root",
                     "metadata": {"core.data_tier":"root-tuple"},
                     "method": "hadd"
