@@ -95,7 +95,7 @@ class JobScheduler(ABC):
             if site is None:
                 site = "local"
             msg.append(f"{site}: \t{site_inputs} -> {site_stage1}")
-        for site, site_jobs in self.jobs[0].items():
+        for site, site_jobs in self.jobs[1].items():
             n_stage2 += sum(1 for job in site_jobs if job[1].output_id == 0)
         n_outputs += n_stage2
 
