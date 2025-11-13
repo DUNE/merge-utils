@@ -469,7 +469,7 @@ class MergeChunk(collections.UserDict):
         """
         output = {'name': self.make_name(spec['name'])}
         for key in ['metadata', 'rename']:
-            if key in spec:
+            if key in spec and spec[key] is not None:
                 output[key] = spec[key]
         return output
 
@@ -480,7 +480,20 @@ class MergeChunk(collections.UserDict):
         if self.tier == 1:
             return [self.get_output(spec) for spec in config.merging['method']['outputs']]
         # Tier 2 merges each output stream separately
-        return [self.get_output(config.merging['method']['outputs'][self.output_id])]
+        spec = config.merging['method']['outputs'][self.output_id]
+        output = self.get_output(spec)
+        # Override 'rename' and 'metadata' if a different stage-2 method is specified
+        if 'method' in spec:
+            spec2 = meta.match_method(name=spec['method'])
+            output.pop('rename', None)
+            rename = spec2['outputs'][0].get('rename', None)
+            if rename:
+                output['rename'] = rename
+            metadata = output.pop('metadata', {})
+            metadata.update(spec2['outputs'][0].get('metadata', {}))
+            if metadata:
+                output['metadata'] = metadata
+        return [output]
 
     @property
     def metadata(self) -> dict:
@@ -507,15 +520,17 @@ class MergeChunk(collections.UserDict):
         if self.tier == 2:
             method = spec['outputs'][self.output_id].get('method', None)
             if method:
-                methods = [m for m in config.merging['methods'] if m['name'] == method]
-                if len(methods) == 0:
+                spec = meta.match_method(name=method)
+                if spec is None:
                     logger.critical("Unknown merging method: %s", method)
                     sys.exit(1)
-                spec = methods[-1]
         # Build the settings dictionary from the spec
-        settings = {'streaming': config.sites['streaming']}
+        settings = {
+            'streaming': config.sites['streaming'],
+            'method': spec['name']
+        }
         for key in ['cfg', 'script', 'cmd']:
-            if key in spec:
+            if key in spec and spec[key] is not None:
                 settings[key] = spec[key]
         return settings
 

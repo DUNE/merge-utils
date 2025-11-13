@@ -79,6 +79,7 @@ def find_file(name: str, dirs: list[str] = None, recursive: bool = False) -> str
     :return: Full path to the located file
     :raises FileNotFoundError: If the file does not exist
     """
+    logger.debug("Searching for file %s", name)
     path = os.path.expanduser(os.path.expandvars(name))
 
     # First, check if the path exists as given

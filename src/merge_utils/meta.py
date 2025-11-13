@@ -135,7 +135,7 @@ def check_required(metadata: dict) -> list:
     name_dict = MetaNameDict(metadata)
     for condition, keys in config.metadata['conditional'].items():
         if not name_dict.eval(condition):
-            logger.debug("Skipping condition: %s", condition)
+            #logger.debug("Skipping condition: %s", condition)
             continue
         logger.debug("Matched condition: %s", condition)
         for key in keys:
@@ -435,25 +435,42 @@ def parents(files: dict) -> list[str]:
             grandparents.add(tuple(sorted(grandparent.items())))
     return [dict(t) for t in grandparents]
 
+def match_method(name: str = None, metadata: dict = None) -> dict:
+    """
+    Find a built-in merging method by name or metadata conditions.
+
+    :param name: name of the merging method
+    :param metadata: metadata dictionary
+    :return: merging method dictionary
+    """
+    # Match by name
+    if name:
+        methods = [m for m in config.merging['methods'] if m['name'] == name]
+        if not methods:
+            return None
+        return methods[-1]
+    # Match by conditions
+    if metadata:
+        name_dict = MetaNameDict(metadata)
+        for method in reversed(config.merging['methods']):
+            condition = method.get('cond', 'False')
+            if name_dict.eval(condition):
+                if condition == 'True':
+                    condition = "unconditional"
+                logger.info("Auto-selected merging method '%s' (%s)", method['name'], condition)
+                return method
+    # No match found
+    return None
+
 def set_method_auto(metadata: dict) -> None:
     """
     Auto-select merging method based on metadata conditions.
 
     :param metadata: metadata dictionary
     """
-    # Find the first matching merging method (in reverse order)
-    method = {}
-    name_dict = MetaNameDict(metadata)
-    for mtd in reversed(config.merging['methods']):
-        condition = mtd.get('cond', 'True')
-        if name_dict.eval(condition):
-            if condition == 'True':
-                condition = "unconditional"
-            logger.info("Auto-selected merging method '%s' (%s)", mtd['name'], condition)
-            method = mtd
-            break
-    if not method:
-        logger.critical("Failed to auto-select merging method!")
+    method = match_method(metadata=metadata)
+    if method is None:
+        logger.critical("Failed to auto-select a merging method!")
         sys.exit(1)
 
     # Set merging method parameters
@@ -567,9 +584,9 @@ def check_method(files: dict) -> None:
         set_method_auto(merged_keys(files, warn=False))
     else:
         # Check if we're using a built-in merging method
-        methods = [m for m in config.merging['methods'] if m['name'] == name]
-        if methods:
-            set_method(methods[-1])
+        method = match_method(name=name)
+        if method:
+            set_method(method)
         else:
             set_method_custom()
 
@@ -599,6 +616,21 @@ def check_method(files: dict) -> None:
         n_out = sum(1 for output in config.merging['method']['outputs'] if 'rename' not in output)
         if n_out > 0 and '{output' not in cmd:
             logger.critical("Merging command does not specify '{output}' (or '{outputs[#]}')")
+            sys.exit(1)
+
+    # Make sure stage-2 merging only produces 1 output
+    for idx, output in enumerate(config.merging['method']['outputs']):
+        if 'method' in output:
+            method2 = match_method(name=output['method'])
+            if method2 is None:
+                logger.critical("Output %d has unknown merging method '%s'", idx, output['method'])
+                sys.exit(1)
+            if len(method2['outputs']) != 1:
+                logger.critical("Output %d merging method '%s' must produce exactly 1 output!",
+                                idx, output['method'])
+                sys.exit(1)
+        elif len(config.merging['method']['outputs']) != 1:
+            logger.critical("Output %d must specify a merging method for stage-2 merges!", idx)
             sys.exit(1)
 
     # Log final merging method configuration

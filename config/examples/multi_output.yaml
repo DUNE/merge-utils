@@ -1,0 +1,36 @@
+output:
+    dir: "/pnfs/dune/scratch/users/${USER}/multi_output_test"
+
+sites:
+    streaming: False
+
+merging:
+    target_mode: count
+    target_size: 100
+    equalize: False
+    chunk_max: 10
+    method:
+        name: "multi-output"
+        cmd: 'hadd -f {output} {inputs} && echo "{inputs}" | tr " " "\n" > files.txt && wc -l files.txt | cut -d" " -f1 > {outputs[2]}'
+        outputs:
+          - name: "{name}_merged.root"
+            method: "hadd"
+          - name: "{name}_files.txt"
+            rename: "files.txt"
+            metadata:
+                core.file_format: "text"
+            method: "text-concat"
+          - name: "{name}_count.txt"
+            metadata:
+                core.file_format: "text"
+            method: "text-sum"
+    methods:
+      - name: "text-concat"
+        cmd: "for f in {inputs}; do cat $f; done > {output}"
+        outputs:
+          - name: "{name}_merged.txt"
+      - name: "text-sum"
+        cmd: "total=0; for f in {inputs}; do val=$(cat $f); total=$((total + val)); done; echo $total > {output}"
+        outputs:
+          - name: "{name}_sum.txt"
+    

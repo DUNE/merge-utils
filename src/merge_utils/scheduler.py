@@ -26,7 +26,7 @@ class JobScheduler(ABC):
         """
         self.source = source
         self.dir = io_utils.expand_path(
-            os.path.join(config.output['scripts'], io_utils.get_timestamp()),
+            os.path.join(config.output['scripts'], config.timestamp),
             base_dir=io_utils.pkg_dir()
         )
         self.jobs = [collections.defaultdict(list), collections.defaultdict(list)]
@@ -225,7 +225,7 @@ class JustinScheduler(JobScheduler):
             cvmfs_dir = self.cvmfs_dir
         cmd = [
             'justin', 'simple-workflow',
-            '--description', f'"Merge {io_utils.get_timestamp()} p{tier} {site}"',
+            '--description', f'"Merge {config.timestamp} p{tier} {site}"',
             '--monte-carlo', str(len(self.jobs[tier-1][site])),
             '--jobscript', io_utils.find_runner("merge.jobscript"),
             '--site', site,

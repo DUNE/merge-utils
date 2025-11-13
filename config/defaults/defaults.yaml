@@ -74,6 +74,7 @@ merging:
     # Default settings for built-in merging methods, matched using 'cond' in reverse order
     methods:
       - name: "tar"
+        cond: "True"  # Always matches if no other method matches first
         script: "merge_tar.py"
         outputs:
           - name: "{name}_merged.tar"
