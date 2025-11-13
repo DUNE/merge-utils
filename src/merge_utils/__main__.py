@@ -128,7 +128,7 @@ def main():
             logger.critical("Dataset mode currently only supports a single dataset name.")
             sys.exit(1)
         config.inputs['dataset'] = inputs[0]
-        query = f"files from {inputs[0]} ordered"
+        query = f"files from {inputs[0]} where dune.output_status=confirmed ordered"
         if config.inputs['skip'] is not None:
             query += f" skip {config.inputs['skip']}"
         if config.inputs['limit'] is not None:
