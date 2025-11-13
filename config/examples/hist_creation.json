@@ -24,6 +24,7 @@
             ]
         },
         "target_mode": "count",
-        "target_size": 100  
+        "target_size": 10000,
+        "chunk_max": 100
     }
 }
