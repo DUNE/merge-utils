@@ -206,17 +206,16 @@
                 <span class="n">chunk</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">chunk</span><span class="p">()</span>
                 <span class="n">chunk</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">site</span>
                 <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">pfns</span><span class="p">[</span><span class="n">site</span><span class="p">]:</span>
-                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="n">target_size</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">target_size</span><span class="p">:</span>
                         <span class="k">yield</span> <span class="n">chunk</span>
                         <span class="n">chunk</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">chunk</span><span class="p">()</span>
                         <span class="n">chunk</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">site</span>
                     <span class="n">chunk</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="n">did</span><span class="p">])</span>
-                <span class="k">if</span> <span class="n">chunk</span><span class="p">:</span>
-                    <span class="k">yield</span> <span class="n">chunk</span>
-            
+                <span class="k">yield</span> <span class="n">chunk</span>
+
             <span class="k">if</span> <span class="ow">not</span> <span class="n">group</span><span class="o">.</span><span class="n">site</span><span class="p">:</span>
                 <span class="n">group</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span>
-            <span class="k">yield</span> <span class="n">group</span></div>
+            <span class="k">yield from</span> <span class="n">group</span><span class="o">.</span><span class="n">tier2_chunks</span><span class="p">()</span></div>
 </div>
 
 </pre></div>

@@ -48,7 +48,7 @@
 <p>Container for a set of files to be merged</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.merge_set.</span></span><span class="sig-name descname"><span class="pre">MergeChunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeChunk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeChunk" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.merge_set.</span></span><span class="sig-name descname"><span class="pre">MergeChunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">merge_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeChunk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeChunk" title="Link to this definition">¶</a></dt>
 <dd><p>Class to keep track of a chunk of files for merging</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.add">
@@ -60,6 +60,20 @@
 <dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.chunk">
 <span class="sig-name descname"><span class="pre">chunk</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#merge_utils.merge_set.MergeChunk" title="merge_utils.merge_set.MergeChunk"><span class="pre">MergeChunk</span></a></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeChunk.chunk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.chunk" title="Link to this definition">¶</a></dt>
 <dd><p>Create a subset of the chunk with the same metadata</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.get_output">
+<span class="sig-name descname"><span class="pre">get_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeChunk.get_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.get_output" title="Link to this definition">¶</a></dt>
+<dd><p>Take an output specification and concretize it for this chunk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>spec</strong> – output specification dictionary</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>concretized output dictionary</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
@@ -74,6 +88,12 @@
 <dd><p>Get the chunk metadata as a JSON-compatible dictionary</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.make_name">
+<span class="sig-name descname"><span class="pre">make_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeChunk.make_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.make_name" title="Link to this definition">¶</a></dt>
+<dd><p>The name of the chunk</p>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.metadata">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">metadata</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.metadata" title="Link to this definition">¶</a></dt>
@@ -81,9 +101,15 @@
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.name">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.name" title="Link to this definition">¶</a></dt>
-<dd><p>The name of the chunk</p>
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.namespace">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">namespace</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.namespace" title="Link to this definition">¶</a></dt>
+<dd><p>Get the namespace for the chunk</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.outputs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">outputs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.outputs" title="Link to this definition">¶</a></dt>
+<dd><p>Get the list of output files</p>
 </dd></dl>
 
 <dl class="py property">
@@ -93,9 +119,21 @@
 </dd></dl>
 
 <dl class="py property">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.settings">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">settings</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.settings" title="Link to this definition">¶</a></dt>
+<dd><p>Get the merging settings for the chunk</p>
+</dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.tier">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">tier</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.tier" title="Link to this definition">¶</a></dt>
 <dd><p>Get the pass number for the chunk</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.merge_set.MergeChunk.tier2_chunks">
+<span class="sig-name descname"><span class="pre">tier2_chunks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Generator</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#merge_utils.merge_set.MergeChunk" title="merge_utils.merge_set.MergeChunk"><span class="pre">MergeChunk</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/merge_utils/merge_set.html#MergeChunk.tier2_chunks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.merge_set.MergeChunk.tier2_chunks" title="Link to this definition">¶</a></dt>
+<dd><p>Split the chunk into tier 2 chunks for each output stream</p>
 </dd></dl>
 
 </dd></dl>
@@ -354,12 +392,17 @@ If not, log the inconsistencies and move the inconsistent files out of the set.<
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk"><code class="docutils literal notranslate"><span class="pre">MergeChunk</span></code></a><ul>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.add"><code class="docutils literal notranslate"><span class="pre">MergeChunk.add()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.chunk"><code class="docutils literal notranslate"><span class="pre">MergeChunk.chunk()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.get_output"><code class="docutils literal notranslate"><span class="pre">MergeChunk.get_output()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.inputs"><code class="docutils literal notranslate"><span class="pre">MergeChunk.inputs</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.json"><code class="docutils literal notranslate"><span class="pre">MergeChunk.json</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.make_name"><code class="docutils literal notranslate"><span class="pre">MergeChunk.make_name()</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.metadata"><code class="docutils literal notranslate"><span class="pre">MergeChunk.metadata</span></code></a></li>
-<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.name"><code class="docutils literal notranslate"><span class="pre">MergeChunk.name</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.namespace"><code class="docutils literal notranslate"><span class="pre">MergeChunk.namespace</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.outputs"><code class="docutils literal notranslate"><span class="pre">MergeChunk.outputs</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.parents"><code class="docutils literal notranslate"><span class="pre">MergeChunk.parents</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.settings"><code class="docutils literal notranslate"><span class="pre">MergeChunk.settings</span></code></a></li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.tier"><code class="docutils literal notranslate"><span class="pre">MergeChunk.tier</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.merge_set.MergeChunk.tier2_chunks"><code class="docutils literal notranslate"><span class="pre">MergeChunk.tier2_chunks()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#merge_utils.merge_set.MergeFile"><code class="docutils literal notranslate"><span class="pre">MergeFile</span></code></a><ul>

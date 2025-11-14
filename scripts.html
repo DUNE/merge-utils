@@ -52,8 +52,9 @@
 <dd><p>Test the command line interface for merge_utils.</p>
 </dd></dl>
 
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: merge [-h] [-c CFG] [-v] [--log LOG] [-f FILE] [-d DIR] [--validate]
-             [--list OPT] [-l]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: merge [-h] [-c CFG] [-t TAG] [--comment COMMENT] [-v] [--log LOG]
+             [-f FILE] [-d DIR] [--skip SKIP] [--limit LIMIT] [--validate]
+             [--list OPT] [-m MTD] [-l]
              [MODE] [inputs ...]
 
 Command line interface for merge_utils
@@ -61,6 +62,8 @@ Command line interface for merge_utils
 optional arguments:
   -h, --help            show this help message and exit
   -c CFG, --config CFG  a configuration file
+  -t TAG, --tag TAG     tag to help identify this run
+  --comment COMMENT     a comment describing the workflow
   -v, --verbose         print more verbose output (e.g. -vvv for debug output)
   --log LOG             specify a custom log file path
 
@@ -68,11 +71,14 @@ input arguments:
   MODE                  input mode (query, dids, files, dir)
   -f FILE, --file FILE  a text file with a list of input files
   -d DIR, --dir DIR     a directory to add to search locations
+  --skip SKIP           skip a number of files before processing the remainder
+  --limit LIMIT         maximum number of files to process (after skip)
   inputs                remaining command line inputs
 
 output arguments:
   --validate            only validate metadata instead of merging
   --list OPT            list (dids, replicas, pfns) instead of merging
+  -m MTD, --method MTD  explicitly specify the merge method to use
   -l, --local           run merge locally instead of submitting to JustIN
 </pre></div>
 </div>

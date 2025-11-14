@@ -73,17 +73,6 @@ Missing keys will be filled in with the defaults in DEFAULT_CONFIG.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="config.runner_settings">
-<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">runner_settings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/config.html#runner_settings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.runner_settings" title="Link to this definition">¶</a></dt>
-<dd><p>Get the merging settings for the runner scripts.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Dictionary of merging settings.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="config.update">
 <span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.update" title="Link to this definition">¶</a></dt>
 <dd><p>Update the global configuration with values from the provided dictionary.</p>
@@ -136,6 +125,12 @@ Strings beginning with ‘~’ are removed from old_list instead.</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="config.uuid">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">uuid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/config.html#uuid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.uuid" title="Link to this definition">¶</a></dt>
+<dd><p>Generate a unique identifier based on the job tag and timestamp.</p>
+</dd></dl>
+
 </section>
 
 
@@ -151,10 +146,10 @@ Strings beginning with ‘~’ are removed from old_list instead.</p>
 <li><a class="reference internal" href="#">config</a><ul>
 <li><a class="reference internal" href="#config.check_environment"><code class="docutils literal notranslate"><span class="pre">check_environment()</span></code></a></li>
 <li><a class="reference internal" href="#config.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
-<li><a class="reference internal" href="#config.runner_settings"><code class="docutils literal notranslate"><span class="pre">runner_settings()</span></code></a></li>
 <li><a class="reference internal" href="#config.update"><code class="docutils literal notranslate"><span class="pre">update()</span></code></a></li>
 <li><a class="reference internal" href="#config.update_dict"><code class="docutils literal notranslate"><span class="pre">update_dict()</span></code></a></li>
 <li><a class="reference internal" href="#config.update_list"><code class="docutils literal notranslate"><span class="pre">update_list()</span></code></a></li>
+<li><a class="reference internal" href="#config.uuid"><code class="docutils literal notranslate"><span class="pre">uuid()</span></code></a></li>
 </ul>
 </li>
 </ul>

@@ -89,10 +89,10 @@
 <li class="toctree-l1"><a class="reference internal" href="config.html">config</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="config.html#config.check_environment"><code class="docutils literal notranslate"><span class="pre">check_environment()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#config.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="config.html#config.runner_settings"><code class="docutils literal notranslate"><span class="pre">runner_settings()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#config.update"><code class="docutils literal notranslate"><span class="pre">update()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#config.update_dict"><code class="docutils literal notranslate"><span class="pre">update_dict()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#config.update_list"><code class="docutils literal notranslate"><span class="pre">update_list()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#config.uuid"><code class="docutils literal notranslate"><span class="pre">uuid()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="local.html">local</a><ul>
@@ -114,7 +114,6 @@
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.find_file"><code class="docutils literal notranslate"><span class="pre">find_file()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.find_runner"><code class="docutils literal notranslate"><span class="pre">find_runner()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.get_inputs"><code class="docutils literal notranslate"><span class="pre">get_inputs()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.get_timestamp"><code class="docutils literal notranslate"><span class="pre">get_timestamp()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.log_dict"><code class="docutils literal notranslate"><span class="pre">log_dict()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.log_list"><code class="docutils literal notranslate"><span class="pre">log_list()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="io_utils.html#merge_utils.io_utils.log_nonzero"><code class="docutils literal notranslate"><span class="pre">log_nonzero()</span></code></a></li>
@@ -186,13 +185,16 @@
 <li class="toctree-l3"><a class="reference internal" href="meta.html#meta.MetaNameDict.format"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.format()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="meta.html#meta.auto_output"><code class="docutils literal notranslate"><span class="pre">auto_output()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="meta.html#meta.check_method"><code class="docutils literal notranslate"><span class="pre">check_method()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="meta.html#meta.check_required"><code class="docutils literal notranslate"><span class="pre">check_required()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="meta.html#meta.fix"><code class="docutils literal notranslate"><span class="pre">fix()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="meta.html#meta.make_name"><code class="docutils literal notranslate"><span class="pre">make_name()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="meta.html#meta.log_method"><code class="docutils literal notranslate"><span class="pre">log_method()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="meta.html#meta.make_names"><code class="docutils literal notranslate"><span class="pre">make_names()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="meta.html#meta.match_method"><code class="docutils literal notranslate"><span class="pre">match_method()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="meta.html#meta.merge_cfg_keys"><code class="docutils literal notranslate"><span class="pre">merge_cfg_keys()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="meta.html#meta.merged_keys"><code class="docutils literal notranslate"><span class="pre">merged_keys()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="meta.html#meta.parents"><code class="docutils literal notranslate"><span class="pre">parents()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="meta.html#meta.set_extension"><code class="docutils literal notranslate"><span class="pre">set_extension()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="meta.html#meta.set_method"><code class="docutils literal notranslate"><span class="pre">set_method()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="meta.html#meta.set_method_auto"><code class="docutils literal notranslate"><span class="pre">set_method_auto()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="meta.html#meta.set_method_custom"><code class="docutils literal notranslate"><span class="pre">set_method_custom()</span></code></a></li>
@@ -239,12 +241,17 @@
 <li class="toctree-l2"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk"><code class="docutils literal notranslate"><span class="pre">MergeChunk</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.add"><code class="docutils literal notranslate"><span class="pre">MergeChunk.add()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.chunk"><code class="docutils literal notranslate"><span class="pre">MergeChunk.chunk()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.get_output"><code class="docutils literal notranslate"><span class="pre">MergeChunk.get_output()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.inputs"><code class="docutils literal notranslate"><span class="pre">MergeChunk.inputs</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.json"><code class="docutils literal notranslate"><span class="pre">MergeChunk.json</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.make_name"><code class="docutils literal notranslate"><span class="pre">MergeChunk.make_name()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.metadata"><code class="docutils literal notranslate"><span class="pre">MergeChunk.metadata</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.name"><code class="docutils literal notranslate"><span class="pre">MergeChunk.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.namespace"><code class="docutils literal notranslate"><span class="pre">MergeChunk.namespace</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.outputs"><code class="docutils literal notranslate"><span class="pre">MergeChunk.outputs</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.parents"><code class="docutils literal notranslate"><span class="pre">MergeChunk.parents</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.settings"><code class="docutils literal notranslate"><span class="pre">MergeChunk.settings</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.tier"><code class="docutils literal notranslate"><span class="pre">MergeChunk.tier</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk.tier2_chunks"><code class="docutils literal notranslate"><span class="pre">MergeChunk.tier2_chunks()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile"><code class="docutils literal notranslate"><span class="pre">MergeFile</span></code></a><ul>
