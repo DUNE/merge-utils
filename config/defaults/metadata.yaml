@@ -135,6 +135,8 @@ metadata:
           - "hdf5"
           - "tar"
         # - "unknown"
+        "dune.output_status":
+          - "confirmed"
     required:     # These keys are required for all files
       - "core.data_stream"
       - "core.data_tier"

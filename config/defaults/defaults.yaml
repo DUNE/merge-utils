@@ -6,16 +6,25 @@ inputs:
     namespace: "usertests"  # Default namespace for local input files
     inputs: []              # List of inputs
     search_dirs: []         # List of directories to search for metadata files
+    skip: ~                 # Skip a number of input files, overridden by '--skip #'
+    limit: ~                # Limit the number of input files, overridden by '--limit #'
+    tag: ~                  # Specify a tag to identify outputs, overridden by '--tag TAG'
+    comment: ~              # Add a comment to output metadata, overridden by '--comment COMMENT'
 
 output:
     scripts: "tmp"    # Directory for generated job scripts (relative to package dir)
     mode: justin      # Options: dids, replicas, pfns, local, justin
-    dir: "/pnfs/dune/scratch/users/${USER}/merge_test" # Directory for output merged files
     namespace: "usertests" # Optionally specify a namespace different from the parents
     name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
     #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"
     grandparents: False # List the parents of the input files as the parents of the merged file
+    dir: "/pnfs/dune/scratch/users/${USER}/merge_test" # Directory for local output files
     lifetime: 7      # Lifetime of output files (in days)
+    scratch:  # Settings for temporary files from 2-stage merging
+        namespace: "usertests" # Optionally specify a namespace different from the parents
+        lifetime: 7      # Lifetime of output files (in days)
+        
+
 
 metadata:
     optional:         # These metadata keys are optional (overrides required and conditional keys)
@@ -28,7 +37,7 @@ validation:
     skip:             # Continue processing files even if some fail validation
         missing:      False # Skip files with missing metadata
         duplicate:    False # Skip duplicated files
-        unreachable:  True # Skip files that are not accessible
+        unreachable:  False # Skip files that are not accessible
         invalid:      False # Skip files with invalid metadata
         inconsistent: False # Skip files with inconsistent metadata
     checksums:
@@ -58,31 +67,35 @@ merging:
     method:
         name: auto        # Can be auto, a specific default method, or the path to a custom script
         cmd: ~            # Optionally specify merging command, eg. '{script} {cfg} {output} {inputs}'
-        ext: ~            # Optionally override the output file extension
         cfg: ~            # Optionally specify a config file for merging
         script: ~         # Optionally specify a custom merging script
+        outputs: []       # List of output files produced by the merging method      
         dependencies: []  # Optionally specify additional files required for merging
-        metadata: {}      # Optionally alter metadata of merged files (same as metadata.overrides)
     # Default settings for built-in merging methods, matched using 'cond' in reverse order
     methods:
       - name: "tar"
+        cond: "True"  # Always matches if no other method matches first
         script: "merge_tar.py"
-        ext: ".tar"
-        metadata:
-            core.file_format: "tar"
+        outputs:
+          - name: "{name}_merged_{UUID}.tar"
+            metadata:
+                core.file_format: "tar"
       - name: "hadd"
         cond: "'{core.file_format}' in ['root', 'rootntuple', 'tfile']"
         cmd: "hadd -f {output} {inputs}"
-        ext: ".root"
+        outputs:
+          - name: "{name}_merged_{UUID}.root"
       - name: "lar"
         cond: "'{core.file_format}' in ['artroot']"
         cmd: "lar -c {cfg} -o {output} {inputs}"
-        ext: ".root"
         cfg: "artcat.fcl"
+        outputs:
+          - name: "{name}_merged_{UUID}.root"
       - name: "hdf5"
         cond: "'{core.file_format}' in ['hdf5']"
         script: "merge_hdf5.py"
-        ext: ".hdf5"
         cfg: "hdf5.yaml"
+        outputs:
+          - name: "{name}_merged_{UUID}.hdf5"
       
 

@@ -1,0 +1,15 @@
+inputs:
+    namespace: "usertests"  # Default namespace for local input files
+
+output:
+    namespace: ~            # Inherit namespace from input files
+    name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
+    dir: "/pnfs/dune/scratch/users/${USER}/merge_test" # Directory for local output files
+    lifetime: 7             # Lifetime of output files (in days)
+
+merging:
+    target_mode: size     # Options: size, count
+    target_size: 10       # Target size (in GB) or number of files
+    equalize: True        # Try to equalize the size of the merged files
+    method:
+        name: tar         # Use tar method for merging files

@@ -26,7 +26,7 @@ class JobScheduler(ABC):
         """
         self.source = source
         self.dir = io_utils.expand_path(
-            os.path.join(config.output['scripts'], io_utils.get_timestamp()),
+            os.path.join(config.output['scripts'], config.uuid()),
             base_dir=io_utils.pkg_dir()
         )
         self.jobs = [collections.defaultdict(list), collections.defaultdict(list)]
@@ -82,6 +82,7 @@ class JobScheduler(ABC):
 
         n_inputs = 0
         n_stage1 = 0
+        n_stage2 = 0
         n_outputs = 0
         msg = [""]
         for site, site_jobs in self.jobs[0].items():
@@ -94,12 +95,13 @@ class JobScheduler(ABC):
             if site is None:
                 site = "local"
             msg.append(f"{site}: \t{site_inputs} -> {site_stage1}")
-        n_stage2 = sum(len(site_jobs) for site_jobs in self.jobs[1].values())
+        for site, site_jobs in self.jobs[1].items():
+            n_stage2 += sum(1 for job in site_jobs if job[1].output_id == 0)
         n_outputs += n_stage2
 
         script = self.write_script()
 
-        msg[0] = f"Merging {n_inputs} input files into {n_outputs} merged files:"
+        msg[0] = f"Merging {n_inputs} input files into {n_outputs} groups"
         io_utils.log_print("\n  ".join(msg))
         if len(script) > 1:
             if len(self.jobs[0]) > 1:
@@ -161,8 +163,9 @@ class LocalScheduler(JobScheduler):
                 if self.jobs[1]:
                     f.write(pass_msg[tier] + "\n")
                 for job in self.jobs[tier][None]:
-                    cmd = ["LD_PRELOAD=$XROOTD_LIB/libXrdPosixPreload.so", "python3",
-                           io_utils.find_runner("do_merge.py"), job[0], out_dir]
+                    #cmd = ["LD_PRELOAD=$XROOTD_LIB/libXrdPosixPreload.so", "python3",
+                    #       io_utils.find_runner("do_merge.py"), job[0], out_dir]
+                    cmd = ["python3", io_utils.find_runner("do_merge.py"), job[0], out_dir]
                     f.write(f"{' '.join(cmd)}\n")
         subprocess.run(['chmod', '+x', script_name], check=False)
         return [script_name]
@@ -225,12 +228,11 @@ class JustinScheduler(JobScheduler):
             cvmfs_dir = self.cvmfs_dir
         cmd = [
             'justin', 'simple-workflow',
-            '--description', f'"Merge {io_utils.get_timestamp()} p{tier} {site}"',
+            '--description', f'"Merge {config.uuid()} p{tier} {site}"',
             '--monte-carlo', str(len(self.jobs[tier-1][site])),
             '--jobscript', io_utils.find_runner("merge.jobscript"),
             '--site', site,
             '--scope', config.output['namespace'],
-            '--output-pattern', f"*_merged_*{config.merging['method']['ext']}",
             '--lifetime-days', str(config.output['lifetime']),
             '--env', f'MERGE_CONFIG="pass{tier}_{site}"',
             '--env', f'CONFIG_DIR="{cvmfs_dir}"'
@@ -239,6 +241,9 @@ class JustinScheduler(JobScheduler):
             cmd += ['--env', f'DUNE_VERSION="{config.merging["dune_version"]}"']
         if config.merging['dune_qualifier']:
             cmd += ['--env', f'DUNE_QUALIFIER="{config.merging["dune_qualifier"]}"']
+        for output in config.merging['method']['outputs']:
+            name, ext = os.path.splitext(output['name'])
+            cmd += ['--output-pattern', f"{name}*{ext}"]
         return f"{' '.join(cmd)}\n"
 
     def write_script(self) -> list:

@@ -100,18 +100,19 @@ class MetaRetriever(ABC):
         :return: yields a series of MergeChunk objects
         """
         for group in self.files.groups():
-            if len(group) > config.merging['chunk_max']:
-                n_chunks = math.ceil(len(group) / config.merging['chunk_max'])
-                target_size = len(group) / n_chunks
-                chunk = group.chunk()
-                for file in sorted(group.values(), key=lambda f: f.path):
-                    chunk.add(file)
-                    if len(chunk) >= target_size:
-                        yield chunk
-                        chunk = group.chunk()
-                if chunk:
+            if len(group) <= config.merging['chunk_max']:
+                yield group
+                continue
+            n_chunks = math.ceil(len(group) / config.merging['chunk_max'])
+            target_size = len(group) / n_chunks
+            chunk = group.chunk()
+            for file in sorted(group.values(), key=lambda f: f.path):
+                if len(chunk) >= target_size:
                     yield chunk
-            yield group
+                    chunk = group.chunk()
+                chunk.add(file)
+            yield chunk
+            yield from group.tier2_chunks()
 
 class PathFinder(MetaRetriever):
     """Base class for finding paths to files"""

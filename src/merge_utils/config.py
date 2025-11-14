@@ -3,6 +3,7 @@
 import logging
 import json
 import os
+from datetime import datetime, timezone
 
 from merge_utils import io_utils
 
@@ -15,10 +16,16 @@ output: dict = {}
 validation: dict = {}
 sites: dict = {}
 merging: dict = {}
-
-initialized: bool = False
+timestamp: str = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
 
 logger = logging.getLogger(__name__)
+
+def uuid() -> str:
+    """Generate a unique identifier based on the job tag and timestamp."""
+    tag = inputs.get('tag')
+    if tag:
+        return f"{tag}_{timestamp}"
+    return timestamp
 
 def update_list(old_list: list, new_list: list) -> None:
     """
@@ -127,22 +134,13 @@ def load(files: list = None) -> None:
 
     check_environment()
 
-    logger.info(
-        "Final configuration:\nmetadata: %s\ninputs: %s\noutput: %s\nvalidation: %s\nsites: %s\nmerging: %s",
-        json.dumps(metadata, indent=2),
-        json.dumps(inputs, indent=2),
-        json.dumps(output, indent=2),
-        json.dumps(validation, indent=2),
-        json.dumps(sites, indent=2),
-        json.dumps(merging, indent=2)
-    )
-
-def runner_settings() -> dict:
-    """
-    Get the merging settings for the runner scripts.
-    
-    :return: Dictionary of merging settings.
-    """
-    return {
-        'streaming': sites['streaming']
-    }
+    msg = [
+        "Final merged configuration:",
+        f"metadata: {json.dumps(metadata, indent=2)}",
+        f"inputs: {json.dumps(inputs, indent=2)}",
+        f"output: {json.dumps(output, indent=2)}",
+        f"validation: {json.dumps(validation, indent=2)}",
+        f"sites: {json.dumps(sites, indent=2)}",
+        f"merging: {json.dumps(merging, indent=2)}"
+    ]
+    logger.info("\n".join(msg))
