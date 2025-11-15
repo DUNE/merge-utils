@@ -4,6 +4,10 @@ output:
 sites:
     streaming: False
 
+validation:
+    skip:
+        unreachable: True
+
 merging:
     target_mode: count
     target_size: 100
