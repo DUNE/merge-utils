@@ -23,8 +23,6 @@ output:
     scratch:  # Settings for temporary files from 2-stage merging
         namespace: "usertests" # Optionally specify a namespace different from the parents
         lifetime: 7      # Lifetime of output files (in days)
-        
-
 
 metadata:
     optional:         # These metadata keys are optional (overrides required and conditional keys)
@@ -51,6 +49,9 @@ sites:
       - "US_FNAL-FermiGrid"
       - "CERN"
     max_distance: 1000                # Distances range from 0 to 101
+    rse_distances:                    # Distances offsets for specific RSEs
+        "FNAL_DCACHE": -5             # Increase priority
+        "DUNE_US_FNAL_DISK_STAGE": 5  # Reduce priority 
     nearline_distance:                # Extra distance to account for staging
         default:        100           # Default distance for all RSEs
         "FNAL_DCACHE":  10

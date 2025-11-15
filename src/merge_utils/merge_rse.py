@@ -179,7 +179,7 @@ class MergeRSEs(collections.UserDict):
                 rse = row['rse']
                 if site not in self.sites or rse not in self or not self[rse].valid:
                     continue
-                dist = 100*float(row['dist'])
+                dist = 100*float(row['dist']) + config.sites['rse_distances'].get(rse, 0)
                 self[rse].distances[site] = dist
                 if dist <= self.max_distance:
                     accessible.add(rse)
