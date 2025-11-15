@@ -221,7 +221,7 @@ class MergeRSEs(collections.UserDict):
             return float('inf')
         _, dist = self[rse].nearest_site()
         if dist > self.max_distance:
-            logger.warning("RSE %s is too far from merging sites (%s > %s)",
+            logger.debug("RSE %s is too far from merging sites (%s > %s)",
                            rse, dist, self.max_distance)
             return dist
 
@@ -238,7 +238,7 @@ class MergeRSEs(collections.UserDict):
         elif status == 'NEARLINE':
             dist += self.data[rse].nearline_dist
             if dist > self.max_distance:
-                logger.warning("RSE %s (tape) is too far from merging sites (%s > %s)",
+                logger.debug("RSE %s (tape) is too far from merging sites (%s > %s)",
                                rse, dist, self.max_distance)
             else:
                 self.tape.add(did)
