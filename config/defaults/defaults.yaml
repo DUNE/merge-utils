@@ -88,7 +88,7 @@ merging:
           - name: "{name}_merged_{UUID}.root"
       - name: "lar"
         cond: "'{core.file_format}' in ['artroot']"
-        cmd: "lar -c {cfg} -o {output} {inputs}"
+        cmd: "lar -c {cfg} -n 1000000 -o {output} {inputs}"
         cfg: "artcat.fcl"
         outputs:
           - name: "{name}_merged_{UUID}.root"

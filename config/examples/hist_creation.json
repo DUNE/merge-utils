@@ -12,7 +12,7 @@
     "merging":{
         "method":{
             "name": "lar",
-            "cmd": "lar -c {cfg} {inputs}",
+            "cmd": "lar -c {cfg} -n 1000000 {inputs}",
             "cfg": "triggerana_dune10kt_1x2x2.fcl",
             "outputs": [
                 {
