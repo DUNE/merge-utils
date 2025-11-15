@@ -203,6 +203,14 @@ metadata:
     overrides: # Set keys to specific values
         "retention.status":         "active"
     abbreviations:  # Try to shorten long output file names
+        "extensions":   # Automatically remove these extensions from all keys
+          - "fcl"
+          - "json"
+          - "yaml"
+          - "root"
+        "substitutions": # Substitute these values in all keys
+            ".": "-"
+            " ": "-"
         "core.run_type":
             "protodune-sp":             "pd-sp"
             "protodune-dp":             "pd-dp"

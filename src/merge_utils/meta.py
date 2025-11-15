@@ -9,6 +9,26 @@ from merge_utils import config, io_utils, __version__
 
 logger = logging.getLogger(__name__)
 
+def abbreviate(key: str, value: str) -> str:
+    """
+    Abbreviate a metadata value based on the global configuration.
+
+    :param key: metadata key
+    :param value: metadata value
+    :return: abbreviated metadata value
+    """
+    # Apply specific abbreviations
+    value = config.metadata['abbreviations'].get(key, {}).get(value, value)
+    # Remove known extensions
+    for ext in config.metadata['abbreviations'].get('extensions', []):
+        if value.endswith(f".{ext}"):
+            value = value[:-(len(ext)+1)]
+            break
+    # Apply general substitutions
+    for old, new in config.metadata['abbreviations'].get('substitutions', {}).items():
+        value = value.replace(old, new)
+    return value
+
 class MetaNameDict:
     """Wrapper class to access metadata dictionary."""
 
@@ -34,7 +54,7 @@ class MetaNameDict:
                 logger.warning("Metadata key '%s' not found", self._key)
                 return self._key
             val = str(val)
-            return config.metadata['abbreviations'].get(self._key, {}).get(val, val)
+            return abbreviate(self._key, val)
 
         def __getitem__(self, name):
             val = self._dict.get(self._key)
@@ -49,7 +69,7 @@ class MetaNameDict:
                 logger.warning("Metadata key '%s[%s]' not found", self._key, name)
                 return f"{self._key}[{name}]"
             val2 = str(val2)
-            return config.metadata['abbreviations'].get(f"{self._key}[{name}]", {}).get(val2, val2)
+            return abbreviate(f"{self._key}[{name}]", val2)
 
     def __getitem__(self, name):
         if name.startswith('$'):
