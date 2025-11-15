@@ -11,7 +11,7 @@
 
     "sites":{
         "rse_distances":{
-            "FNAL_DCACHE": 1000
+            "FNAL_DCACHE": 1001
         }
     },
 
