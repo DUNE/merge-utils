@@ -9,6 +9,12 @@
         "required":["~core.runs"]
     },
 
+    "sites":{
+        "rse_distances":{
+            "FNAL_DCACHE": 1000
+        }
+    },
+
     "merging":{
         "method":{
             "name": "lar",
