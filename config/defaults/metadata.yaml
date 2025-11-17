@@ -209,8 +209,10 @@ metadata:
           - "yaml"
           - "root"
         "substitutions": # Substitute these values in all keys
+            ", ": ","
             ".": "-"
-            " ": "-"
+            " ": "_"
+            "/": "-"
         "core.run_type":
             "protodune-sp":             "pd-sp"
             "protodune-dp":             "pd-dp"

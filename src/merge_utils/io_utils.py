@@ -231,8 +231,8 @@ def log_list(msg: str, items: Iterable, level=logging.WARNING) -> int:
     else:
         msg = [msg.format(n=total, s="s", es="es")]
 
-    msg += [f"\n  {item}" for item in sorted(items)]
-    logger.log(level, "".join(msg), stacklevel=2)
+    msg += items
+    logger.log(level, "\n  ".join(msg), stacklevel=2)
     return total
 
 def log_dict(msg: str, items: dict, level=logging.WARNING) -> int:
@@ -247,9 +247,9 @@ def log_dict(msg: str, items: dict, level=logging.WARNING) -> int:
 
     mult = max(items.values())
     if mult == 1:
-        msg += [f"\n  {item}" for item in sorted(items)]
+        msg += sorted(items)
     else:
         pad = int(math.log10(mult)+1)
-        msg += [f"\n  ({count:{pad}}) {item}" for item, count in sorted(items.items())]
-    logger.log(level, "".join(msg), stacklevel=2)
+        msg += [f"({count:{pad}}) {item}" for item, count in sorted(items.items())]
+    logger.log(level, "\n  ".join(msg), stacklevel=2)
     return total

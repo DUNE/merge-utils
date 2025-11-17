@@ -9,85 +9,193 @@ from merge_utils import config, io_utils, __version__
 
 logger = logging.getLogger(__name__)
 
-def abbreviate(key: str, value: str) -> str:
-    """
-    Abbreviate a metadata value based on the global configuration.
-
-    :param key: metadata key
-    :param value: metadata value
-    :return: abbreviated metadata value
-    """
-    # Apply specific abbreviations
-    value = config.metadata['abbreviations'].get(key, {}).get(value, value)
-    # Remove known extensions
-    for ext in config.metadata['abbreviations'].get('extensions', []):
-        if value.endswith(f".{ext}"):
-            value = value[:-(len(ext)+1)]
-            break
-    # Apply general substitutions
-    for old, new in config.metadata['abbreviations'].get('substitutions', {}).items():
-        value = value.replace(old, new)
-    return value
-
 class MetaNameDict:
     """Wrapper class to access metadata dictionary."""
 
-    def __init__(self, meta: dict):
+    def __init__(self, metadata: dict):
         """
         Initialize the MetaNameDict with a metadata dictionary.
         """
-        self._dict = meta
+        self.data = metadata
+        self.errors = []
 
-    class MetaNameReader:
+    def get(self, key, default=None):
+        """
+        Get a metadata value by key.
+
+        :param key: metadata key
+        :param default: default value if key not found
+        :return: metadata value
+        """
+        return self.data.get(key, default)
+
+    class MetaVal:
         """Class to read metadata values."""
 
-        def __init__(self, meta: dict, key: str):
+        def __init__(self, meta, key, idx=None):
+            self._dict = meta
+            self._key = key
+            self._idx = idx
+
+        @property
+        def key(self) -> str:
+            """
+            Get the metadata key.
+
+            :return: metadata key
+            """
+            if self._idx is not None:
+                return f"{self._key}[{self._idx}]"
+            return self._key
+
+        def read_list(self, data) -> any:
+            """
+            Try to extract a value from a list.
+            
+            :param data: list of data
+            :return: extracted value
+            """
+            if isinstance(self._idx, int):
+                if self._idx >= 0 and self._idx < len(data):
+                    return data[self._idx]
+                self._dict.errors.append(f"Metadata key '{self.key}' index out of range")
+            elif isinstance(self._idx, str):
+                try:
+                    idx = [int(i) if i else None for i in self._idx.split(':')]
+                    if len(idx) == 1:
+                        return data[idx[0]]
+                    if len(idx) == 2:
+                        return data[slice(idx[0], idx[1])]
+                    if len(idx) == 3:
+                        return data[slice(idx[0], idx[1], idx[2])]
+                except ValueError:
+                    pass
+                self._dict.errors.append(f"Metadata key '{self.key}' has invalid slice")
+            else:
+                self._dict.errors.append(f"Metadata key '{self.key}' has invalid index")
+            return None
+
+        def read_dict(self, data) -> any:
+            """
+            Try to extract a value from a dictionary.
+            
+            :param data: dictionary of data
+            :return: extracted value
+            """
+            key = self._idx
+            if key.startswith("'") and key.endswith("'"):
+                key = key[1:-1]
+            elif key.startswith('"') and key.endswith('"'):
+                key = key[1:-1]
+            val = data.get(key)
+            if val is None:
+                self._dict.errors.append(f"Metadata key '{self.key}' has invalid index")
+            return val
+
+        @property
+        def value(self) -> any:
+            """
+            Get the metadata value.
+
+            :return: metadata value
+            """
+            if self._key.startswith('$'):
+                val = os.getenv(self._key[1:], None)
+                if val is None:
+                    self._dict.errors.append(f"Environment variable '{self._key[1:]}' not found")
+                return val
+            val = self._dict.get(self._key)
+            if val is None:
+                self._dict.errors.append(f"Metadata key '{self._key}' not found")
+            elif self._idx is not None:
+                if isinstance(val, list):
+                    val = self.read_list(val)
+                elif isinstance(val, dict):
+                    val = self.read_dict(val)
+                elif hasattr(val, '__getitem__'):
+                    try:
+                        val = val[self._idx]
+                    except (KeyError, IndexError, TypeError):
+                        self._dict.errors.append(f"Metadata key '{self.key}' has invalid index")
+                        val = None
+                else:
+                    self._dict.errors.append(f"Metadata key '{self._key}' is not subscriptable")
+                    val = None
+            return val
+
+        def __format__(self, format_spec):
+            key = self.key
+            #logger.debug("Formatting metadata key '%s' with spec '%s'", key, format_spec)
+            val = self.value
+            if val is None:
+                if format_spec:
+                    return f"{{{key}:{format_spec}}}"
+                return f"{{{key}}}"
+            if isinstance(val, str):
+                # Apply specific abbreviations
+                val = config.metadata['abbreviations'].get(key, {}).get(val, val)
+                # Remove known extensions
+                for ext in config.metadata['abbreviations'].get('extensions', []):
+                    if val.endswith(f".{ext}"):
+                        val = val[:-(len(ext)+1)]
+                        break
+            # Apply formatting
+            try:
+                output = format(val, format_spec)
+            except (ValueError, TypeError):
+                self._dict.errors.append(
+                    f"Failed to format key '{key}' ({val}) with spec '{format_spec}'"
+                )
+                return f"{{{key}:{format_spec}}}"
+            # Apply general substitutions
+            for old, new in config.metadata['abbreviations'].get('substitutions', {}).items():
+                output = output.replace(old, new)
+            return output
+
+    class MetaKey:
+        """Class to parse metadata keys."""
+
+        def __init__(self, meta, key: str):
             self._dict = meta
             self._key = key
 
         def __getattr__(self, name):
-            return MetaNameDict.MetaNameReader(self._dict, self._key + '.' + name)
+            return MetaNameDict.MetaKey(self._dict, self._key + '.' + name)
 
-        def __str__(self):
-            val = self._dict.get(self._key)
-            if val is None:
-                logger.warning("Metadata key '%s' not found", self._key)
-                return self._key
-            val = str(val)
-            return abbreviate(self._key, val)
+        def __format__(self, format_spec):
+            return format(MetaNameDict.MetaVal(self._dict, self._key), format_spec)
 
         def __getitem__(self, name):
-            val = self._dict.get(self._key)
-            if val is None:
-                logger.warning("Metadata key '%s' not found", self._key)
-                return self._key
-            if not hasattr(val, '__getitem__'):
-                logger.warning("Metadata key '%s' is not subscriptable", self._key)
-                return f"{self._key}[{name}]"
-            val2 = val.get(eval(name)) #pylint: disable=eval-used
-            if val2 is None:
-                logger.warning("Metadata key '%s[%s]' not found", self._key, name)
-                return f"{self._key}[{name}]"
-            val2 = str(val2)
-            return abbreviate(f"{self._key}[{name}]", val2)
+            return MetaNameDict.MetaVal(self._dict, self._key, name)
 
     def __getitem__(self, name):
         if name.startswith('$'):
-            return os.getenv(name[1:], name[1:])
+            return MetaNameDict.MetaVal(self, name)
         if name == "TIMESTAMP":
             return config.timestamp
         if name == "UUID":
             return config.uuid()
-        return MetaNameDict.MetaNameReader(self._dict, name)
+        if name == "NAME":
+            return config.output['name']
+        return MetaNameDict.MetaKey(self, name)
 
-    def format(self, template: str) -> str:
+    def format(self, template: str, strict: bool = True) -> str:
         """
         Format a string using the metadata dictionary.
 
         :param template: template string
         :return: formatted string
         """
-        return template.format_map(self)
+        self.errors = []
+        output = template.format_map(self)
+        if self.errors:
+            errors = [output] + self.errors
+            if strict:
+                io_utils.log_list("Failed to parse name template:", errors, logging.CRITICAL)
+                sys.exit(1)
+            io_utils.log_list("Failed to parse name template:", errors, logging.ERROR)
+            self.errors = []
+        return output
 
     def eval(self, condition: str) -> bool:
         """
@@ -96,7 +204,7 @@ class MetaNameDict:
         :param condition: condition string to evaluate
         :return: evaluated value
         """
-        expr = condition.format_map(self)
+        expr = self.format(condition)
         try:
             val = eval(expr) #pylint: disable=eval-used
         except Exception as exc:
@@ -675,7 +783,6 @@ def make_names(files: dict) -> str:
     name_dict = MetaNameDict(metadata)
     name = name_dict.format(config.output['name'])
     config.output['name'] = name
-    metadata['name'] = name
     for output in config.merging['method']['outputs']:
         #name, ext = os.path.splitext(name_dict.format(output['name']))
         #output['name'] = f"{name}_{config.timestamp}{ext}"

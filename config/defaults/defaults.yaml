@@ -77,25 +77,25 @@ merging:
         cond: "True"  # Always matches if no other method matches first
         script: "merge_tar.py"
         outputs:
-          - name: "{name}_merged_{UUID}.tar"
+          - name: "{NAME}_merged_{UUID}.tar"
             metadata:
                 core.file_format: "tar"
       - name: "hadd"
         cond: "'{core.file_format}' in ['root', 'rootntuple', 'tfile']"
         cmd: "hadd -f {output} {inputs}"
         outputs:
-          - name: "{name}_merged_{UUID}.root"
+          - name: "{NAME}_merged_{UUID}.root"
       - name: "lar"
         cond: "'{core.file_format}' in ['artroot']"
         cmd: "lar -c {cfg} -n 1000000 -o {output} {inputs}"
         cfg: "artcat.fcl"
         outputs:
-          - name: "{name}_merged_{UUID}.root"
+          - name: "{NAME}_merged_{UUID}.root"
       - name: "hdf5"
         cond: "'{core.file_format}' in ['hdf5']"
         script: "merge_hdf5.py"
         cfg: "hdf5.yaml"
         outputs:
-          - name: "{name}_merged_{UUID}.hdf5"
+          - name: "{NAME}_merged_{UUID}.hdf5"
       
 

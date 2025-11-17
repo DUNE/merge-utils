@@ -1,6 +1,6 @@
 {   "comment":"example",
     "output":{
-        "name": "{dune_mc.gen_fcl_filename}_{dune.campaign}_{dune.config_file}_{core.application.name}_{core.application.version}_{merge.cfg}_{$DUNESW_VERSION}_s{merge.skip}_l{merge.limit}_{merge.tag}",
+        "name": "{dune_mc.gen_fcl_filename}_{dune.campaign}_{dune.config_file}_{core.application.name}_{core.application.version}_{merge.cfg}_{$DUNESW_VERSION}_s{merge.skip:06d}_l{merge.limit:06d}",
         "namespace": "usertests",
         "dir": "/pnfs/dune/scratch/users/${USER}/merge_test/triggerAna"
     },
@@ -22,7 +22,7 @@
             "cfg": "triggerana_dune10kt_1x2x2.fcl",
             "outputs": [
                 {
-                    "name": "{name}_ntuple_{UUID}.root",
+                    "name": "{NAME}_ntuple_{UUID}.root",
                     "rename": "triggerAna.ntuple.root",
                     "metadata": {"core.data_tier":"root-tuple"},
                     "method": "hadd"
