@@ -47,95 +47,212 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="abbreviate">
-<a class="viewcode-back" href="../meta.html#meta.abbreviate">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">abbreviate</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Abbreviate a metadata value based on the global configuration.</span>
-
-<span class="sd">    :param key: metadata key</span>
-<span class="sd">    :param value: metadata value</span>
-<span class="sd">    :return: abbreviated metadata value</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Apply specific abbreviations</span>
-    <span class="n">value</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;abbreviations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-    <span class="c1"># Remove known extensions</span>
-    <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;abbreviations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;extensions&#39;</span><span class="p">,</span> <span class="p">[]):</span>
-        <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;.</span><span class="si">{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">):</span>
-            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">[:</span><span class="o">-</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
-            <span class="k">break</span>
-    <span class="c1"># Apply general substitutions</span>
-    <span class="k">for</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;abbreviations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;substitutions&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">value</span></div>
-
-
 <div class="viewcode-block" id="MetaNameDict">
 <a class="viewcode-back" href="../meta.html#meta.MetaNameDict">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MetaNameDict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrapper class to access metadata dictionary.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the MetaNameDict with a metadata dictionary.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="n">meta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">metadata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
 
-<div class="viewcode-block" id="MetaNameDict.MetaNameReader">
-<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.MetaNameReader">[docs]</a>
-    <span class="k">class</span><span class="w"> </span><span class="nc">MetaNameReader</span><span class="p">:</span>
+<div class="viewcode-block" id="MetaNameDict.get">
+<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a metadata value by key.</span>
+
+<span class="sd">        :param key: metadata key</span>
+<span class="sd">        :param default: default value if key not found</span>
+<span class="sd">        :return: metadata value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MetaNameDict.MetaVal">
+<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.MetaVal">[docs]</a>
+    <span class="k">class</span><span class="w"> </span><span class="nc">MetaVal</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Class to read metadata values.&quot;&quot;&quot;</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="n">meta</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">key</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="o">=</span> <span class="n">idx</span>
+
+        <span class="nd">@property</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Get the metadata key.</span>
+
+<span class="sd">            :return: metadata key</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="si">}</span><span class="s2">[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="si">}</span><span class="s2">]&quot;</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span>
+
+<div class="viewcode-block" id="MetaNameDict.MetaVal.read_list">
+<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.MetaVal.read_list">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">read_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">any</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Try to extract a value from a list.</span>
+<span class="sd">            </span>
+<span class="sd">            :param data: list of data</span>
+<span class="sd">            :return: extracted value</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; index out of range&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">idx</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="k">else</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)]</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">idx</span><span class="p">[</span><span class="mi">2</span><span class="p">])]</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="k">pass</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; has invalid slice&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; has invalid index&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="MetaNameDict.MetaVal.read_dict">
+<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.MetaVal.read_dict">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">read_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">any</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Try to extract a value from a dictionary.</span>
+<span class="sd">            </span>
+<span class="sd">            :param data: dictionary of data</span>
+<span class="sd">            :return: extracted value</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span>
+            <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">key</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">):</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">key</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">):</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; has invalid index&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">val</span></div>
+
+
+        <span class="nd">@property</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">any</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Get the metadata value.</span>
+
+<span class="sd">            :return: metadata value</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;$&#39;</span><span class="p">):</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Environment variable &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="si">}</span><span class="s2">&#39; not found&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">val</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="si">}</span><span class="s2">&#39; not found&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_list</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_dict</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="s1">&#39;__getitem__&#39;</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="p">]</span>
+                    <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; has invalid index&quot;</span><span class="p">)</span>
+                        <span class="n">val</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="si">}</span><span class="s2">&#39; is not subscriptable&quot;</span><span class="p">)</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="n">val</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="fm">__format__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span>
+            <span class="c1">#logger.debug(&quot;Formatting metadata key &#39;%s&#39; with spec &#39;%s&#39;&quot;, key, format_spec)</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">format_spec</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">format_spec</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="c1"># Apply specific abbreviations</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;abbreviations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                <span class="c1"># Remove known extensions</span>
+                <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;abbreviations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;extensions&#39;</span><span class="p">,</span> <span class="p">[]):</span>
+                    <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;.</span><span class="si">{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">):</span>
+                        <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">[:</span><span class="o">-</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+                        <span class="k">break</span>
+            <span class="c1"># Apply formatting</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="nb">format</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to format key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; (</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s2">) with spec &#39;</span><span class="si">{</span><span class="n">format_spec</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">format_spec</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
+            <span class="c1"># Apply general substitutions</span>
+            <span class="k">for</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;abbreviations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;substitutions&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">output</span></div>
+
+
+<div class="viewcode-block" id="MetaNameDict.MetaKey">
+<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.MetaKey">[docs]</a>
+    <span class="k">class</span><span class="w"> </span><span class="nc">MetaKey</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class to parse metadata keys.&quot;&quot;&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="n">meta</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">key</span>
 
         <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaNameReader</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaKey</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">%s</span><span class="s2">&#39; not found&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">)</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">abbreviate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="fm">__format__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">format</span><span class="p">(</span><span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaVal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">),</span> <span class="n">format_spec</span><span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">%s</span><span class="s2">&#39; not found&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">)</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="s1">&#39;__getitem__&#39;</span><span class="p">):</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">%s</span><span class="s2">&#39; is not subscriptable&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">)</span>
-                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="si">}</span><span class="s2">[</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">]&quot;</span>
-            <span class="n">val2</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="c1">#pylint: disable=eval-used</span>
-            <span class="k">if</span> <span class="n">val2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">%s</span><span class="s2">[</span><span class="si">%s</span><span class="s2">]&#39; not found&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="si">}</span><span class="s2">[</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">]&quot;</span>
-            <span class="n">val2</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">val2</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">abbreviate</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="si">}</span><span class="s2">[</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">,</span> <span class="n">val2</span><span class="p">)</span></div>
+            <span class="k">return</span> <span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaVal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;$&#39;</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="k">return</span> <span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaVal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;TIMESTAMP&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">timestamp</span>
         <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;UUID&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">uuid</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaNameReader</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;NAME&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaKey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
 
 <div class="viewcode-block" id="MetaNameDict.format">
 <a class="viewcode-back" href="../meta.html#meta.MetaNameDict.format">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">template</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">template</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Format a string using the metadata dictionary.</span>
 
 <span class="sd">        :param template: template string</span>
 <span class="sd">        :return: formatted string</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">template</span><span class="o">.</span><span class="n">format_map</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">format_map</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
+            <span class="n">errors</span> <span class="o">=</span> <span class="p">[</span><span class="n">output</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">errors</span>
+            <span class="k">if</span> <span class="n">strict</span><span class="p">:</span>
+                <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Failed to parse name template:&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Failed to parse name template:&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="n">output</span></div>
 
 
 <div class="viewcode-block" id="MetaNameDict.eval">
@@ -147,7 +264,7 @@
 <span class="sd">        :param condition: condition string to evaluate</span>
 <span class="sd">        :return: evaluated value</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">expr</span> <span class="o">=</span> <span class="n">condition</span><span class="o">.</span><span class="n">format_map</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">val</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span> <span class="c1">#pylint: disable=eval-used</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
@@ -817,7 +934,6 @@
     <span class="n">name_dict</span> <span class="o">=</span> <span class="n">MetaNameDict</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
     <span class="n">name</span> <span class="o">=</span> <span class="n">name_dict</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
     <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-    <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
     <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]:</span>
         <span class="c1">#name, ext = os.path.splitext(name_dict.format(output[&#39;name&#39;]))</span>
         <span class="c1">#output[&#39;name&#39;] = f&quot;{name}_{config.timestamp}{ext}&quot;</span>

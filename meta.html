@@ -210,13 +210,69 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="meta.MetaNameDict">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MetaNameDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MetaNameDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">MetaNameDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MetaNameDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict" title="Link to this definition">¶</a></dt>
 <dd><p>Wrapper class to access metadata dictionary.</p>
 <p>Initialize the MetaNameDict with a metadata dictionary.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="meta.MetaNameDict.MetaNameReader">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MetaNameReader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MetaNameDict.MetaNameReader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict.MetaNameReader" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="meta.MetaNameDict.MetaKey">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MetaKey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">meta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MetaNameDict.MetaKey"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict.MetaKey" title="Link to this definition">¶</a></dt>
+<dd><p>Class to parse metadata keys.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="meta.MetaNameDict.MetaVal">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MetaVal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">meta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MetaNameDict.MetaVal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict.MetaVal" title="Link to this definition">¶</a></dt>
 <dd><p>Class to read metadata values.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MetaNameDict.MetaVal.key">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#meta.MetaNameDict.MetaVal.key" title="Link to this definition">¶</a></dt>
+<dd><p>Get the metadata key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>metadata key</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MetaNameDict.MetaVal.read_dict">
+<span class="sig-name descname"><span class="pre">read_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">any</span></span></span><a class="reference internal" href="_modules/meta.html#MetaNameDict.MetaVal.read_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict.MetaVal.read_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Try to extract a value from a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> – dictionary of data</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>extracted value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MetaNameDict.MetaVal.read_list">
+<span class="sig-name descname"><span class="pre">read_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">any</span></span></span><a class="reference internal" href="_modules/meta.html#MetaNameDict.MetaVal.read_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict.MetaVal.read_list" title="Link to this definition">¶</a></dt>
+<dd><p>Try to extract a value from a list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> – list of data</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>extracted value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="meta.MetaNameDict.MetaVal.value">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">any</span></em><a class="headerlink" href="#meta.MetaNameDict.MetaVal.value" title="Link to this definition">¶</a></dt>
+<dd><p>Get the metadata value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>metadata value</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py method">
@@ -235,7 +291,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="meta.MetaNameDict.format">
-<span class="sig-name descname"><span class="pre">format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/meta.html#MetaNameDict.format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict.format" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/meta.html#MetaNameDict.format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict.format" title="Link to this definition">¶</a></dt>
 <dd><p>Format a string using the metadata dictionary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -247,23 +303,23 @@
 </dl>
 </dd></dl>
 
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="meta.abbreviate">
-<span class="sig-prename descclassname"><span class="pre">meta.</span></span><span class="sig-name descname"><span class="pre">abbreviate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/meta.html#abbreviate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.abbreviate" title="Link to this definition">¶</a></dt>
-<dd><p>Abbreviate a metadata value based on the global configuration.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="meta.MetaNameDict.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/meta.html#MetaNameDict.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#meta.MetaNameDict.get" title="Link to this definition">¶</a></dt>
+<dd><p>Get a metadata value by key.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>key</strong> – metadata key</p></li>
-<li><p><strong>value</strong> – metadata value</p></li>
+<li><p><strong>default</strong> – default value if key not found</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>abbreviated metadata value</p>
+<dd class="field-even"><p>metadata value</p>
 </dd>
 </dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -498,12 +554,19 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#meta.MetaNameDict"><code class="docutils literal notranslate"><span class="pre">MetaNameDict</span></code></a><ul>
-<li><a class="reference internal" href="#meta.MetaNameDict.MetaNameReader"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.MetaNameReader</span></code></a></li>
-<li><a class="reference internal" href="#meta.MetaNameDict.eval"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.eval()</span></code></a></li>
-<li><a class="reference internal" href="#meta.MetaNameDict.format"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.format()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MetaNameDict.MetaKey"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.MetaKey</span></code></a></li>
+<li><a class="reference internal" href="#meta.MetaNameDict.MetaVal"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.MetaVal</span></code></a><ul>
+<li><a class="reference internal" href="#meta.MetaNameDict.MetaVal.key"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.MetaVal.key</span></code></a></li>
+<li><a class="reference internal" href="#meta.MetaNameDict.MetaVal.read_dict"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.MetaVal.read_dict()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MetaNameDict.MetaVal.read_list"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.MetaVal.read_list()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MetaNameDict.MetaVal.value"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.MetaVal.value</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#meta.abbreviate"><code class="docutils literal notranslate"><span class="pre">abbreviate()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MetaNameDict.eval"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.eval()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MetaNameDict.format"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.format()</span></code></a></li>
+<li><a class="reference internal" href="#meta.MetaNameDict.get"><code class="docutils literal notranslate"><span class="pre">MetaNameDict.get()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#meta.auto_output"><code class="docutils literal notranslate"><span class="pre">auto_output()</span></code></a></li>
 <li><a class="reference internal" href="#meta.check_method"><code class="docutils literal notranslate"><span class="pre">check_method()</span></code></a></li>
 <li><a class="reference internal" href="#meta.check_required"><code class="docutils literal notranslate"><span class="pre">check_required()</span></code></a></li>
