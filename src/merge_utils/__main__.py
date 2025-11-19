@@ -41,6 +41,7 @@ def main():
                            help='only validate metadata instead of merging')
     out_group.add_argument('--list', choices=['dids', 'replicas', 'pfns'], metavar='OPT',
                            help='list (dids, replicas, pfns) instead of merging')
+    out_group.add_argument('-n', '--name', type=str, help='specify a name for the output files')
     out_group.add_argument('-m', '--method', type=str, metavar='MTD',
                            help='explicitly specify the merge method to use')
     out_group.add_argument('-l', '--local', action='store_true',
@@ -69,14 +70,30 @@ def main():
 
     if args.tag:
         config.inputs['tag'] = args.tag
+        logger.debug("Overriding tag: %s", args.tag)
     if args.comment:
         config.inputs['comment'] = args.comment
+        logger.debug("Overriding comment: %s", args.comment)
     if args.skip is not None:
-        config.inputs['skip'] = args.skip
+        skip = args.skip if args.skip >= 0 else None
+        config.inputs['skip'] = skip
+        if skip is None:
+            logger.debug("Overriding skip: none")
+        else:
+            logger.debug("Overriding skip: %d", skip)
     if args.limit is not None:
-        config.inputs['limit'] = args.limit
+        limit = args.limit if args.limit >= 0 else None
+        config.inputs['limit'] = limit
+        if limit is None:
+            logger.debug("Overriding limit: none")
+        else:
+            logger.debug("Overriding limit: %d", limit)
+    if args.name:
+        config.output['name'] = args.name
+        logger.info("Setting output name: %s", args.name)
     if args.method:
         config.merging['method']['name'] = args.method
+        logger.info("Setting merge method: %s", args.method)
 
     # Collect inputs
     inputs = config.inputs['inputs'] or []
@@ -105,6 +122,9 @@ def main():
             skip = config.inputs['skip'] or 0
             limit = config.inputs['limit'] or len(inputs)
             inputs = inputs[skip:skip+limit]
+        if len(inputs) == 0:
+            logger.critical("No input files provided, exiting.")
+            sys.exit(1)
         paths = local.get_local_files(inputs, dirs)
         metadata = paths.meta
     elif input_mode == 'query':
@@ -114,8 +134,10 @@ def main():
             sys.exit(1)
         query = inputs[0]
         config.inputs['query'] = query
-        if 'ordered' in query or 'skip' in query or 'limit' in query:
-            logger.warning("Consider using command line options instead of including 'ordered', 'skip', or 'limit' in the query.")
+        if 'ordered' in query:
+            logger.info("The 'ordered' keyword is automatically appeneded to queries.")
+        if 'skip' in query or 'limit' in query:
+            logger.warning("Consider using command line options for 'skip' and 'limit'.")
         query += " ordered"
         if config.inputs['skip'] is not None:
             query += f" skip {config.inputs['skip']}"
@@ -140,6 +162,9 @@ def main():
             skip = config.inputs['skip'] or 0
             limit = config.inputs['limit'] or len(inputs)
             inputs = inputs[skip:skip+limit]
+        if len(inputs) == 0:
+            logger.critical("No input DIDs provided, exiting.")
+            sys.exit(1)
         metadata = MetaCatRetriever(dids=inputs)
     else:
         logger.critical("Unknown input mode: %s", input_mode)

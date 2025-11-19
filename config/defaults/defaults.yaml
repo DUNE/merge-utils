@@ -43,22 +43,22 @@ validation:
 
 sites:
     justin_url: "https://justin-ui-fnal.dune.hep.ac.uk"
-    local: "US_FNAL-FermiGrid"        # Local site name
-    default: "US_FNAL-FermiGrid"      # Default site (eg for stage 2 jobs)
-    allowed_sites:                    # Sites where merging is allowed
+    local: "US_FNAL-FermiGrid"          # Local site name
+    default: "US_FNAL-FermiGrid"        # Default site (eg for stage 2 jobs)
+    allowed_sites:                      # Sites where merging is allowed
       - "US_FNAL-FermiGrid"
       - "CERN"
-    max_distance: 1000                # Distances range from 0 to 101
-    rse_distances:                    # Distances offsets for specific RSEs
-        "DUNE_US_FNAL_DISK_STAGE": -5 # Increase priority 
-    nearline_distance:                # Extra distance to account for staging
-        default:        100           # Default distance for all RSEs
-        "FNAL_DCACHE":  10
-    streaming: True                   # Stream files from remote sites instead of making a local copy
+    max_distance: 1000.0                # Distances range from 0 to 101
+    rse_distances:                      # Distances offsets for specific RSEs
+        "DUNE_US_FNAL_DISK_STAGE": -5.0 # Increase priority 
+    nearline_distance:                  # Extra distance to account for staging
+        default:        100.0           # Default distance for all RSEs
+        "FNAL_DCACHE":  10.0
+    streaming: True                     # Stream files from remote sites instead of making a local copy
 
 merging:
     target_mode: size     # Options: size, count
-    target_size: 10       # Target size (in GB) or number of files
+    target_size: 10.0     # Target size (in GB) or number of files
     equalize: True        # Try to equalize the size of the merged files
     chunk_min: 2          # Minimum number of files to merge at once
     chunk_max: 1000       # Maxiumum number of files to merge at once
