@@ -35,7 +35,7 @@
             "transform":true,
             "outputs": [
                 {
-                    "name": "{name}__ntuple__{UUID}.root",
+                    "name": "{NAME}__ntuple__{UUID}.root",
                     "rename": "triggerAna.ntuple.root",
                     "metadata": {
                         "core.data_tier": "root-tuple-virtual",
