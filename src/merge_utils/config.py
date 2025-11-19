@@ -23,9 +23,17 @@ logger = logging.getLogger(__name__)
 def uuid() -> str:
     """Generate a unique identifier based on the job tag and timestamp."""
     tag = inputs.get('tag')
+    skip = inputs.get('skip')
+    limit = inputs.get('limit')
+    pad = 6
+    out = timestamp
+    if limit:
+        out = f"l{limit:0{pad}d}_{out}"
+    if skip:
+        out = f"s{skip:0{pad}d}_{out}"
     if tag:
-        return f"{tag}_{timestamp}"
-    return timestamp
+        out = f"{tag}_{out}"
+    return out
 
 def update_list(old_list: list, new_list: list) -> None:
     """

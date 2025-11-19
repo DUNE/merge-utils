@@ -1,6 +1,6 @@
 {   "comment":"example",
     "output":{
-        "name": "{dune_mc.gen_fcl_filename}_{dune.campaign}_{dune.config_file}_{core.application.name}_{core.application.version}_{merge.cfg}_{$DUNESW_VERSION}_s{merge.skip:06d}_l{merge.limit:06d}",
+        "name": "{dune_mc.gen_fcl_filename}_{dune.campaign}_{dune.config_file}_{core.application.name}_{core.application.version}_{merge.cfg}_{$DUNESW_VERSION}",
         "namespace": "usertests",
         "dir": "/pnfs/dune/scratch/users/${USER}/merge_test/triggerAna"
     },
