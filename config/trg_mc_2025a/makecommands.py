@@ -23,7 +23,7 @@ if task not in tasks:
 config = tasks[task]["FCL"].replace('.fcl','.json')
 nfiles = int(tasks[task]['NFILES'])
 f = open(f'{task}.sh','w')
-if nfiles < 6000:    
+if nfiles < 7500:    
     command = f"merge -vv -c trg_mc_2025a/{config} --tag=\"{task}\" query \" files from {tasks[task]['QUERY']}\""
     print(command)
     f.write(command + '\n')
