@@ -54,7 +54,7 @@
 
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: merge [-h] [-c CFG] [-t TAG] [--comment COMMENT] [-v] [--log LOG]
              [-f FILE] [-d DIR] [--skip SKIP] [--limit LIMIT] [--validate]
-             [--list OPT] [-m MTD] [-l]
+             [--list OPT] [-n NAME] [-m MTD] [-l]
              [MODE] [inputs ...]
 
 Command line interface for merge_utils
@@ -78,6 +78,7 @@ input arguments:
 output arguments:
   --validate            only validate metadata instead of merging
   --list OPT            list (dids, replicas, pfns) instead of merging
+  -n NAME, --name NAME  specify a name for the output files
   -m MTD, --method MTD  explicitly specify the merge method to use
   -l, --local           run merge locally instead of submitting to JustIN
 </pre></div>
