@@ -9,6 +9,7 @@ metadata:
         # Misspelled values
         "core.data_tier":
             "pandora_info": "pandora-info"
+            "trigger-primitives": "trigprim"
         "core.data_stream":
             "Test": "test"
             "Cosmics": "cosmics"
