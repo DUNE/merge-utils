@@ -8,7 +8,7 @@
             "core.application.name": "triggerAna",
             "core.application.version": "$DUNESW_VERSION",
             "core.file_format": "root"
-        }
+        },
         "grandparents": true,
         "lifetime": 180
     },
