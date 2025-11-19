@@ -1,0 +1,53 @@
+{   "comment":"make triggerAna tuples for DUNE 10kt 1x2x6 trg MC 2025a",
+    "inputs":{
+        "skip":0,
+        "limit":10000
+    },
+    "output":{
+        "name": "{dune_mc.gen_fcl_filename}__{dune.campaign}__{dune.config_file}__{core.application.name}__{core.application.version}__{merge.cfg}__{$DUNESW_VERSION}__s{merge.skip}__l{merge.limit}",
+        "namespace": "usertests",
+        "dir": "/pnfs/dune/scratch/users/${USER}/merge_test/triggerAna",
+        "metadata": {
+            "core.data_tier": "root-tuple-virtual",
+            "core.application.name": "triggerAna",
+            "core.application.version": "$DUNESW_VERSION",
+            "core.file_format": "root"
+        }
+        
+    },
+
+    "metadata":{
+        "required":["~core.runs"]
+    },
+
+    "sites":{
+        "rse_distances":{
+            "FNAL_DCACHE": 1001,
+            "DUNE_US_FNAL_DISK_STAGE":1
+        }
+    },
+
+    "merging":{
+        "method":{
+            "name": "lar",
+            "cmd": "lar -c {cfg} -n 1000000 {inputs}",
+            "cfg": "triggerana_dune10kt_1x2x6.fcl",
+            "transform":true,
+            "outputs": [
+                {
+                    "name": "{name}__ntuple__{UUID}.root",
+                    "rename": "triggerAna.ntuple.root",
+                    "metadata": {
+                        "core.data_tier": "root-tuple-virtual",
+                        "core.application.name": "triggerAna",
+                        "core.file_format": "root"
+                    },
+                    "method": "hadd"
+                }
+            ]
+        },
+        "target_mode": "count",
+        "target_size": 10000,
+        "chunk_max": 100
+    }
+}
