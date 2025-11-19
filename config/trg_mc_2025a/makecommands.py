@@ -3,7 +3,7 @@ import os,sys,csv
 import csv
 
 
-tasklist = 'trg_mc_2025a.csv'
+tasklist = os.path.join(os.getenv("MERGE_UTILS_DIR"),"config","trg_mc_2025a",'trg_mc_2025a_jobs.csv')
 
 tasks = {}
 with open(tasklist,encoding='utf-8-sig') as csvfile:
@@ -21,5 +21,19 @@ if task not in tasks:
     sys.exit(1)
 
 config = tasks[task]["FCL"].replace('.fcl','.json')
-command = f"merge -v -c trg_mc_2025a/{config} --tag=\"{task}\" query \" files from {tasks[task]['QUERY']}\""
-print(command)
+nfiles = int(tasks[task]['NFILES'])
+f = open(f'{task}.sh','w')
+if nfiles < 6000:    
+    command = f"merge -vv -c trg_mc_2025a/{config} --tag=\"{task}\" query \" files from {tasks[task]['QUERY']}\""
+    print(command)
+    f.write(command + '\n')
+else:
+    step = 5000
+    skip = 0
+    while skip < nfiles:
+        command = f"merge -vv -c trg_mc_2025a/{config} --skip {skip} --limit {step} --tag=\"{task}\" query \" files from {tasks[task]['QUERY']}\""
+        print (command)
+        f.write(command + '\n')
+        skip += step
+f.close()
+
