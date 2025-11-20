@@ -16,7 +16,10 @@ with open(tasklist,encoding='utf-8-sig') as csvfile:
         #print(row["TAG"], row['FCL'], row['QUERY'])
         tasks[row["TAG"]] = row 
     
-task = sys.argv[1]
+if len(sys.argv)<2:
+    task="HELP"
+else:
+    task = sys.argv[1]
 if task not in tasks:
     if task != "TEST":
         print(f"Task {task} not found")
@@ -25,11 +28,10 @@ if task not in tasks:
     else:
         # For testing purposes
         maxjob = 2
-        tasks[task] = {
-            "FCL":"triggerana_dune10kt_1x2x2.fcl",
-            "NFILES":"5",
-            "QUERY":"fardet-hd:fardet-hd__trg_mc_2025a_tpg__trigger-primitives__v10_12_01d01__tpg_dune10kt_1x2x2__prodmarley_nue_flat_es_dune10kt_1x2x2__out1__v1_official"
-        }
+        basetask="FLAT-CC"
+        tasks[task] = tasks[basetask]
+        tasks[task]["NFILES"]="5"
+        tasks[task]["TAG"]=task
 
 config = tasks[task]["FCL"].replace('.fcl','.json')
 nfiles = int(tasks[task]['NFILES'])
@@ -37,14 +39,14 @@ f = open(f'{task}.sh','w')
 print ("nfiles",nfiles)
 skip = 0
 if nfiles < maxjob:    
-    command = f"merge -vv -c trg_mc_2025a/{config} --tag=\"{task}\" query \" files from {tasks[task]['QUERY']}\" > {task}_{timestamp}_{skip}.log 2>&1 "
+    command = f"merge -vv -c trg_mc_2025a/{config} --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
     print(command)
     f.write(command + '\n')
 else:
     step = maxjob
     
     while skip < nfiles:
-        command = f"merge -vv -c trg_mc_2025a/{config} --skip={skip} --limit={step}  --tag=\"{task}\" query \" files from {tasks[task]['QUERY']}\" > {task}_{timestamp}_{skip}.log 2>&1 "
+        command = f"merge -vv -c trg_mc_2025a/{config} --skip={skip} --limit={step}  --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
         print(command)
         f.write(command + '\n')
         skip += step
