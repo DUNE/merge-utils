@@ -7,8 +7,14 @@ Overview
 - make certain the json config files look good. For example, set the namespace correctly (when testing it is usertests)
 
 ### pass1
-- use makecommand.py and a `<tag>` to make a `<tag>.sh` file 
-- if a tag has already been used and you are reruning you need to make a new tag in that file. Outputs are merged later based on that tag so leftovers are bad. 
+- use `makecommand.py` and a `<tag>` to make a `<tag>.sh` file 
+
+~~~
+python makecommand.py <tag>
+~~~
+
+the tag has to be one of the ones in the `csv` file. 
+if a tag has already been used and you are reruning you need to edit the file to add a new tag. Outputs are merged later based on that tag so leftovers are bad. 
 - run the `<tag>.sh` file interactively to set up `pass1`
 - `cat` the log files from that run and grep for `pass1` to get a list of justin submissions. 
 - source those scripts to submit to justin
@@ -18,7 +24,7 @@ Overview
 
 ### pass2
 
-- make a query based on the <tag>, check that it has the right number `~N/100` of files in it and then set up a `pass2` merge. 
+- make a query based on the `<tag>`, check that it has the right number `~N/100` of files in it and then set up a `pass2` merge. 
 
 ~~~
 export QUERY="files where merge.tag=<tag> and dune.output_status=confirmed"
@@ -35,6 +41,6 @@ cat *.json | grep fid | sort -u | grep -c fid
 
 This should equal the # of input files listed in the spreadsheet.
 
-The sum of `core.event_count` across output files should also be consistend with `N input x events/file`
+The sum of `core.event_count` across output files should also be consistent with `N input x events/file`
 
 The lifetime for the output file is currently set to 180 days.
