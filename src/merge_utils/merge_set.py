@@ -396,7 +396,7 @@ class MergeSet(collections.UserDict):
         group_id = 0
         group = MergeChunk(merge_hash)
         if len(divs) > 1:
-            group.group_id = group_id
+            group.group_id = group_id + 1
         for i, file in enumerate(self.files):
             group.add(file)
             # Check if we need to yield the group
@@ -404,24 +404,24 @@ class MergeSet(collections.UserDict):
                 logger.debug("Yielding group %d with %d files", group_id, len(group))
                 yield group
                 group_id += 1
-                group = MergeChunk(merge_hash, group=group_id)
+                group = MergeChunk(merge_hash, group = group_id + 1)
 
 
 class MergeChunk(collections.UserDict):
     """Class to keep track of a chunk of files for merging"""
-    def __init__(self, merge_hash: str, group: int = -1):
+    def __init__(self, merge_hash: str, group: int = 0):
         super().__init__()
         self.merge_hash = merge_hash
         self.site = None
         self.group_id = group
-        self.chunk_id = -1
+        self.chunk_id = 0
         self.chunks = 0
         self.output_id = -1
 
     @property
     def namespace(self) -> str:
         """Get the namespace for the chunk"""
-        if self.chunk_id >= 0:
+        if self.chunk_id > 0:
             return config.output['scratch']['namespace']
         return config.output['namespace']
 
@@ -437,12 +437,12 @@ class MergeChunk(collections.UserDict):
         name, ext = os.path.splitext(name)
         if group is None:
             group = self.group_id
-        if group >= 0:
-            name = f"{name}_f{group}"
+        if group > 0:
+            name = f"{name}_f{group:03d}"
         if chunk is None:
             chunk = self.chunk_id
-        if chunk >= 0:
-            name = f"{name}_c{chunk}"
+        if chunk > 0:
+            name = f"{name}_c{chunk:03d}"
         return f"{name}{ext}"
 
     @property
@@ -453,7 +453,7 @@ class MergeChunk(collections.UserDict):
             return [file.path for file in self.data.values()]
         # Tier 2 uses the outputs from tier 1
         name_spec = config.merging['method']['outputs'][self.output_id]['name']
-        inputs = [f"{self.make_name(name_spec, chunk=c)}" for c in range(self.chunks)]
+        inputs = [f"{self.make_name(name_spec, chunk=c+1)}" for c in range(self.chunks)]
         if config.output['mode'] != 'local':
             namespace = config.output['scratch']['namespace']
             return [f"{namespace}:{name}" for name in inputs]
@@ -500,9 +500,9 @@ class MergeChunk(collections.UserDict):
         """Get the metadata for the chunk"""
         md = meta.merged_keys(self.data)
         md['merge.hash'] = self.merge_hash
-        if self.group_id >= 0:
+        if self.group_id > 0:
             md['merge.group'] = self.group_id
-        if self.chunk_id >= 0:
+        if self.chunk_id > 0:
             md['merge.chunk'] = self.chunk_id
         return md
 
@@ -555,8 +555,8 @@ class MergeChunk(collections.UserDict):
         """Create a subset of the chunk with the same metadata"""
         chunk = MergeChunk(self.merge_hash, self.group_id)
         chunk.site = self.site
-        chunk.chunk_id = self.chunks
         self.chunks += 1
+        chunk.chunk_id = self.chunks
         return chunk
 
     def tier2_chunks(self) -> Generator[MergeChunk, None, None]:
