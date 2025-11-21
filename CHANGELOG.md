@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [trg_mc_2025a_v1] - 2025-11-21
+
+### added a tag trg_mc_2025_v1
+
+- added a tag to preserve state for production merging
+
 ## [0.7.3] - 2025-09-19
 
 ### Changed
