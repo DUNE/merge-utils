@@ -21,6 +21,11 @@ if a tag has already been used and you are reruning you need to edit the file to
 - log the workflow #'s
 - wait for justin workflows to complete
 - check that all of the workflows complete, you should get `ceiling(N/100)` total output files. 
+- do:
+~~~
+metacat query -s "files where merge.tag=<tag> and dune.output_status=confirmed"
+~~~
+to check that all files actually were returned.
 
 ### pass2
 
@@ -41,6 +46,8 @@ cat *.json | grep fid | sort -u | grep -c fid
 
 This should equal the # of input files listed in the spreadsheet.
 
-The sum of `core.event_count` across output files should also be consistent with `N input x events/file`
+The sum of `core.event_count` across output files should also be consistent with `N input x events/file`.
+
+You can check the # of events in the root file with the new script `CountEvents.py`
 
 The lifetime for the output file is currently set to 180 days.
