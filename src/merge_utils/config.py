@@ -9,13 +9,184 @@ from merge_utils import io_utils
 
 DEFAULT_CONFIG = ["defaults/metadata.yaml", "defaults/defaults.yaml"]
 
-# Configuration dictionaries
-metadata: dict = {}
-inputs: dict = {}
-output: dict = {}
-validation: dict = {}
-sites: dict = {}
-merging: dict = {}
+class ConfigKey:
+    """Base class for configuration keys"""
+
+    def __init__(self, name: str):
+        self._name = name
+        self._value = None
+        self._type = ['none']
+
+    def _lock(self) -> list:
+        return self._type
+
+    def _set(self, value) -> list:
+        self._value = value
+        return []
+
+    def __set__(self, instance, value):
+        errors = self._set(value)
+        if errors:
+            raise ValueError(errors[0])
+
+    def __get__(self, instance, owner=None):
+        return self._value
+
+class ConfigValue(ConfigKey):
+    """Class to manage a configuration value with type checking"""
+
+    def __init__(self, name: str, value = None, val_type: str = None):
+        super().__init__(name)
+        if value is None and val_type is None:
+            raise ValueError(f"Config key {name} needs a type or default value")
+        self._value = value
+        if val_type is not None:
+            self._type = val_type
+        elif isinstance(value, str):
+            self._type = 'str'
+        elif isinstance(value, bool):
+            self._type = 'bool'
+        elif isinstance(value, int):
+            self._type = 'int'
+        elif isinstance(value, float):
+            self._type = 'float'
+        else:
+            raise TypeError(f"Config key '{name}' has unsupported type")
+
+    def _set(self, value) -> list:
+        if value is None:
+            self._value = None
+            return []
+        if self._type == 'str' and not isinstance(value, str):
+            return [f"Config key '{self._name}' must be a string"]
+        if self._type == 'bool' and not isinstance(value, bool):
+            return [f"Config key '{self._name}' must be a boolean"]
+        if self._type == 'int' and not isinstance(value, int):
+            return [f"Config key '{self._name}' must be an integer"]
+        if self._type == 'float' and not isinstance(value, (int, float)):
+            return [f"Config key '{self._name}' must be a float"]
+        self._value = value
+        return []
+
+class ConfigOption(ConfigKey):
+    """Class to manage a configuration option with predefined choices"""
+
+    def __init__(self, name: str, options: str):
+        super().__init__(name)
+        if not options.startswith('(') or not options.endswith(')'):
+            raise ValueError(f"Config key {name} options must be in parentheses")
+        options = [opt.strip() for opt in options[1:-1].split(',')]
+        if len(options) <= 1:
+            raise ValueError(f"Config key {name} must have more than one option")
+        self._value = options[0]
+        self._options = set(options)
+        self._type = ['opt']
+
+    def _set(self, value: str) -> list:
+        if value not in self._options:
+            return [f"Config key '{self._name}' must be one of ({', '.join(self._options)})"]
+        self._value = value
+        return []
+
+class ConfigSet(ConfigKey):
+    """Class to manage a configuration set (of strings)"""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._value = set()
+        self._type = ['set']
+
+    def _set(self, value: list) -> list:
+        if not isinstance(value, list):
+            return [f"Config key '{self._name}' must be a list of strings"]
+        errors = []
+        removals = set()
+        for item in value:
+            if not isinstance(item, str):
+                errors.append(f"Config key '{self._name}' must be a list of strings")
+                continue
+            if item.startswith('~'):
+                removals.add(item[1:])
+            else:
+                self._value.add(item)
+        self._value = set(value)
+        return errors
+
+    def __contains__(self, item):
+        return item in self._value
+
+    def __iter__(self):
+        return iter(self._value)
+
+class ConfigList(collections.UserList):
+    """Class to manage configuration list"""
+
+    def __init__(self, name: str):
+        super().__init__()
+        self._name = name
+        self._locked = False
+        self._type = ['list']
+    
+    def _lock(self) -> list:
+        self._locked = True
+        if len(self.data) == 0:
+            self._type = ['list', 'str']  # default to list of strings
+            return self._type
+        types = [item._lock() for item in self.data]
+        for i in range(len(types[0])):
+            next_type = types[0][i]
+            for t in types[1:]:
+                if len(t) <= i or t[i] != next_type:
+                    return self._type
+            self._type.append(next_type)
+        return self._type
+    
+    def _set(self, value: list) -> list:
+        if not isinstance(value, list):
+            return [f"Config key '{self._name}' must be a list"]
+        errors = []
+        for item in value:
+            # Remove strings starting with '~'
+            if isinstance(item, str) and item.startswith('~'):
+                item = item[1:]
+                count = 0
+                while item in self.data:
+                    self.data.remove(item)
+                    count += 1
+
+                # Remove the value if it starts with '~'
+                for old_item in self.data:
+                    if isinstance(old_item, ConfigValue) and old_item._value == item:
+                        self.data.remove(old_item)
+                        break
+                continue
+        return errors
+
+
+class ConfigDict(collections.UserDict):
+    """Class to manage configuration dictionary"""
+
+    def __init__(self):
+        super().__init__()
+        self._locked = False
+        self._extendable = False
+        self._required_keys = set()
+        self._type = None
+    
+    def __setitem__(self, key, value):
+        override = False
+        if key.startswith('~'):
+            key = key[1:]
+            override = True
+        
+        if self._locked and key not in self.data:
+            raise KeyError(f"Cannot add new key '{key}' to locked ConfigDict")
+        if self._type and not isinstance(value, self._type):
+            raise TypeError(f"Value for key '{key}' must be of type {self._type.__name__}")
+        super().__setitem__(key, value)
+
+# Configuration dictionary
+config_dict = ConfigDict()
 timestamp: str = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
 
 logger = logging.getLogger(__name__)
