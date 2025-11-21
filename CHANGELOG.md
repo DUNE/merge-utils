@@ -1,6 +1,13 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+Note that the package versin number is defined in src/merge_utils/__init__.py
+
+## [0.7.4] - 2025-11-21
+
+### Changed
+
+- Output file and chunk IDs are now 1-indexed and padded to 3 digits
 
 ## [trg_mc_2025a_v1] - 2025-11-21
 
