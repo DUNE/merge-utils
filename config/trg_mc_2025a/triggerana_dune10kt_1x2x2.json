@@ -3,6 +3,12 @@
         "skip":0,
         "limit":10000
     },
+    "sites":{
+        "allowed_sites":[
+            "US_FNAL-FermiGrid",
+            "CERN",
+            "FR_CCIN2P3"]
+        },
     "output":{
         "name": "{dune_mc.gen_fcl_filename}__{dune.campaign}__{dune.config_file}__{core.application.name}__{core.application.version}__{merge.cfg}__{$DUNESW_VERSION}",
         "namespace": "fardet-hd",

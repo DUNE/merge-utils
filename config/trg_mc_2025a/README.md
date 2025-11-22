@@ -6,6 +6,17 @@ Overview
 - `trg_mc_2025a_jobs.csv` contains a list of datasets with tags assigned
 - make certain the json config files look good. For example, set the namespace correctly (when testing it is usertests)
 
+### logging in for production
+
+~~~
+ssh -Y duneproshift@dunegpvm05.fnal.gov
+./apptainer.sh
+source setup_merge.sh
+~~~
+this puts you in the 
+`/exp/dune/data/users/duneproshift/merge` subdirectory and does some setup.  
+
+
 ### pass1
 - use `makecommand.py` and a `<tag>` to make a `<tag>.sh` file 
 
@@ -18,7 +29,7 @@ if a tag has already been used and you are reruning you need to edit the file to
 - run the `<tag>.sh` file interactively to set up `pass1`
 - `cat` the log files from that run and grep for `pass1` to get a list of justin submissions. 
 - source those scripts to submit to justin
-- log the workflow #'s
+- log the workflow #'s in the google sheet. 
 - wait for justin workflows to complete
 - check that all of the workflows complete, you should get `ceiling(N/100)` total output files. 
 - do:
@@ -38,7 +49,13 @@ merge -v -c trg_mc_2025a/hadd.json --tag=<tag>_pass2 query "$QUERY"
 ~~~
 submit the justIn job
 
-- Once that job completes, download the metadata for all of `pass2` output files and count the unique output files.
+- Once that job completes, download the metadata for all of `pass2` output files and count the unique output files. Make certain to check that they are confirmed. 
+
+~~~
+metacat query -s "files where merge.tag=<tag>_pass2 and dune.output_status=confirmed"
+~~~
+
+The lifetime for the output file is currently set to 180 days.
 
 ~~~ 
 cat *.json | grep fid | sort -u | grep -c fid
@@ -50,4 +67,7 @@ The sum of `core.event_count` across output files should also be consistent with
 
 You can check the # of events in the root file with the new script `CountEvents.py`
 
-The lifetime for the output file is currently set to 180 days.
+log checks on number of files and the event counts in the spreadsheet
+
+- inform the production team of completion and discuss making a dataset with them. 
+
