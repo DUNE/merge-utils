@@ -1,7 +1,11 @@
-import os,sys,csv
+import os,sys,csv,math
 
-import csv
+
 from datetime import datetime, timezone
+
+from metacat.webapi import MetaCatClient
+
+mc_client = MetaCatClient(os.environ["METACAT_SERVER_URL"])
 
 timestamp: str = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
 
@@ -35,8 +39,19 @@ if task not in tasks:
         tasks[task]["NFILES"]="5"
         tasks[task]["TAG"]=task
 
+nfiles = int(tasks[task]["NFILES"].strip())
+nchunks = math.ceil(nfiles/100)
 query = "files where merge.tag=%s and dune.output_status=confirmed"%tag
-check = "metacat query -s %s"%query
-print (check)
+result  = mc_client.query(query=query,summary="count")
+outfiles = result["count"]
+                           
+if nchunks != outfiles:
+    print ("FAILURE: Expected %d chunks and got %d from pass1"%(nchunks,outfiles))
+    sys.exit(1)
+else:
+    print ("Success: Expected %d chunks and got %d from pass1"%(nchunks,outfiles))
+
+                    
+ 
 command = "merge -c trg_mc_2025a/hadd_prod.json --tag=%s-pass2 query \"%s\""%(tag,query)
 print ("if ok \n",command)
