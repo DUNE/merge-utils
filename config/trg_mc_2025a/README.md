@@ -33,8 +33,16 @@ if a tag has already been used and you are reruning you need to edit the file to
 - wait for justin workflows to complete
 - check that all of the workflows complete, you should get `ceiling(N/100)` total output files. 
 - do:
+
+
 ~~~
 metacat query -s "files where merge.tag=<tag> and dune.output_status=confirmed"
+~~~
+
+and 
+
+~~~
+python Pass1Check.py <tag>
 ~~~
 to check that all files actually were returned.
 
@@ -43,29 +51,31 @@ to check that all files actually were returned.
 - make a query based on the `<tag>`, check that it has the right number `~N/100` of files in it and then set up a `pass2` merge. 
 
 ~~~
+python makepass2.py < tag>
+~~~
+
+and then submit the justin job that comes out at the end. 
+
+internaly this is doing this:
+
+~~~
 export QUERY="files where merge.tag=<tag> and dune.output_status=confirmed"
 metacat query -s $QUERY
 merge -v -c trg_mc_2025a/hadd.json --tag=<tag>_pass2 query "$QUERY"
 ~~~
-submit the justIn job
 
-- Once that job completes, download the metadata for all of `pass2` output files and count the unique output files. Make certain to check that they are confirmed. 
+
+- Once that job completes
 
 ~~~
-metacat query -s "files where merge.tag=<tag>_pass2 and dune.output_status=confirmed"
+python Pass2Check.py <tag>
 ~~~
 
-The lifetime for the output file is currently set to 180 days.
-
-~~~ 
-cat *.json | grep fid | sort -u | grep -c fid
-~~~
-
-This should equal the # of input files listed in the spreadsheet.
+This should check that the # of input files listed in the spreadsheet.
 
 The sum of `core.event_count` across output files should also be consistent with `N input x events/file`.
 
-You can check the # of events in the root file with the new script `CountEvents.py`
+You can check the # of events that are actually in a root file with the new script `CountEvents.py`
 
 log checks on number of files and the event counts in the spreadsheet
 
