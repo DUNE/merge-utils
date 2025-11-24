@@ -9,6 +9,51 @@ from merge_utils import io_utils
 
 DEFAULT_CONFIG = ["defaults/metadata.yaml", "defaults/defaults.yaml"]
 
+type_defs = dict()
+key_defs = dict()
+
+def make_cfg_type(name, type_name):
+    """Factory function to create appropriate ConfigKey subclass based on type name."""
+    if type_name in ['<bool>', '<int>', '<float>', '<str>']:
+        return ConfigValue(name, None, type_name[1:-1]), []
+    if type_name.startswith('<opt>'):
+        return ConfigOption(name, type_name[5:]), []
+    if type_name.startswith('<set(') and type_name.endswith(')>'):
+        val_type = type_name[5:-2]
+        return ConfigSet(name, val_type), []
+    if type_name.startswith('<map(') and type_name.endswith(')>'):
+        val_type = type_name[5:-2]
+        return ConfigMap(name, val_type), []
+    if type_name.startswith('<list(') and type_name.endswith(')>'):
+        val_type = type_name[6:-2]
+        return ConfigList(name, val_type), []
+    if type_name in type_defs:
+        return ConfigClass(name, type_name, type_defs[type_name]), []
+    return None, [f"Config key '{name}' has unsupported type '{type_name}'"]
+
+def make_cfg_val(name, val):
+    """Factory function to create appropriate ConfigKey subclass based on value."""
+    # If the key has a predefined type, use that
+    if name in key_defs:
+        key, errors = make_cfg_type(name, key_defs[name])
+        errors.extend(key._update(val)) # pylint: disable=protected-access
+        return key, errors
+    # If the value is a type definition, use that
+    if isinstance(val, str) and val.startswith('<'):
+        return make_cfg_type(name, val)
+    # If the value is a simple type, create a ConfigValue
+    if isinstance(val, (bool, int, float, str)):
+        return ConfigValue(name, val), []
+    if isinstance(val, list):
+        out = ConfigSet(name)
+        errors = out._update(val) # pylint: disable=protected-access
+        return out, errors
+    if isinstance(val, dict):
+        out = ConfigDict(name)
+        errors = out._update(val) # pylint: disable=protected-access
+        return out, errors
+    return None, [f"Config key '{name}' has unsupported value '{val}'"]
+
 class ConfigKey:
     """Base class for configuration keys"""
 
@@ -20,19 +65,25 @@ class ConfigKey:
     def _lock(self) -> list:
         return self._type
 
-    def _set(self, value) -> list:
+    def _clear(self) -> None:
+        self._value = None
+
+    def _update(self, value) -> list:
         self._value = value
         return []
 
-    def __set__(self, instance, value):
-        errors = self._set(value)
-        if errors:
-            raise ValueError(errors[0])
+    def __str__(self):
+        return str(self._value)
 
-    def __get__(self, instance, owner=None):
-        return self._value
+    def __repr__(self):
+        return f"<{self._type[0]}> {repr(self._value)}"
 
-class ConfigValue(ConfigKey):
+    def __eq__(self, value):
+        if isinstance(value, ConfigKey):
+            return self._value == value._value
+        return self._value == value
+
+class ConfigValue(ConfigKey): # pylint: disable=too-few-public-methods
     """Class to manage a configuration value with type checking"""
 
     def __init__(self, name: str, value = None, val_type: str = None):
@@ -42,18 +93,20 @@ class ConfigValue(ConfigKey):
         self._value = value
         if val_type is not None:
             self._type = val_type
-        elif isinstance(value, str):
-            self._type = 'str'
-        elif isinstance(value, bool):
-            self._type = 'bool'
-        elif isinstance(value, int):
-            self._type = 'int'
-        elif isinstance(value, float):
-            self._type = 'float'
+        elif isinstance(value, (bool, int, float, str)):
+            self._type = [type(value).__name__]
         else:
             raise TypeError(f"Config key '{name}' has unsupported type")
+        self._default = value
 
-    def _set(self, value) -> list:
+    def _lock(self) -> list:
+        self._default = self._value
+        return self._type
+    
+    def _clear(self) -> None:
+        self._value = self._default
+
+    def _update(self, value) -> list:
         if value is None:
             self._value = None
             return []
@@ -68,48 +121,309 @@ class ConfigValue(ConfigKey):
         self._value = value
         return []
 
-class ConfigOption(ConfigKey):
+class ConfigOption(ConfigValue): # pylint: disable=too-few-public-methods
     """Class to manage a configuration option with predefined choices"""
 
     def __init__(self, name: str, options: str):
-        super().__init__(name)
+        super().__init__(name, val_type='str')
         if not options.startswith('(') or not options.endswith(')'):
             raise ValueError(f"Config key {name} options must be in parentheses")
         options = [opt.strip() for opt in options[1:-1].split(',')]
-        if len(options) <= 1:
-            raise ValueError(f"Config key {name} must have more than one option")
         self._value = options[0]
-        self._options = set(options)
+        self._options = [options[0]] + sorted(set(options) - set([options[0]]))
+        if len(self._options) <= 1:
+            raise ValueError(f"Config key {name} must have more than one option")
         self._type = ['opt']
 
-    def _set(self, value: str) -> list:
+    def _update(self, value: str) -> list:
         if value not in self._options:
             return [f"Config key '{self._name}' must be one of ({', '.join(self._options)})"]
         self._value = value
         return []
 
-class ConfigSet(ConfigKey):
-    """Class to manage a configuration set (of strings)"""
+class ConfigCollection(ConfigKey):
+    """Base class for configuration collections"""
 
     def __init__(self, name: str):
         super().__init__(name)
+
+    def __contains__(self, item):
+        return item in self._value
+
+    def __iter__(self):
+        return iter(self._value)
+
+    def __len__(self):
+        return len(self._value)
+
+class ConfigSet(ConfigCollection):
+    """Class to manage a configuration set (of strings)"""
+
+    def __init__(self, name: str, val_type: str = None):
+        super().__init__(name)
         self._value = set()
         self._type = ['set']
+        if val_type is None:
+            self._type.append('str')
+        else:
+            self._type.extend(val_type)
 
-    def _set(self, value: list) -> list:
+    def _clear(self) -> None:
+        self._value = set()
+
+    def _update(self, value: list) -> list:
         if not isinstance(value, list):
             return [f"Config key '{self._name}' must be a list of strings"]
+        if not all(isinstance(item, str) for item in value):
+            return [f"Config key '{self._name}' must be a list of strings"]
+        self._value -= set(item[1:] for item in value if item.startswith('~'))
+        self._value |= set(item for item in value if not item.startswith('~'))
+        return []
+
+class ConfigMap(ConfigCollection):
+    """Class to manage a configuration map"""
+
+    def __init__(self, name: str, val_type: list = None):
+        super().__init__(name)
+        self._value = dict()
+        self._required = set()
+        self._type = ['map']
+        if val_type is None:
+            self._type.append('str')
+        else:
+            self._type.extend(val_type)
+
+    def _clear(self) -> None:
+        # Remove all non-required keys
+        self._value = {k: v for k, v in self._value.items() if k in self._required}
+        # Clear all required keys
+        for val in self._value.values():
+            val._clear() # pylint: disable=protected-access
+
+    def _add_required(self, key: str, value) -> None:
+        """Add a required key to the map"""
+        self._value[key] = value
+        self._required.add(key)
+
+    def _update(self, value: dict) -> list:
+        if not isinstance(value, dict):
+            return [f"Config key '{self._name}' must be a dictionary with string keys"]
         errors = []
-        removals = set()
-        for item in value:
-            if not isinstance(item, str):
-                errors.append(f"Config key '{self._name}' must be a list of strings")
+        for key, val in value.items():
+            if not isinstance(key, str):
+                return [f"Config key '{self._name}' must be a dictionary with string keys"]
+            # Keys starting with '~' override existing keys
+            if key.startswith('~'):
+                key = key[1:]
+                if key in self._value:
+                    self._value[key]._clear() # pylint: disable=protected-access
+            # Values set to None remove existing keys if permitted
+            name = f"{self._name}.{key}" if self._name else key
+            if val is None:
+                if key in self._required:
+                    self._value[key]._clear() # pylint: disable=protected-access
+                elif key in self._value:
+                    del self._value[key]
                 continue
-            if item.startswith('~'):
-                removals.add(item[1:])
-            else:
-                self._value.add(item)
-        self._value = set(value)
+            # If the key exists, update it
+            if key in self._value:
+                errors.extend(self._value[key]._update(val)) # pylint: disable=protected-access
+                continue
+            # If the key does not exist, create it
+            new_key, new_errors = make_cfg_type(name, self._type[1])
+            errors.extend(new_errors)
+            if new_key is None:
+                continue
+            errors.extend(new_key._update(val)) # pylint: disable=protected-access
+            self._value[key] = new_key
+        return errors
+    
+    def __getitem__(self, key):
+        return self._value[key]
+
+    def __setitem__(self, key, value):
+        errors = self._update({key: value})
+        if errors:
+            raise ValueError(errors[0])
+
+class ConfigList(ConfigCollection):
+    """Class to manage a configuration list"""
+
+    def __init__(self, name: str, val_type: str = None):
+        super().__init__(name)
+        self._value = list()
+        self._type = ['list']
+        if val_type is None:
+            self._type.append('str')
+        else:
+            self._type.extend(val_type)
+
+    def _clear(self) -> None:
+        self._value = list()
+
+    def _update(self, value: list) -> list:
+        if not isinstance(value, list):
+            return [f"Config key '{self._name}' must be a list"]
+        errors = []
+        for item in value:
+            name = f"{self._name}[{len(self._value)}]"
+            new_key, new_errors = make_cfg_type(name, self._type[1])
+            errors.extend(new_errors)
+            if new_key is None:
+                continue
+            errors.extend(new_key._update(item)) # pylint: disable=protected-access
+            self._value.append(new_key)
+        return errors
+
+class ConfigDict(ConfigKey):
+    """Class to manage a configuration dictionary"""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._value = dict()
+        self._locked = False
+        self._type = ['dict']
+    
+    def _lock(self) -> list:
+        self._locked = True
+        return self._type
+    
+    def _clear(self) -> None:
+        for val in self._value.values():
+            val._clear() # pylint: disable=protected-access
+    
+    def _update(self, value: dict) -> list:
+        if not isinstance(value, dict):
+            return [f"Config key '{self._name}' must be a dictionary"]
+        errors = []
+        for key, val in value.items():
+            if not isinstance(key, str):
+                return [f"Config key '{self._name}' must be a dictionary with string keys"]
+            # Keys starting with '~' override existing keys
+            if key.startswith('~'):
+                key = key[1:]
+                if key in self._value:
+                    self._value[key]._clear() # pylint: disable=protected-access
+            # Values set to None clear existing keys but do not remove them
+            if val is None:
+                self._value[key]._clear() # pylint: disable=protected-access
+                continue
+            # Update keys that already exist
+            if key in self._value:
+                errors.extend(self._value[key]._update(val)) # pylint: disable=protected-access
+                continue
+            # Cannot add new keys if locked
+            if self._locked:
+                errors.append(f"Config key '{self._name}' has no member named '{key}'")
+                continue
+            # Create new keys
+            new_key, new_errors = make_config_key(f"{self._name}.{key}", val)
+            errors.extend(new_errors)
+            if new_key is not None:
+                self._value[key] = new_key
+        return errors
+    
+    def __getattr__(self, key):
+        return self._value[key]
+
+    def __setattr__(self, key, value):
+        if key.startswith('_'):
+            super().__setattr__(key, value)
+        else:
+            errors = self._update({key: value})
+            if errors:
+                raise ValueError(errors[0])
+
+class ConfigClass(ConfigDict):
+    """Class to manage a configuration class instance"""
+
+    def __init__(self, name: str, type_name: str, spec: dict):
+        super().__init__(name)
+        self._type = [type_name]
+        errors = self._update(spec)
+        if errors:
+            raise TypeError(f"Config key '{name}' has invalid class specification:\n  {'\n  '.join(errors)}")
+        self._lock()
+
+    
+
+class ConfigDict(ConfigKey):
+    """Class to manage a configuration dictionary"""
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._value = dict()
+        self._locked = False
+        self._extendable = False
+        self._required = set()
+        self._type = ['dict']
+
+    def _lock(self) -> list:
+        self._locked = True
+        if len(self._value) == 0:
+            self._type = ['dict', 'str']  # default to list of strings
+            return self._type
+        types = []
+        for key, val in self._value.items():
+            key_type = val._lock() # pylint: disable=protected-access
+            if not self._extendable or key in self._required:
+                continue
+            if types is []:
+                types = key_type
+                continue
+            raise TypeError(f"Config key '{self._name}' has inconsistent types for extendable keys")
+        self._type = ['dict'] + types
+        return self._type
+
+    def _clear(self) -> None:
+        # If extendable, remove all non-required keys
+        if self._extendable:
+            self._value = {k: v for k, v in self._value.items() if k in self._required}
+        # Clear all keys including required keys
+        for val in self._value.values():
+            val._clear() # pylint: disable=protected-access
+
+    def _update(self, value: dict) -> list:
+        if not isinstance(value, dict):
+            return [f"Config key '{self._name}' must be a dictionary"]
+        errors = []
+        for key, val in value.items():
+            # Keys starting with '~' override existing keys
+            if key.startswith('~'):
+                key = key[1:]
+                if key in self._value:
+                    self._value[key]._clear() # pylint: disable=protected-access
+            # Values set to None remove existing keys if permitted
+            name = f"{self._name}.{key}" if self._name else key
+            if val is None:
+                if not self._extendable:
+                    errors.append(f"Config key '{self._name}' does not support removing keys")
+                elif key in self._required:
+                    errors.append(f"Config key '{name}' is required and cannot be removed")
+                elif key in self._value:
+                    del self._value[key]
+                continue
+            # If the key exists, update it
+            if key in self._value:
+                errors.extend(self._value[key]._update(val)) # pylint: disable=protected-access
+                continue
+            # If the key does not exist, create it if permitted
+            if self._locked and not self._extendable:
+                errors.append(f"Config key '{self._name}' does not support adding new keys")
+                continue
+            new_key, new_errors = make_config_key(name, val, self._type[1:])
+            errors.extend(new_errors)
+            if new_key is None:
+                continue
+            if not self._locked:
+                self._value[key] = new_key
+                continue
+            # If locked, check that the type of the new key is correct
+            key_type = new_key._lock() # pylint: disable=protected-access
+            if key_type != self._type[1:]:
+                errors.append(f"Config key '{name}' must be of type {'->'.join(self._type[1:])}'")
+                continue
+            self._value[key] = new_key
         return errors
 
     def __contains__(self, item):
@@ -118,7 +432,30 @@ class ConfigSet(ConfigKey):
     def __iter__(self):
         return iter(self._value)
 
-class ConfigList(collections.UserList):
+    def __len__(self):
+        return len(self._value)
+
+    def __getitem__(self, key):
+        return self._value[key]
+
+    def __setitem__(self, key, value):
+        errors = self._update({key: value})
+        if errors:
+            raise ValueError(errors[0])
+
+    def __getattr__(self, key):
+        return self._value[key]
+
+    def __setattr__(self, key, value):
+        if key.startswith('_'):
+            super().__setattr__(key, value)
+        else:
+            errors = self._update({key: value})
+            if errors:
+                raise ValueError(errors[0])
+
+
+class ConfigList(ConfigKey):
     """Class to manage configuration list"""
 
     def __init__(self, name: str):
@@ -132,7 +469,8 @@ class ConfigList(collections.UserList):
         if len(self.data) == 0:
             self._type = ['list', 'str']  # default to list of strings
             return self._type
-        types = [item._lock() for item in self.data]
+        types = 
+        [item._lock() for item in self.data]
         for i in range(len(types[0])):
             next_type = types[0][i]
             for t in types[1:]:
@@ -141,7 +479,7 @@ class ConfigList(collections.UserList):
             self._type.append(next_type)
         return self._type
     
-    def _set(self, value: list) -> list:
+    def _update(self, value: list) -> list:
         if not isinstance(value, list):
             return [f"Config key '{self._name}' must be a list"]
         errors = []

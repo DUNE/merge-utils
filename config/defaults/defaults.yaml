@@ -99,3 +99,24 @@ merging:
           - name: "{NAME}_merged_{UUID}.hdf5"
       
 
+schema:
+    type_defs:
+        output_file:
+            name: <str>
+            metadata: <dict>
+            rename: <str>
+            method: <str>
+        merging_method:
+            name: <str>
+            cond: <str>
+            cmd: <str>
+            cfg: <str>
+            script: <str>
+            outputs: <list(output_file)>
+            dependencies: <set>
+    key_defs:
+        merging.methods: <list(merging_method)>
+        merging.method.outputs: <list(output_file)>
+        sites.rse_distances: <map(float)>
+        sites.nearline_distance: <map(float)>
+        sites.nearline_distance.default: <float>
