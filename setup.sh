@@ -1,7 +1,13 @@
 export DUNE_VERSION=${DUNE_VERSION:-v10_12_01d01}
 export DUNE_QUALIFIER=${DUNE_QUALIFIER:-e26:prof}
 
-export MERGE_UTILS_DIR="$(dirname `readlink -f "${BASH_SOURCE[0]}"`)"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    release="MacOS"
+else
+    release=`lsb_release -i | cut -f 2`
+fi
+
+export MERGE_UTILS_DIR="$(dirname "$(realpath "$0")")"
 echo "Setting MERGE_UTILS_DIR to $MERGE_UTILS_DIR"
 
 # Set up rucio configuration file
@@ -9,8 +15,20 @@ mkdir -p $MERGE_UTILS_DIR/config/misc/
 export RUCIO_CONFIG=$MERGE_UTILS_DIR/config/misc/rucio.cfg
 sed "s/<username>/$USER/g" $MERGE_UTILS_DIR/config/misc/rucio_template.cfg > $RUCIO_CONFIG
 
-release=`lsb_release -i | cut -f 2`
-if [[ "$release" == "AlmaLinux" ]]; then
+if [[ "$release" == "MacOS" ]]; then
+    echo "Doing setup for MacOS"
+
+    export METACAT_AUTH_SERVER_URL=https://metacat.fnal.gov:8143/auth/dune
+    export METACAT_SERVER_URL=https://metacat.fnal.gov:9443/dune_meta_prod/app 
+    
+    pip install metacat
+
+    python3 -m venv $MERGE_UTILS_DIR/.venv_macos
+    source $MERGE_UTILS_DIR/.venv_macos/bin/activate
+    pip install --upgrade pip
+    pip install --editable "$MERGE_UTILS_DIR[test]"
+    
+elif [[ "$release" == "AlmaLinux" ]]; then
     echo "Doing setup for Alma Linux"
 
     source /cvmfs/larsoft.opensciencegrid.org/spack-packages/setup-env.sh
