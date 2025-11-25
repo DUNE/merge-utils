@@ -10,14 +10,18 @@
     "metadata":{
         "required":[ "~core.runs"]},
     "merging":{
-        "method":{
+        "method":{           
             "name": "hadd",
             "outputs": [
-                {"metadata":{
-                    "core.data_tier": "root-tuple",
-                    "core.application.name": "triggerAna",
-                    "core.file_format": "root"
-                    }
+                {
+                    "name": "{NAME}__ntuple__{UUID}.root",
+                    "rename": "triggerAna.ntuple.root",
+                    "metadata": {
+                        "core.data_tier": "root-tuple",
+                        "core.application.name": "triggerAna",
+                        "core.file_format": "root"
+                    },
+                    "method": "hadd"
                 }
             ],
             "target_mode": "size",
