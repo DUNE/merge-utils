@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, json
 from metacat.webapi import MetaCatClient
 
 import csv
@@ -27,7 +27,7 @@ if task not in tasks:
         print("Available tasks:", ', '.join(tasks.keys()))
         sys.exit(1)
 nfiles = int(tasks[task]['NFILES'])
-f = open(f'{task}.sh','w')
+
 print ("nfiles",nfiles)
 
 query = "files where merge.tag=%s-pass2 and dune.output_status=confirmed"%sys.argv[1]
@@ -46,11 +46,14 @@ for file in files:
     # event_count += count
     # fid += nfid
     # print (nfid, count)
-    if metadata["core.data_tier"] == "root-tuple-virtual":
+    if metadata["core.data_tier"] == "root-tuple":
         did = file["namespace"] + ":" + file["name"]
         fix = {"core.data_tier":"root-tuple"}
         print ("Fixing data tier for ", did)
-        mc_client.update_file(did=did,replace=True,metadata=fix)
+        f = open(file['name']+".json.backup",'r')
+        json.dump(file,f)
+        f.close()
+        #mc_client.update_file(did=did,replace=False,metadata=fix)
         count += 1
 
 print ("fixed data tier for ",count," files out of ",filecount," pass2 files for this tag")

@@ -27,7 +27,6 @@ if task not in tasks:
         print("Available tasks:", ', '.join(tasks.keys()))
         sys.exit(1)
 nfiles = int(tasks[task]['NFILES'])
-f = open(f'{task}.sh','w')
 print ("nfiles",nfiles)
 
 query = "files where merge.tag=%s-pass2 and dune.output_status=confirmed"%sys.argv[1]
