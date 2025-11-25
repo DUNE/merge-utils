@@ -14,8 +14,6 @@
             "name": "hadd",
             "outputs": [
                 {
-                    "name": "{NAME}__ntuple__{UUID}.root",
-                    "rename": "triggerAna.ntuple.root",
                     "metadata": {
                         "core.data_tier": "root-tuple",
                         "core.application.name": "triggerAna",
