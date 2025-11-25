@@ -14,7 +14,7 @@
             "name": "hadd",
             "outputs": [
                 {
-                    "name": "{dune_mc.gen_fcl_filename}__{dune.campaign}__{dune.config_file}__{core.application.name}__{core.application.version}__{merge.cfg}__{$DUNESW_VERSION}.root",
+                    "name": "{NAME}__ntuple__{UUID}.root",
                     "namespace": "usertests",
                     "metadata": {
                         "core.data_tier": "root-tuple",
