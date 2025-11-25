@@ -53,5 +53,5 @@ else:
 
                     
  
-command = "merge -c trg_mc_2025a/hadd_prod.json --tag=%s-pass2 query \"%s\""%(tag,query)
+command = "merge -c trg_mc_2025a/hadd_prod.json --tag=%s-pass2_v2 query \"%s\""%(tag,query)
 print ("if ok \n",command)
