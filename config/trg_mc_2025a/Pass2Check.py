@@ -36,17 +36,22 @@ files = mc_client.query(query=query,with_metadata=True, with_provenance=True)
 
 event_count = 0
 fid = 0
+filecount = 0
+
 for file in files:
+    filecount +=1
     #print ("a file",file)
     metadata = file["metadata"]
     count = metadata["core.event_count"]
     nfid = len(file["parents"])
     event_count += count
     fid += nfid
+    print (nfid, count)
 
-print ("this query had ",fid,"parents and ",event_count,"events")
+
+print ("this query had ",fid,"parents and ",event_count,"events, spread across ", filecount," pass2 files")
 
 if fid != nfiles:
-     print ("ERROR: final number of files %d is not = the input %d")%(fid,nfiles)
+     print ("ERROR: final number of files %d is not = the input %d"%(fid,nfiles))
 else:
      print ("This task is complete",task)

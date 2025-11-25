@@ -3,11 +3,6 @@
         "name": "{dune_mc.gen_fcl_filename}__{dune.campaign}__{dune.config_file}__{core.application.name}__{core.application.version}__{merge.cfg}__{$DUNESW_VERSION}",
         "namespace": "fardet-hd",
         "dir": "/pnfs/dune/scratch/users/${USER}/merge_test/triggerAna",
-        "metadata": {
-            "core.data_tier": "root-tuple",
-            "core.application.name": "triggerAna",
-            "core.file_format": "root"
-        },
         "grandparents": true,
         "lifetime": 180
     },
@@ -17,11 +12,14 @@
     "merging":{
         "method":{
             "name": "hadd",
-            "metadata": {
-                "core.data_tier": "root-tuple",
-                "core.application.name": "triggerAna",
-                "core.file_format": "root"
-            },
+            "outputs": [
+                {"metadata":{
+                    "core.data_tier": "root-tuple",
+                    "core.application.name": "triggerAna",
+                    "core.file_format": "root"
+                    }
+                }
+            ],
             "target_mode": "size",
             "target_size": 10 
         }

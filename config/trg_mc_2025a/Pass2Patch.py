@@ -27,29 +27,31 @@ if task not in tasks:
         print("Available tasks:", ', '.join(tasks.keys()))
         sys.exit(1)
 nfiles = int(tasks[task]['NFILES'])
-#f = open(f'{task}.sh','w')
+f = open(f'{task}.sh','w')
 print ("nfiles",nfiles)
 
-query = "files where merge.tag=%s and dune.output_status=confirmed"%sys.argv[1]
+query = "files where merge.tag=%s-pass2 and dune.output_status=confirmed"%sys.argv[1]
 
 files = mc_client.query(query=query,with_metadata=True, with_provenance=True)
 
-event_count = 0
-fid = 0
+count = 0
 filecount = 0
+
 for file in files:
-    filecount += 1
+    filecount +=1
     #print ("a file",file)
     metadata = file["metadata"]
-    count = metadata["core.event_count"]
-    nfid = len(file["parents"])
-    event_count += count
-    fid += nfid
+    # count = metadata["core.event_count"]
+    # nfid = len(file["parents"])
+    # event_count += count
+    # fid += nfid
+    # print (nfid, count)
+    if metadata["core.data_tier"] == "root-tuple-virtual":
+        did = file["namespace"] + ":" + file["name"]
+        fix = {"core.data_tier":"root-tuple"}
+        print ("Fixing data tier for ", did)
+        mc_client.update_file(did=did,replace=True,metadata=fix)
+        count += 1
 
-print ("pass1 this tag had ",fid,"parents and ",event_count,"events, spread across",filecount,"pass1 files")
+print ("fixed data tier for ",count," files out of ",filecount," pass2 files for this tag")
 
-if fid != nfiles:
-     print (fid,nfiles)
-     print ("ERROR: final number of files %d is not = the input %d"%(fid,nfiles))
-else:
-     print ("This pass1 is complete",task)
