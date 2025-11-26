@@ -29,7 +29,7 @@ if task not in tasks:
 nfiles = int(tasks[task]['NFILES'])
 print ("nfiles",nfiles)
 
-query = "files where merge.tag=%s-pass2 and dune.output_status=confirmed"%sys.argv[1]
+query = "files where merge.tag=%s-pass2_v2 and dune.output_status=confirmed"%sys.argv[1]
 
 files = mc_client.query(query=query,with_metadata=True, with_provenance=True)
 
