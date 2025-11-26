@@ -34,6 +34,9 @@ if task not in tasks:
         tasks[task]["TAG"]=task
 
 config = tasks[task]["FCL"].replace('.fcl','.json')
+if "CENTRAL" in task or "LATERAL" in task:
+    config = "triggerana_dune10kt_1x2x6_large.json"
+    maxjob = 5000
 nfiles = int(tasks[task]['NFILES'])
 f = open(f'{task}.sh','w')
 print ("nfiles",nfiles)

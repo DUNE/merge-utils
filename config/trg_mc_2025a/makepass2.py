@@ -43,7 +43,10 @@ nfiles = int(tasks[task]["NFILES"].strip())
 nchunks = math.ceil(nfiles/100)
 query = "files where merge.tag=%s and dune.output_status=confirmed"%tag
 result  = mc_client.query(query=query,summary="count")
+print (result)
 outfiles = result["count"]
+size = result["total_size"]
+print ("average output file size: ",size/outfiles/1000000000," GB")
                            
 if nchunks != outfiles:
     print ("FAILURE: Expected %d chunks and got %d from pass1"%(nchunks,outfiles))

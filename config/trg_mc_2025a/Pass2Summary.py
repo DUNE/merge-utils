@@ -6,7 +6,7 @@ import csv
 mc_client = MetaCatClient(os.environ["METACAT_SERVER_URL"])
 
 tasklist = os.path.join(os.getenv("MERGE_UTILS_DIR"),"config","trg_mc_2025a",'trg_mc_2025a_jobs.csv')
-maxjob = 2000
+maxjob = 5000
 tasks = {}
  
 with open(tasklist,encoding='utf-8-sig') as csvfile:
@@ -38,18 +38,21 @@ for task in tasks.keys():
     event_count = 0
     fid = 0
     filecount = 0
-
+    avesize = 0
     for file in files:
         filecount +=1
         #print ("a file",file)
         metadata = file["metadata"]
         count = metadata["core.event_count"]
+        size = float(file['size']/1000000000)
+        avesize += size
         nfid = len(file["parents"])
         event_count += count
         fid += nfid
         #print (nfid, count)
 
-
+    avesize = float(avesize/filecount) if filecount>0 else 0
+    print ("Average file size for pass2 files: ",avesize," GB")
     print ("this query had ",fid,"parents and ",event_count,"events, spread across ", filecount," pass2 files")
 
     if fid != nfiles:
