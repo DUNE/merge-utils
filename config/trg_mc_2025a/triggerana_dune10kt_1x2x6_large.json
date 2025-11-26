@@ -46,8 +46,8 @@
                 }
             ]
         },
-        "target_mode": "size",
+        "target_mode": "count",
         "target_size": 5000,
-        "chunk_max": 100
+        "chunk_max": 50 
     }
 }
