@@ -4,9 +4,9 @@ from metacat.webapi import MetaCatClient
 
 mc_client = MetaCatClient(os.environ["METACAT_SERVER_URL"])
 
-DEBUG = False
 
-def am_i_done(did=None,descrip=None):
+
+def am_i_done(did=None,descrip=None,DEBUG=False):
     topmeta = mc_client.get_file(did=did, with_metadata=True, with_provenance=True)
     if len(topmeta["children"])==0:
         print("No children found for ",did)
@@ -18,6 +18,11 @@ def am_i_done(did=None,descrip=None):
         metadata = meta["metadata"]
         local = True
         for key,value in descrip.items():
+            if key is "namespace":
+                if str(meta[key]) != str(value):
+                    if DEBUG: print(f"Value mismatch for key {key} in file {cdid}: expected {value}, found {meta['key']}")
+                    local = False
+                continue
             if key not in metadata:
                 if DEBUG: print(f"Key {key} not found in metadata of file {cdid}")
                 local = False
@@ -25,7 +30,7 @@ def am_i_done(did=None,descrip=None):
                 if DEBUG: print(f"Value mismatch for key {key} in file {cdid}: expected {value}, found {metadata[key]}")
                 local = False
         if local:
-            print(f"There are children of {did} that match the description {descrip}")
+            if DEBUG: print(f"There are children of {did} that match the description {descrip}")
             return local
     return found
 

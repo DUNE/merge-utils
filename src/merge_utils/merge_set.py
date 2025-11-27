@@ -8,9 +8,12 @@ import logging
 import subprocess
 import hashlib
 import math
+
+
 from typing import Iterable, Generator
 
-from merge_utils import io_utils, config, meta
+
+from merge_utils import io_utils, config, meta, am_i_done
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +133,13 @@ class MergeSet(collections.UserDict):
             lvl = logging.ERROR if config.validation['skip']['duplicate'] else logging.CRITICAL
             logger.log(lvl, "Found duplicate input file %s", did)
             return None
-
+        tag = config.inputs.get('tag')
+        if tag is not None:
+            compare_fields = {"merge.tag":config.inputs.get('tag'), "namespace":config.output.get('namespace')}
+            #print ("Checking if am i done for ",did, compare_fields)
+            if am_i_done.am_i_done(did=did, descrip=compare_fields,DEBUG=False):
+                logger.info("File %s has already been processed, skipping", did)
+                return None 
         # Actualy add the file
         self.data[did] = file
         self.data[did].count = 1
