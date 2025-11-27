@@ -134,7 +134,7 @@ class MergeSet(collections.UserDict):
             logger.log(lvl, "Found duplicate input file %s", did)
             return None
         tag = config.inputs.get('tag')
-        if tag is not None:
+        if tag is not None and config.inputs.get('retry'):
             compare_fields = {"merge.tag":config.inputs.get('tag'), "namespace":config.output.get('namespace')}
             #print ("Checking if am i done for ",did, compare_fields)
             if am_i_done.am_i_done(did=did, descrip=compare_fields,DEBUG=False):
