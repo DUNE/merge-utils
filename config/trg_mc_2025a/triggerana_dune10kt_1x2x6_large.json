@@ -38,7 +38,7 @@
                     "name": "{NAME}__ntuple__{UUID}.root",
                     "rename": "triggerAna.ntuple.root",
                     "metadata": {
-                        "core.data_tier": "root-tuple-virtual",
+                        "core.data_tier": "root-tuple",
                         "core.application.name": "triggerAna",
                         "core.file_format": "root"
                     },
