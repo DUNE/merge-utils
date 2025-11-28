@@ -46,6 +46,31 @@ python Pass1Check.py <tag>
 ~~~
 to check that all files actually were returned.
 
+If they have not been returned first restart any paused workflows to see if they will complete
+
+#### first restart workflows that paused 
+
+run the workflow checker to identify the workflows that failed.
+It will give you the `skip` index for the bad ones. 
+
+~~~
+WorkFlowCheck.py <tag> <minid> <maxid>
+~~~
+
+~~~
+justin workflow-restart --workflow-id=<workflow>
+~~~
+
+#### then rerun the `skips` that are still missing files 
+
+This resubmits with the `--retry` flag set.  This does a file by file check on the inputs for children - it takes some time so generally only do it for failed workflows. 
+
+~~~
+python makecommands.py <tag> retry
+~~~
+
+comment out any completed workflows in the `<tag>.sh` file and resubmit the rest.
+
 ### pass2
 
 - make a query based on the `<tag>`, check that it has the right number `~N/100` of files in it and then set up a `pass2` merge. 

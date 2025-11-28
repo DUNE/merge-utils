@@ -42,7 +42,7 @@ if task not in tasks:
 config = tasks[task]["FCL"].replace('.fcl','.json')
 if "CENTRAL" in task or "LATERAL" in task:
     config = "triggerana_dune10kt_1x2x6_large.json"
-    maxjob = 5000
+    #maxjob = 5000
 nfiles = int(tasks[task]['NFILES'])
 f = open(f'{task}.sh','w')
 print ("nfiles",nfiles)
@@ -55,6 +55,7 @@ else:
     step = maxjob
     
     while skip < nfiles:
+
         command = f"merge  {retry} -vv -c trg_mc_2025a/{config} --skip={skip} --limit={step}  --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
         print(command)
         f.write(command + '\n')

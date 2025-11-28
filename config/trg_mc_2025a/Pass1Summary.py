@@ -5,11 +5,11 @@ import csv
 
 mc_client = MetaCatClient(os.environ["METACAT_SERVER_URL"])
 
+large = ["CENTRAL_prod","LATERAL_prod"]
 tasklist = os.path.join(os.getenv("MERGE_UTILS_DIR"),"config","trg_mc_2025a",'trg_mc_2025a_jobs.csv')
 maxjob = 5000
 tasks = {}
-
-large = ["CENTRAL_prod","LATERAL_prod"]
+ 
 with open(tasklist,encoding='utf-8-sig') as csvfile:
     reader = csv.DictReader(csvfile)
     #print(reader.fieldnames)
@@ -27,17 +27,16 @@ with open(tasklist,encoding='utf-8-sig') as csvfile:
     #         print(f"Task {task} not found")
     #         print("Available tasks:", ', '.join(tasks.keys()))
     #         sys.exit(1)
-f = open("trg_mc_2025a_Pass2Summary.txt","w")
+f = open("trg_mc_2025a_Pass1Summary.txt","w")
 f.write("TASK, NFILES, CHECK, NFILES_OUTPUT, QUERY\n")
 for task in tasks.keys():
-    if task in large:
+    if task not in large:
         continue
     nfiles = int(tasks[task]['NFILES'])
     print ("nfiles",nfiles)
     config = tasks[task]['FCL']
-    print ("config",config)
     parent_dataset = tasks[task]['DATASET']
-    query = "files where merge.tag=%s-pass2_v2 and core.run_type='fardet-hd' and dune.output_status=confirmed and core.data_tier='root-tuple' and dune.campaign=trg_mc_2025a_tpg and merge.dataset='%s' and merge.cfg='%s'"%(task,parent_dataset,config)
+    query = "files where merge.tag=%s and core.run_type='fardet-hd' and dune.output_status=confirmed and core.data_tier='root-tuple' and dune.campaign=trg_mc_2025a_tpg and merge.dataset='%s' and merge.cfg='%s'"%(task,parent_dataset,config)
     files = mc_client.query(query=query,with_metadata=True, with_provenance=True)
 
     event_count = 0
@@ -57,11 +56,11 @@ for task in tasks.keys():
         #print (nfid, count)
 
     avesize = float(avesize/filecount) if filecount>0 else 0
-    print ("Average file size for pass2 files: ",avesize," GB")
-    print ("this query had ",fid,"parents and ",event_count,"events, spread across ", filecount," pass2 files")
+    print ("Average file size for pass1 files: ",avesize," GB")
+    print ("this query had ",fid,"parents and ",event_count,"events, spread across ", filecount," pass1 files")
 
     if fid != nfiles:
-        print ("ERROR: final number of files %d in %s is not = the input %d"%(fid,task,nfiles))
+        print ("ERROR: final number of files %d from %s is not = the input %d"%(fid,task,nfiles))
     else:
         print ("This task is complete",task)
     f.write("%s, %d, %d, %d, \"%s\" \n"%(task, nfiles, fid, filecount, query))

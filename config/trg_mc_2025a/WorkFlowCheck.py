@@ -49,11 +49,11 @@ for workflow in range(int(sys.argv[2]), int(sys.argv[3])+1):
         event_count += count
         fid += nfid
 
-    print ("pass1 this workflow", workflow, " had ",fid,"parents and ",event_count,"events, spread across",filecount,"pass1 files and has skip=",skip)
+    #print ("pass1 this workflow", workflow, " had ",fid,"parents and ",event_count,"events, spread across",filecount,"pass1 files and has skip=",skip)
 
     if fid != maxjob:
-        print (fid,maxjob)
-        print ("ERROR: final number of files %d is not = the input %d"%(fid,maxjob))
+        #print (fid,maxjob)
+        print ("ERROR: final number of input files %d is not = the input %d for workflow %d skip %d"%(fid,maxjob,workflow,skip))
     else:
-        print ("This pass1 workflow is complete",task,workflow,skip)
+        print ("This pass1 %s workflow %d with skip %d is complete %d %d"%(task,workflow,skip,fid,filecount))
 
