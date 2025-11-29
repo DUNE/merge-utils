@@ -7,6 +7,10 @@ timestamp: str = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
 
 from get_tasks import get_tasks
 
+if len(os.getenv("CAMPAIGN")) < 1:
+    print ("Please set CAMPAIGN environment variable")
+    sys.exit(1)
+
 retry = " "
 maxjob = 2000
 local = " "
