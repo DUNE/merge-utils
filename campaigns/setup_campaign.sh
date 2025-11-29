@@ -1,0 +1,6 @@
+export CAMPAIGN=$1
+export CAMPAIGN_DIR=$MERGE_UTILS_DIR/campaigns/$CAMPAIGN
+export PYTHONPATH=$MERGE_UTILS_DIR/src/prod_utils:$PYTHONPATH
+export CAMPAIGN_CONFIG=$CAMPAIGN_jobs.csv
+export PRODSRC=${MERGE_UTILS_DIR}/src/prod_utils
+
