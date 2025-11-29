@@ -26,12 +26,12 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
     newrows = []
     for row in reader:
         basedataset = row['DATASET']
-        #print(row["TAG"], row['FCL'], row['QUERY'])
+        if DEBUG: print(row["TAG"], row['FCL'], row['DATASET'])
         newrow = row.copy()
         query = "files from " + basedataset + " where dune.output_status=confirmed"
-        #print (query)
+        if DEBUG: print(query)
         info = mc_client.query(query=query,summary="count")
-        #print (info)
+        if DEBUG: print(info)
         newrow['NFILES'] = info['count']
         newrow['SIZE_GB'] = round(info['total_size']/1e9,3)
         newrow["NAMESPACE"] = "usertests"
@@ -40,7 +40,6 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
         newrows.append(newrow)
         print(newrow)
     
-#fieldnames = ['TAG', 'FCL','NFILES','SIZE_GB','FCL','CONFIG' 'CAMPAIGN','NAMESPACE', 'DATASET' ]  
 with open(newlist,'w') as csvfile:
     fieldnames = ['TAG', 'FCL','NFILES','SIZE_GB','FCL','CONFIG', 'CAMPAIGN','NAMESPACE', 'DATASET' ] 
     #fieldnames = reader.fieldnames + ['NFILES','SIZE_GB','NAMESPACE','CONFIG']
