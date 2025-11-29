@@ -37,14 +37,20 @@ if task not in tasks:
         tasks[task]["NFILES"]="5"
         tasks[task]["TAG"]=task
 
-config = tasks[task]["FCL"].replace('.fcl','.json')
+config = tasks[task]['CONFIG']
 campaign = tasks[task]["CAMPAIGN"]
 campaign_dir = os.path.join(os.getenv("CAMPAIGN_DIR"))
 nfiles = int(tasks[task]['NFILES'])
 f = open(f'{task}.sh','w')
 print ("nfiles",nfiles)
 skip = 0
-if nfiles < maxjob:    
+query = f"files where merge.tag={task} and dune.output_status=confirmed and namespace=%s"%(tasks[task]["NAMESPACE"]) 
+check = mc_client.query(query=query,summary="count")
+count = check.next()["count"]
+if count > 0:
+    retry = "--retry"
+if nfiles < maxjob:  
+    
     command = f"merge {retry} {local} -vv -c {config} --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
     print(command)
     f.write(command + '\n')
