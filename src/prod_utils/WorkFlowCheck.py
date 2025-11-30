@@ -1,3 +1,5 @@
+'''Script to check the status of workflows for a given task'''
+
 import os, sys
 from metacat.webapi import MetaCatClient
 
@@ -14,7 +16,7 @@ chunk = 100
 
 tasks = get_tasks(tasklist)
     
-if len(sys.argv)<2:
+if len(sys.argv)<4:
     task="HELP"
     print ("Usage: python -m WorkFlowCheck.py <TASK> <start_workflow_id> <end_workflow_id>")
 else:

@@ -1,5 +1,8 @@
 import os,sys,csv
 
+'''
+Script to create pass1 merge commands for a given task'''
+
 import csv
 from metacat.webapi import MetaCatClient
 
