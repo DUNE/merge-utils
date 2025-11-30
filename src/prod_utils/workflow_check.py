@@ -16,7 +16,7 @@ chunk = 100
 
 tasks = get_tasks(tasklist)
 
-batch = tasks[task].get("BATCH",2000)
+batch = int(tasks[task].get("BATCH",2000))
     
 if len(sys.argv)<4:
     task="HELP"

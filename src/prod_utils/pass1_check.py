@@ -21,7 +21,7 @@ if task not in tasks:
         sys.exit(1)
 
 nfiles = int(tasks[task]['NFILES'])
-batch = tasks[task]['BATCH']
+batch = int(tasks[task]['BATCH'])
 print ("nfiles",nfiles)
 
 query = "files where merge.tag=%s and dune.output_status=confirmed  and namespace=%s"%(sys.argv[1],tasks[task]["NAMESPACE"])
