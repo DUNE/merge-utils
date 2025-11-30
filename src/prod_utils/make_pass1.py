@@ -1,6 +1,10 @@
 import os,sys,csv
 
 import csv
+from metacat.webapi import MetaCatClient
+
+mc_client = MetaCatClient(os.environ["METACAT_SERVER_URL"])
+
 from datetime import datetime, timezone
 
 timestamp: str = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
@@ -27,19 +31,15 @@ if len(sys.argv)<2:
 else:
     task = sys.argv[1]
 if task not in tasks:
-    if task != "test":
-        local = ""
         print(f"Task {task} not found")
         print("Available tasks:", ', '.join(tasks.keys()))
         sys.exit(1)
-    else:
+else:
+    if "TEST" in task:
         # For testing purposes
-        maxjob = 2
-        local = "--local"
-        basetask="TEST"
-        tasks[task] = tasks[basetask]
-        tasks[task]["NFILES"]="5"
-        tasks[task]["TAG"]=task
+        maxjob = 20
+        #local = "--local"
+        tasks[task]["NFILES"]="50"
 
 config = tasks[task]['CONFIG']
 campaign = tasks[task]["CAMPAIGN"]
@@ -50,11 +50,11 @@ print ("nfiles",nfiles)
 skip = 0
 query = f"files where merge.tag={task} and dune.output_status=confirmed and namespace=%s"%(tasks[task]["NAMESPACE"]) 
 check = mc_client.query(query=query,summary="count")
-count = check.next()["count"]
-if count > 0:
-    retry = "--retry"
+count = check["count"]
+
 if nfiles < maxjob:  
-    
+    if count > 0:
+        retry = "--retry"
     command = f"merge {retry} {local} -vv -c {config} --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
     print(command)
     f.write(command + '\n')
@@ -62,10 +62,16 @@ else:
     step = maxjob
     
     while skip < nfiles:
-
+        saveretry = retry
+        query = f"files where merge.tag={task} and dune.output_status=confirmed and namespace=%s and merge.skip={skip} and merge.limit={step}"%(tasks[task]["NAMESPACE"]) 
+        check = mc_client.query(query=query,summary="count")
+        count = check["count"]
+        if count > 0:
+            retry = "--retry"
         command = f"merge  {retry} {local} -vv -c {campaign_dir}/{config} --skip={skip} --limit={step}  --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
         print(command)
         f.write(command + '\n')
         skip += step
+        retry = saveretry
 f.close()
 

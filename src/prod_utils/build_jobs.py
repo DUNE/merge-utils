@@ -31,10 +31,10 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
         query = "files from " + basedataset + " where dune.output_status=confirmed"
         if DEBUG: print(query)
         result = mc_client.query(query=query,summary="count")
-        info = {}
-        for item in result:
-            if DEBUG: print("   ",item)
-            info = item
+        info = result
+        # for item in result:
+        #     if DEBUG: print("   ",item)
+        #     info = item
         print ("Result for tag",row["TAG"],":",info )
         newrow['NFILES'] = info['count']
         newrow['SIZE_GB'] = round(info['total_size']/1e9,3)
