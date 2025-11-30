@@ -49,13 +49,14 @@ f = open(f'{task}.sh','w')
 print ("nfiles",nfiles)
 skip = 0
 query = f"files where merge.tag={task} and dune.output_status=confirmed and namespace=%s"%(tasks[task]["NAMESPACE"]) 
+print ("query",query)
 check = mc_client.query(query=query,summary="count")
 count = check["count"]
 
 if count > 0:
     retry = "--retry"
     print (f"Found {count} existing files for task {task}, will use {retry} option")
-    
+
 if nfiles < maxjob:  
     if count > 0:
         retry = "--retry"
