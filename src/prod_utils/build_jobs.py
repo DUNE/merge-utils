@@ -40,9 +40,8 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
         print ("Result for tag",row["TAG"],":",info )
         newrow['NFILES'] = info['count']
         newrow['SIZE_GB'] = round(info['total_size']/1e9,3)
-        newrow["NAMESPACE"] = "usertests"
-        newrow["CONFIG"] = row["FCL"].replace('.fcl','.json')
-       
+
+        
         newrows.append(newrow)
         print(newrow)
     
