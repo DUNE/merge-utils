@@ -19,7 +19,6 @@ if len(os.getenv("CAMPAIGN")) < 1:
     sys.exit(1)
 
 retry = " "
-maxjob = 2000
 local = " "
 if len(sys.argv)>2:
     if sys.argv[2].lower() == "retry":
@@ -33,16 +32,18 @@ if len(sys.argv)<2:
     sys.exit(1)
 else:
     task = sys.argv[1]
+
+
 if task not in tasks:
         print(f"Task {task} not found")
         print("Available tasks:", ', '.join(tasks.keys()))
         sys.exit(1)
 else:
     if "TEST" in task:
-        # For testing purposes
-        maxjob = 20
-        #local = "--local"
         tasks[task]["NFILES"]="50"
+        local="-l"
+
+batch = tasks[task].get("BATCH",2000)
 
 config = tasks[task]['CONFIG']
 campaign = tasks[task]["CAMPAIGN"]
@@ -61,14 +62,14 @@ if count > 0:
     retry = "--retry"
     print (f"Found {count} existing files for task {task}, will use {retry} option")
 
-if nfiles < maxjob:  
+if nfiles < batch:  
     if count > 0:
         retry = "--retry"
     command = f"merge {retry} {local} -vv -c {config} --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
     print(command)
     f.write(command + '\n')
 else:
-    step = maxjob
+    step = batch
     
     while skip < nfiles:
         saveretry = retry

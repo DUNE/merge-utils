@@ -11,10 +11,12 @@ mc_client = MetaCatClient(os.environ["METACAT_SERVER_URL"])
 
 tasklist = os.path.join(os.getenv("MERGE_UTILS_DIR"),os.getenv("CAMPAIGN_DIR"),os.getenv("CAMPAIGN")+"_jobs.csv")
 
-maxjob = 2000
+
 chunk = 100
 
 tasks = get_tasks(tasklist)
+
+batch = tasks[task].get("BATCH",2000)
     
 if len(sys.argv)<4:
     task="HELP"
@@ -51,9 +53,9 @@ for workflow in range(int(sys.argv[2]), int(sys.argv[3])+1):
 
     #print ("pass1 this workflow", workflow, " had ",fid,"parents and ",event_count,"events, spread across",filecount,"pass1 files and has skip=",skip)
 
-    if fid != maxjob/chunk:
-        #print (fid,maxjob)
-        print ("ERROR: final number of input files %d is not = the input %d for workflow %d skip %d"%(fid,maxjob,workflow,skip))
+    if fid != batch/chunk:
+        #print (fid,batch)
+        print ("ERROR: final number of input files %d is not = the input %d for workflow %d skip %d"%(fid,batch,workflow,skip))
     else:
         print ("This pass1 %s workflow %d with skip %d is complete %d %d"%(task,workflow,skip,fid,filecount))
 

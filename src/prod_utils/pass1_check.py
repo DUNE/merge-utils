@@ -9,7 +9,7 @@ mc_client = MetaCatClient(os.environ["METACAT_SERVER_URL"])
 tasklist = os.path.join(os.getenv("CAMPAIGN_DIR"),os.getenv("CAMPAIGN")+"_jobs.csv")
 
 tasks= get_tasks(tasklist)
-maxjob = 2000
+
    
 if len(sys.argv)<2:
     task="HELP"
@@ -21,7 +21,7 @@ if task not in tasks:
         sys.exit(1)
 
 nfiles = int(tasks[task]['NFILES'])
-
+batch = tasks[task]['BATCH']
 print ("nfiles",nfiles)
 
 query = "files where merge.tag=%s and dune.output_status=confirmed  and namespace=%s"%(sys.argv[1],tasks[task]["NAMESPACE"])

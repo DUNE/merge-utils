@@ -47,7 +47,7 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
         print(newrow)
     
 with open(newlist,'w') as csvfile:
-    fieldnames = ['TAG', 'FCL','NFILES','SIZE_GB','FCL','CONFIG', 'CAMPAIGN','NAMESPACE', 'DATASET' ] 
+    fieldnames = ['TAG', 'FCL','NFILES','SIZE_GB','BATCH','FCL','CONFIG', 'CAMPAIGN','NAMESPACE', 'DATASET' ] 
     #fieldnames = reader.fieldnames + ['NFILES','SIZE_GB','NAMESPACE','CONFIG']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
