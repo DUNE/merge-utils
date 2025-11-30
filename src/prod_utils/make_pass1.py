@@ -53,6 +53,7 @@ print ("query",query)
 check = mc_client.query(query=query,summary="count")
 count = check["count"]
 
+print ("count",count)
 if count > 0:
     retry = "--retry"
     print (f"Found {count} existing files for task {task}, will use {retry} option")
