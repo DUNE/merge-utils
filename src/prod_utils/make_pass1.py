@@ -52,6 +52,8 @@ query = f"files where merge.tag={task} and dune.output_status=confirmed and name
 check = mc_client.query(query=query,summary="count")
 count = check["count"]
 
+if count > 0:
+    retry = "--retry"
 if nfiles < maxjob:  
     if count > 0:
         retry = "--retry"
