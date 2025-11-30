@@ -2,8 +2,10 @@ import os, sys
 
 import csv
 
-def get_tasks(listpath):
-    tasklist = os.path.join(listpath)
+def get_tasks(tasklist):
+    if not os.path.exists(tasklist):
+        print(f"Task list file {tasklist} not found")
+        sys.exit(1)
     tasks = {}
     with open(tasklist,encoding='utf-8-sig') as csvfile:
         reader = csv.DictReader(csvfile) 
