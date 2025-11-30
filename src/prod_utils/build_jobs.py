@@ -1,3 +1,5 @@
+'''Script to build a job list with file counts and sizes from a base job list CSV file'''
+
 import os,sys,csv
 
 from metacat.webapi import MetaCatClient

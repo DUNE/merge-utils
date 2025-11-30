@@ -1,3 +1,5 @@
+'''Script to get task definitions from a CSV file'''
+
 import os, sys
 
 import csv
