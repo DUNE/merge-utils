@@ -17,7 +17,8 @@
             "core.data_tier": "root-tuple-virtual",
             "core.application.name": "triggerAna",
             "core.application.version": "$DUNESW_VERSION",
-            "core.file_format": "root"
+            "core.file_format": "root",
+            "dune.campaign": "$CAMPAIGN"
         }
         
     },
