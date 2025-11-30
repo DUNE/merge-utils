@@ -54,6 +54,8 @@ count = check["count"]
 
 if count > 0:
     retry = "--retry"
+    print (f"Found {count} existing files for task {task}, will use {retry} option")
+    
 if nfiles < maxjob:  
     if count > 0:
         retry = "--retry"
