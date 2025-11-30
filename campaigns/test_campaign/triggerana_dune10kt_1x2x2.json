@@ -11,7 +11,7 @@
         },
     "output":{
         "name": "{dune_mc.gen_fcl_filename}__{dune.campaign}__{dune.config_file}__{core.application.name}__{core.application.version}__{merge.cfg}__{$DUNESW_VERSION}",
-        "namespace": "fardet-hd",
+        "namespace": "usertests",
         "dir": "/pnfs/dune/scratch/users/${USER}/merge_test/triggerAna",
         "metadata": {
             "core.data_tier": "root-tuple-virtual",
