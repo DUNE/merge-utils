@@ -40,10 +40,10 @@ if task not in tasks:
         sys.exit(1)
 else:
     if "TEST" in task:
-        tasks[task]["NFILES"]="50"
+        tasks[task]["NFILES"]=50
         local="-l"
 
-batch = tasks[task].get("BATCH",2000)
+batch = int(tasks[task].get("BATCH",2000))
 
 config = tasks[task]['CONFIG']
 campaign = tasks[task]["CAMPAIGN"]
