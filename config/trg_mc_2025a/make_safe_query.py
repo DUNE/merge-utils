@@ -11,7 +11,7 @@ mc_client = MetaCatClient(os.environ["METACAT_SERVER_URL"])
 
 def make_safe_query(tasks,tag):
     campaign = "trg_mc_2025a_tpg"
-    namespace = tasks[tag]['NAMESPACE']
+    namespace = 'fardet-hd'
     input_dataset = tasks[tag]['DATASET']
     fcl = tasks[tag]['FCL']
     
