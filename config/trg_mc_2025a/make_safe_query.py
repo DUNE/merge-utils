@@ -15,7 +15,7 @@ def make_safe_query(tasks,tag):
     input_dataset = tasks[tag]['DATASET']
     fcl = tasks[tag]['FCL']
     
-    children = f"files where merge.tag={tag} and dune.output_status=confirmed and dune.campaign={campaign} and namespace={namespace} and dune.config_file={fcl} ordered"
+    children = f"files where merge.tag={tag} and dune.output_status=confirmed and dune.campaign={campaign} and namespace={namespace} and merge.cfg={fcl} ordered"
     parents = f"parents ({children})"
     newquery = f"files from {input_dataset} - ({parents})"
     print (newquery)

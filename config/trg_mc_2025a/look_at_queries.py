@@ -6,16 +6,18 @@ import csv
 
 mc_client = MetaCatClient(os.environ["METACAT_SERVER_URL"])
 
-joblist = 'retry.csv'
-newlist = 'retry.csv'
+joblist = 'trg_mc_2025a.csv'
+newlist = 'trg_mc_2025a_jobs.csv'
 with open(joblist,encoding='utf-8-sig') as csvfile:
     reader = csv.DictReader(csvfile)
     print(reader.fieldnames)
     newrows = []
+    
     for row in reader:
         print(row["TAG"], row['FCL'], row['DATASET'])
         newrow = row.copy()
-        query = "files from " + row['DATASET'] + " where dune.output_status=confirmed"
+        dataset = row['DATASET']
+        query = f"files from {dataset} where dune.output_status=confirmed"
         print (query)
         info = mc_client.query(query=query,summary="count")
         print (info)
