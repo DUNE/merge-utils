@@ -19,10 +19,10 @@ output:
     #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"
     grandparents: False # List the parents of the input files as the parents of the merged file
     dir: "/pnfs/dune/scratch/users/${USER}/merge_test" # Directory for local output files
-    lifetime: 7      # Lifetime of output files (in days)
+    lifetime: 30      # Lifetime of output files (in days)
     scratch:  # Settings for temporary files from 2-stage merging
         namespace: "usertests" # Optionally specify a namespace different from the parents
-        lifetime: 7      # Lifetime of output files (in days)
+        lifetime: 30      # Lifetime of output files (in days)
 
 metadata:
     optional:         # These metadata keys are optional (overrides required and conditional keys)
