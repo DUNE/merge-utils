@@ -5,7 +5,7 @@ valid_values.json
 
 used in :ref:`metavalidator`
 
-.. literalinclude:: ../../config/valid_values.json
+.. literalinclude:: ../../config/defaults/metadata.yaml
 
 
 
