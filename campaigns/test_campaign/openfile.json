@@ -1,0 +1,35 @@
+{   "comment":"example",
+    "output":{
+        "name": "{dune_mc.gen_fcl_filename}__{dune.campaign}__{dune.config_file}__{core.application.name}__{core.application.version}",
+        "namespace": "usertests",
+        "dir": "/pnfs/dune/scratch/users/${USER}/merge_test/rootls",
+        "metadata": {
+            "core.data_tier": "logfile",
+            "core.application.name": "rootls",
+            "core.application.version": "$DUNESW_VERSION",
+            "core.file_format": "txt"
+        },
+        "grandparents": false,
+        "lifetime": 10
+    },
+
+    "metadata":{
+        "required":[ "~core.runs"]},
+    "merging":{
+        "method":{
+            "name": "rootls",
+            "cmd": "rootls -l {inputs} > rootls.log",
+            "name": "{NAME}__rootls__{UUID}.root",
+            "rename":"rootls.log",
+            "metadata": {
+                "core.data_tier": "logfile",
+                "core.application.name": "rootls",
+                "core.application.version": "$DUNESW_VERSION",
+                "core.file_format": "txt"
+            },
+            "target_mode": "count",
+            "target_size": 20
+        }
+    }
+}
+  
