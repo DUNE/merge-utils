@@ -56,7 +56,7 @@ if __name__ == '__main__':
     skip = 0
     query = f"files where merge.tag={task} and dune.output_status=confirmed and namespace=%s"%(tasks[task]["NAMESPACE"]) 
     print ("query",query)
-    check = mc_client.query(query=query,summary="count")
+    check, = mc_client.query(query=query,summary="count")
     count = check["count"]
 
     print ("count",count)
@@ -76,7 +76,7 @@ if __name__ == '__main__':
         while skip < nfiles:
             saveretry = retry
             query = f"files where merge.tag={task} and dune.output_status=confirmed and namespace=%s and merge.skip={skip} and merge.limit={step}"%(tasks[task]["NAMESPACE"]) 
-            check = mc_client.query(query=query,summary="count")
+            check, = mc_client.query(query=query,summary="count")
             count = check["count"]
             if count > 0:
                 retry = "--retry"
