@@ -17,16 +17,21 @@
         "required":[ "~core.runs"]},
     "merging":{
         "method":{
-            "name": "rootls",
-            "cmd": "rootls -l {inputs} > rootls.log",
-            "name": "{NAME}__rootls__{UUID}.root",
-            "rename":"rootls.log",
-            "metadata": {
-                "core.data_tier": "logfile",
-                "core.application.name": "rootls",
-                "core.application.version": "$DUNESW_VERSION",
-                "core.file_format": "txt"
-            },
+            "name": "lar",
+            "cmd": "rootls -l {inputs} > rootls.log",    
+            "outputs": [
+                {
+                    "name": "{NAME}__rootls__{UUID}.root",
+                    "rename": "rootls.log",
+                    "metadata": {
+                        "core.data_tier": "logfile",
+                        "core.application.name": "rootls",
+                        "core.file_format": "txt",
+                        "dune.campaign": "test_campaign"
+                    },
+                    "method": "hadd"
+                }
+            ]
             "target_mode": "count",
             "target_size": 20
         }
