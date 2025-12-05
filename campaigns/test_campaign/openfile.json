@@ -31,7 +31,7 @@
                     },
                     "method": "hadd"
                 }
-            ]
+            ],
             "target_mode": "count",
             "target_size": 20
         }
