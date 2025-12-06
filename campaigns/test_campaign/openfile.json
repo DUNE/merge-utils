@@ -18,7 +18,7 @@
     "merging":{
         "method":{
             "name": "lar",
-            "cmd": "rootcheck -l {inputs} > rootcheck.log",    
+            "cmd": "python rootcheck.py -l {inputs} > rootcheck.log",    
             "outputs": [
                 {
                     "name": "{NAME}__rootcheck__{UUID}.root",
