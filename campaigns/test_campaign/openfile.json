@@ -18,14 +18,14 @@
     "merging":{
         "method":{
             "name": "lar",
-            "cmd": "python rootcheck.py -l {inputs} > rootcheck.log",   
+            "cmd": "python rootcheck.py -l {inputs} ",   
             "script": "rootcheck.py", 
             "dependencies": [
                 "rootcheck.py"
             ],
             "outputs": [
                 {
-                    "name": "{NAME}__rootcheck__{UUID}.root",
+                    "name": "{NAME}__rootcheck__{UUID}.log",
                     "rename": "rootcheck.log",
                     "metadata": {
                         "core.data_tier": "logfile",
