@@ -22,7 +22,7 @@
             "script": "rootcheck.py", 
             "dependencies": [
                 "rootcheck.py"
-            ]
+            ],
             "outputs": [
                 {
                     "name": "{NAME}__rootcheck__{UUID}.root",
