@@ -1,10 +1,10 @@
 {   "comment":"example",
     "output":{
         "name": "{dune_mc.gen_fcl_filename}__{dune.campaign}__{dune.config_file}__{core.application.name}__{core.application.version}__{merge.cfg}__{$DUNESW_VERSION}",
-        "namespace": "usertests",
+        "namespace": "fardet-hd",
         "dir": "/pnfs/dune/scratch/users/${USER}/merge_test/triggerAna",
         "grandparents": true,
-        "lifetime": 30
+        "lifetime": 180
     },
 
     "metadata":{
@@ -25,7 +25,7 @@
                 }
             ],
             "target_mode": "size",
-            "target_size": 20 
+            "target_size": 10 
         }
     }
 }
