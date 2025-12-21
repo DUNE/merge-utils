@@ -36,6 +36,13 @@ Configuration
 
     configuration
 
+Production scripts
+------------------
+
+.. toctree::
+
+    prod_utils
+
 python API
 ----------
 

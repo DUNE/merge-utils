@@ -18,14 +18,7 @@ Data Dispatcher (dd)
 
   `Data Dispatcher monitor <https://metacat.fnal.gov:9443/dune/dd/gui/P/projects>`_
 
-samweb
-------
-
-  `official samweb <https://cdcvs.fnal.gov/redmine/projects/sam/wiki/User_Guide_for_SAM>`_
-
-  `samweb project monitor <https://samweb.fnal.gov:8483/station_monitor/dune/stations/dune/projects>`_
-
 JustIn
 ------
 
-  `JustIn documentation <https://justin.dune.hep.ac.uk/docs/>`_
+  `JustIn documentation <https://dunejustin.fnal.gov/docs/>`_

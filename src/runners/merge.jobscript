@@ -48,10 +48,23 @@ setup dunesw "$DUNE_VERSION" -q "$DUNE_QUALIFIER"
 
 python3 $CONFIG_DIR/do_merge.py $CONFIG_DIR/$config $OUT_DIR
 
+
+
+
 exitcode=$?
 if [ $exitcode -ne 0 ];
 then
   echo "failed to merge $config $exitcode"
+  exit $exitcode
+fi
+
+echo "check any root output"
+python3 $CONFIG_DIR/rootchecker.py *.root
+
+exitcode=$?
+if [ $exitcode -ne 0 ];
+then
+  echo "bad root files $config $exitcode"
   exit $exitcode
 fi
 
