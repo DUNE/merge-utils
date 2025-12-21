@@ -1,4 +1,5 @@
 ''' open a root file and check contents '''
+''' returns # of bad files '''
 from ROOT import TFile
 
 import os, sys
@@ -35,4 +36,4 @@ if __name__ == '__main__':
             print ("BAD",x)
         for x in gone:
             print ("MISSING",x)
-            
+    sys.exit(len(bad))           
