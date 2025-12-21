@@ -12,17 +12,13 @@ def rootcheck(names):
         print ("checking file",filename)
         file = filename.strip()
 
-        if not os.path.exists(file):
-            print(" does not exist")
-            gone.append(file)
-        else:
-            try:
-                f = TFile.Open(file,'readonly')
-                f.ls()
-                f.Close()
-            except:
-                bad.append(file)
-    return bad,gone
+        try:
+            f = TFile.Open(file,'readonly')
+            f.ls()
+            f.Close()
+        except:
+            bad.append(file)
+    return bad
 
 
 if __name__ == '__main__':
@@ -31,9 +27,8 @@ if __name__ == '__main__':
         print ("rootcheck.py f1 f2 f3 f4")
         sys.exit(1)
     else:
-        bad,gone = rootcheck(sys.argv[1:])
+        bad = rootcheck(sys.argv[1:])
         for x in bad:
             print ("BAD",x)
-        for x in gone:
-            print ("MISSING",x)
+        
     sys.exit(len(bad))           
