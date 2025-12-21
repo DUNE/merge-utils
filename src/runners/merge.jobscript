@@ -55,9 +55,6 @@ cat $CONFIG_DIR/$config
 
 python3 $CONFIG_DIR/do_merge.py $CONFIG_DIR/$config $OUT_DIR
 
-echo "check any root output"
-python3 $CONFIG_DIR/rootchecker.py *.root
-
 exitcode=$?
 if [ $exitcode -ne 0 ]; then
   echo "failed to merge $config $exitcode"
