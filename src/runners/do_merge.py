@@ -8,6 +8,9 @@ import subprocess
 import shutil
 import socket
 from datetime import datetime, timezone
+import tarfile
+import ROOT
+import h5py
 
 def checksums(filename: str) -> dict:
     """Calculate the checksum of a file"""
@@ -19,6 +22,99 @@ def checksums(filename: str) -> dict:
     checksum = ret.stdout.split()[0]
     results = {'adler32':checksum}
     return results
+
+def list_root(tdir, base="") -> list:
+    """
+    List all contents of a ROOT file recursively.
+
+    :param dir: ROOT TDirectoryFile or TFile to list
+    :param base: Base path for the current directory
+    :return: list of object paths
+    """
+    contents = []
+    for key in tdir.GetListOfKeys():
+        obj_name = key.GetName()
+        full_path = os.path.join(base, obj_name)
+        contents.append(full_path)
+        if key.IsFolder():
+            subdir = tdir.Get(obj_name)
+            if isinstance(subdir, ROOT.TDirectoryFile):
+                contents.extend(list_root(subdir, full_path))
+    return contents
+
+def list_hdf5(group) -> list:
+    """
+    List all contents of an HDF5 file recursively.
+
+    :param group: HDF5 group to list
+    :return: list of dataset paths
+    """
+    contents = []
+    for obj in group.values():
+        contents.append(obj.name[1:])  # Remove leading '/'
+        if isinstance(obj, h5py.Group):
+            contents.extend(list_hdf5(obj))
+    return contents
+
+def check_file(path: str, rename: str = None, checklist: list = None) -> bool:
+    """
+    Make sure a file is readable and not empty
+
+    :param path: Path to the file
+    :param rename: If provided, rename this file to the new name
+    :param checklist: Optional list of expected contents in the file
+    :return: True if the file is valid, False otherwise
+    """
+    # Rename file if needed
+    if rename is not None:
+        if os.path.exists(rename):
+            shutil.move(rename, path)
+        else:
+            print(f"ERROR: Expected output file {rename} not found!")
+            return False
+    elif not os.path.exists(path):
+        print(f"ERROR: Output file {os.path.basename(path)} not found!")
+        return False
+
+    # Read file contents
+    ext = os.path.splitext(path)[1].lower()
+    try:
+        if ext in ['.root']:
+            root_file = ROOT.TFile.Open(path, 'READ')
+            if not root_file or root_file.IsZombie():
+                print(f"ERROR: Failed to open ROOT file {os.path.basename(path)}")
+                return False
+            contents = list_root(root_file)
+            root_file.Close()
+        elif ext in ['.h5', '.hdf5', '.he5']:
+            with h5py.File(path, 'r') as hdf5_file:
+                contents = list_hdf5(hdf5_file)
+        elif ext in ['.tar', '.gz']:
+            with tarfile.open(path, 'r') as tar_file:
+                contents = tar_file.getnames()
+        else:
+            print(f"WARNING: Unknown file type {os.path.basename(path)}, skipping content check")
+            return True
+    except Exception as e:
+        print(f"ERROR: Failed to read file {os.path.basename(path)}: {e}")
+        return False
+
+    # Check for expected contents
+    if checklist is None:
+        if len(contents) > 0:
+            return True
+        print(f"ERROR: File {os.path.basename(path)} is empty")
+        return False
+    missing = []
+    for item in checklist:
+        if item not in contents:
+            missing.append(item)
+    if len(missing) > 0:
+        print(f"ERROR: File {os.path.basename(path)} is missing expected contents:")
+        for item in missing:
+            print(f"  {item}")
+        return False
+    return True
 
 def renew_token():
     """Try to renew the token if on interactive gpvm at fnal""" 
@@ -117,31 +213,30 @@ def get_settings(config: dict, script_dir: str) -> dict:
 
 def write_metadata(outputs: list[dict], out_dir: str, config: dict) -> None:
     """Write file metadata to JSON files"""
+    print(f"Processing output files (dir: {out_dir}):")
+    valid = True
     for output in outputs:
         name = output['name']
-        print(f"Processing output file {name}")
+        print(f"Processing {name}")
         # Apply per-file metadata overrides
         metadata = copy.deepcopy(config)
         metadata['metadata'].update(output.get('metadata', {}))
         metadata['name'] = name
-        # Rename default output files if needed
+        # Check output file existence and validity
         path = os.path.join(out_dir, name)
-        if 'rename' in output:
-            old_path = output['rename']
-            if os.path.exists(old_path):
-                shutil.move(old_path, path)
-            else:
-                print(f"ERROR: Expected output file {output['rename']} not found!")
-                sys.exit(1)
-        elif not os.path.exists(path):
-            print(f"ERROR: Output file {output['name']} not found!")
-            sys.exit(1)
+        if not check_file(path, rename=output.get('rename'), checklist=output.get('checklist')):
+            valid = False
+            continue
         # Check output file attributes
         metadata['size'] = os.path.getsize(path)
         metadata['checksums'] = checksums(path)
         # Write metadata to JSON file
         with open(path+'.json', 'w', encoding="utf-8") as fjson:
             fjson.write(json.dumps(metadata, indent=2))
+    if not valid:
+        print("ERROR: One or more output files failed validation!")
+        sys.exit(1)
+    print("All output files processed successfully")
 
 def merge(config: dict, script_dir: str, out_dir: str) -> None:
     """Merge the input files into a single output file"""
