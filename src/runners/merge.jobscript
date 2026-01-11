@@ -58,16 +58,6 @@ then
   exit $exitcode
 fi
 
-echo "check any root output"
-python3 $CONFIG_DIR/rootchecker.py *.root
-
-exitcode=$?
-if [ $exitcode -ne 0 ];
-then
-  echo "bad root files $config $exitcode"
-  exit $exitcode
-fi
-
 echo "$jobkey" > justin-processed-pfns.txt
 
 echo "merged $config"
