@@ -43,44 +43,22 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="module-merge_utils.__main__">
-<span id="merge"></span><h1>merge<a class="headerlink" href="#module-merge_utils.__main__" title="Link to this heading">¶</a></h1>
-<p>Command line interface for merge_utils.</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="merge_utils.__main__.main">
-<span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/__main__.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.main" title="Link to this definition">¶</a></dt>
-<dd><p>Test the command line interface for merge_utils.</p>
-</dd></dl>
-
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>usage: merge [-h] [-c CFG] [-t TAG] [--comment COMMENT] [-v] [--log LOG]
-             [-f FILE] [-d DIR] [--skip SKIP] [--limit LIMIT] [--validate]
-             [--list OPT] [-n NAME] [-m MTD] [-l]
-             [MODE] [inputs ...]
-
-Command line interface for merge_utils
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -c CFG, --config CFG  a configuration file
-  -t TAG, --tag TAG     tag to help identify this run
-  --comment COMMENT     a comment describing the workflow
-  -v, --verbose         print more verbose output (e.g. -vvv for debug output)
-  --log LOG             specify a custom log file path
-
-input arguments:
-  MODE                  input mode (query, dids, files, dir)
-  -f FILE, --file FILE  a text file with a list of input files
-  -d DIR, --dir DIR     a directory to add to search locations
-  --skip SKIP           skip a number of files before processing the remainder
-  --limit LIMIT         maximum number of files to process (after skip)
-  inputs                remaining command line inputs
-
-output arguments:
-  --validate            only validate metadata instead of merging
-  --list OPT            list (dids, replicas, pfns) instead of merging
-  -n NAME, --name NAME  specify a name for the output files
-  -m MTD, --method MTD  explicitly specify the merge method to use
-  -l, --local           run merge locally instead of submitting to JustIN
+  <section id="merge">
+<h1>merge<a class="headerlink" href="#merge" title="Link to this heading">¶</a></h1>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Traceback (most recent call last):
+  File &quot;/home/runner/work/merge-utils/merge-utils/docs/source/merge&quot;, line 4, in &lt;module&gt;
+    from merge_utils.__main__ import main
+  File &quot;/opt/hostedtoolcache/Python/3.9.25/x64/lib/python3.9/site-packages/merge_utils/__main__.py&quot;, line 7, in &lt;module&gt;
+    from merge_utils import io_utils, config, scheduler, local
+  File &quot;/opt/hostedtoolcache/Python/3.9.25/x64/lib/python3.9/site-packages/merge_utils/scheduler.py&quot;, line 14, in &lt;module&gt;
+    from merge_utils.retriever import PathFinder
+  File &quot;/opt/hostedtoolcache/Python/3.9.25/x64/lib/python3.9/site-packages/merge_utils/retriever.py&quot;, line 12, in &lt;module&gt;
+    from merge_utils.merge_set import MergeSet, MergeChunk
+  File &quot;/opt/hostedtoolcache/Python/3.9.25/x64/lib/python3.9/site-packages/merge_utils/merge_set.py&quot;, line 13, in &lt;module&gt;
+    from merge_utils import io_utils, config, meta, am_i_done
+  File &quot;/opt/hostedtoolcache/Python/3.9.25/x64/lib/python3.9/site-packages/merge_utils/am_i_done.py&quot;, line 3, in &lt;module&gt;
+    from metacat.webapi import MetaCatClient
+ModuleNotFoundError: No module named &#39;metacat&#39;
 </pre></div>
 </div>
 </section>
@@ -92,16 +70,6 @@ output arguments:
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-  <div>
-    <h3><a href="index.html">Table of Contents</a></h3>
-    <ul>
-<li><a class="reference internal" href="#">merge</a><ul>
-<li><a class="reference internal" href="#merge_utils.__main__.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
-</ul>
-</li>
-</ul>
-
-  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="MetaValidator.html"

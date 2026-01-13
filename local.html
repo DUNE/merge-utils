@@ -43,91 +43,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="module-merge_utils.local">
-<span id="local"></span><h1>local<a class="headerlink" href="#module-merge_utils.local" title="Link to this heading">¶</a></h1>
-<p>Class variants for managing local file retrieval and merging operations.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="merge_utils.local.LocalMetaRetriever">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.local.</span></span><span class="sig-name descname"><span class="pre">LocalMetaRetriever</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/local.html#LocalMetaRetriever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.local.LocalMetaRetriever" title="Link to this definition">¶</a></dt>
-<dd><p>MetaRetriever for local files</p>
-<p>Initialize the LocalMetaRetriever with a list of json files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>files</strong> – dictionary of metadata file names and paths</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="merge_utils.local.LocalMetaRetriever.input_batches">
-<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_batches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AsyncGenerator</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/merge_utils/local.html#LocalMetaRetriever.input_batches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.local.LocalMetaRetriever.input_batches" title="Link to this definition">¶</a></dt>
-<dd><p>Retrieve metadata for local files in batches</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="merge_utils.local.LocalPathFinder">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.local.</span></span><span class="sig-name descname"><span class="pre">LocalPathFinder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MetaRetriever</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/local.html#LocalPathFinder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.local.LocalPathFinder" title="Link to this definition">¶</a></dt>
-<dd><p>PathFinder for local files</p>
-<p>Initialize the LocalMetaRetriever with a list of json files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>source</strong> – MetaRetriever object to use as the source of file metadata</p></li>
-<li><p><strong>files</strong> – dictionary of metadata file names and paths</p></li>
-<li><p><strong>dirs</strong> – list of directories to search for data files</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="merge_utils.local.LocalPathFinder.process">
-<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/local.html#LocalPathFinder.process"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.local.LocalPathFinder.process" title="Link to this definition">¶</a></dt>
-<dd><p>Process a batch of files to find their physical locations.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>files</strong> – dictionary of files to process</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="merge_utils.local.get_local_files">
-<span class="sig-prename descclassname"><span class="pre">merge_utils.local.</span></span><span class="sig-name descname"><span class="pre">get_local_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PathFinder</span></span></span><a class="reference internal" href="_modules/merge_utils/local.html#get_local_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.local.get_local_files" title="Link to this definition">¶</a></dt>
-<dd><p>Search local filesystem for pairs of data and metadata files.
-If both data and metadata files are found, return a LocalPathFinder using a LocalMetaRetriever.
-If only metadata files are found, return a RucioPathFinder using a LocalMetaRetriever.
-If only data files are found, return a LocalPathFinder using a MetaCatRetriever.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>files</strong> – List of input data or metadata file paths</p></li>
-<li><p><strong>dirs</strong> – List of directories to search for corresponding data or metadata files</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Appropriate PathFinder object</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="merge_utils.local.search">
-<span class="sig-prename descclassname"><span class="pre">merge_utils.local.</span></span><span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/merge_utils/local.html#search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.local.search" title="Link to this definition">¶</a></dt>
-<dd><p>Search for a file in a list of directories.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>file</strong> – Name of the file to search for</p></li>
-<li><p><strong>dirs</strong> – List of directories to search in</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Full path to the file if found, otherwise None</p>
-</dd>
-</dl>
-</dd></dl>
-
+  <section id="local">
+<h1>local<a class="headerlink" href="#local" title="Link to this heading">¶</a></h1>
 </section>
 
 
@@ -137,25 +54,6 @@ If only data files are found, return a LocalPathFinder using a MetaCatRetriever.
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-  <div>
-    <h3><a href="index.html">Table of Contents</a></h3>
-    <ul>
-<li><a class="reference internal" href="#">local</a><ul>
-<li><a class="reference internal" href="#merge_utils.local.LocalMetaRetriever"><code class="docutils literal notranslate"><span class="pre">LocalMetaRetriever</span></code></a><ul>
-<li><a class="reference internal" href="#merge_utils.local.LocalMetaRetriever.input_batches"><code class="docutils literal notranslate"><span class="pre">LocalMetaRetriever.input_batches()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#merge_utils.local.LocalPathFinder"><code class="docutils literal notranslate"><span class="pre">LocalPathFinder</span></code></a><ul>
-<li><a class="reference internal" href="#merge_utils.local.LocalPathFinder.process"><code class="docutils literal notranslate"><span class="pre">LocalPathFinder.process()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#merge_utils.local.get_local_files"><code class="docutils literal notranslate"><span class="pre">get_local_files()</span></code></a></li>
-<li><a class="reference internal" href="#merge_utils.local.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
-</ul>
-</li>
-</ul>
-
-  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="config.html"

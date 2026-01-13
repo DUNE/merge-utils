@@ -5,14 +5,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>valid_values.json &#8212; merge-utils 0.0 documentation</title>
+    <title>Production Utilities (prod_utils) &#8212; merge-utils 0.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css?v=0f882399" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
     <script src="_static/documentation_options.js?v=837179f8"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <link rel="canonical" href="https://hschellman.github.io/merge-utils-test/valid_values.html" />
+    <link rel="canonical" href="https://hschellman.github.io/merge-utils-test/prod_utils.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="do_merge" href="do_merge.html" />
@@ -34,8 +34,7 @@
           <a href="logging.html" title="logging.json"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="configuration.html" accesskey="U">Configuration</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">valid_values.json</a></li> 
+        <li class="nav-item nav-item-this"><a href="">Production Utilities (prod_utils)</a></li> 
       </ul>
     </div>  
 
@@ -44,9 +43,34 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="valid-values-json">
-<span id="valid-values"></span><h1>valid_values.json<a class="headerlink" href="#valid-values-json" title="Link to this heading">¶</a></h1>
-<p>used in <a class="reference internal" href="MetaValidator.html#metavalidator"><span class="std std-ref">MetaValidator</span></a></p>
+  <section id="production-utilities-prod-utils">
+<h1>Production Utilities (prod_utils)<a class="headerlink" href="#production-utilities-prod-utils" title="Link to this heading">¶</a></h1>
+<section id="setup">
+<h2>Setup<a class="headerlink" href="#setup" title="Link to this heading">¶</a></h2>
+<p>Production merging is done by setting up a directory under the <cite>campaigns</cite> directory. Each campaign directory contains configuration files and scripts to run the merging.  The code itself is in the <cite>prod_utils</cite> directory.</p>
+<p>There is a bash script in <cite>campaigns</cite> which sets up environmentals.</p>
+<p><code class="docutils literal notranslate"><span class="pre">`</span>
+<span class="pre">./setup_campaign.sh</span> <span class="pre">&lt;campaign_name&gt;</span>
+<span class="pre">`</span></code>
+They are:</p>
+<ul class="simple">
+<li><p><cite>CAMPAIGN`</cite> the name of the campaign - which is the name of the directory under <cite>campaigns</cite></p></li>
+<li><p><cite>CAMPAIGN_DIR=$MERGE_UTILS_DIR/campaigns/$CAMPAIGN`</cite></p></li>
+<li><p><cite>PYTHONPATH=$MERGE_UTILS_DIR/src/prod_utils:$PYTHONPATH</cite></p></li>
+<li><p><cite>CAMPAIGN_CONFIG=$CAMPAIGN_jobs.csv</cite></p></li>
+</ul>
+<p>Within a campaign, you can specify multiple merges each of which is specified by line in the <cite>&lt;campaign&gt;.csv</cite> file in the campaign directory.</p>
+<p>It specifies</p>
+<ul class="simple">
+<li><p>TAG - a unique ID you give to a merge project</p></li>
+<li><p>FCL - the fcl file you run over the merge</p></li>
+<li><p>CONFIG - the merge configuration file</p></li>
+<li><p>CAMPAIGN - the campaign name = directory name</p></li>
+<li><p>NAMESPACE     - the namespace the outputs will go to - <cite>usertests</cite> when testing</p></li>
+<li><p>BATCH - the # of input files that go into each output workflow</p></li>
+<li><p>DATASET - the input dataset - which will be chopped up into batches for processing.</p></li>
+</ul>
+</section>
 </section>
 
 
@@ -56,6 +80,16 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Production Utilities (prod_utils)</a><ul>
+<li><a class="reference internal" href="#setup">Setup</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="logging.html"
@@ -69,7 +103,7 @@
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/valid_values.rst.txt"
+      <li><a href="_sources/prod_utils.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -103,8 +137,7 @@
           <a href="logging.html" title="logging.json"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="configuration.html" >Configuration</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">valid_values.json</a></li> 
+        <li class="nav-item nav-item-this"><a href="">Production Utilities (prod_utils)</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
