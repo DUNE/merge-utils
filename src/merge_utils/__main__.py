@@ -16,6 +16,7 @@ def main():
     parser.add_argument('-c', '--config', action='append', metavar='CFG',
                         help='a configuration file')
     parser.add_argument('-t', '--tag', type=str, help='tag to help identify this run')
+    parser.add_argument('-r', '--retry', action='store_true', help='retry a failed workflow requires tag')
     parser.add_argument('--comment', type=str, help='a comment describing the workflow')
     parser.add_argument('-v', '--verbose', action='count', default=0,
                         help='print more verbose output (e.g. -vvv for debug output)')
@@ -71,6 +72,12 @@ def main():
     if args.tag:
         config.inputs['tag'] = args.tag
         logger.debug("Overriding tag: %s", args.tag)
+    if args.retry:
+        if not args.tag:
+            logger.critical("Retry option requires a tag to identify the workflow to retry.")
+            sys.exit(1)
+        config.inputs['retry'] = args.retry
+        logger.debug("Retrying tag: %s", args.tag)
     if args.comment:
         config.inputs['comment'] = args.comment
         logger.debug("Overriding comment: %s", args.comment)

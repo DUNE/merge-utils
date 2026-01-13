@@ -1,0 +1,3 @@
+TASK, NFILES, CHECK, NFILES_OUTPUT, QUERY
+TEST-CC, 5549, 0, 0, "files where merge.tag=TEST-CC and namespace=usertests and dune.output_status=confirmed and dune.campaign=test_campaign and merge.dataset='fardet-hd:fardet-hd__trg_mc_2025a_tpg__trigger-primitives__v10_12_01d01__tpg_dune10kt_1x2x2__prodmarley_nue_flat_es_dune10kt_1x2x2__out1__v1_official' and merge.cfg='triggerana_dune10kt_1x2x2.fcl'" 
+TEST-ES, 5027, 0, 0, "files where merge.tag=TEST-ES and namespace=usertests and dune.output_status=confirmed and dune.campaign=test_campaign and merge.dataset='fardet-hd:fardet-hd__trg_mc_2025a_tpg__trigger-primitives__v10_12_01d01__tpg_dune10kt_1x2x2__prodmarley_nue_flat_cc_dune10kt_1x2x2__out1__v1_official' and merge.cfg='triggerana_dune10kt_1x2x2.fcl'" 
