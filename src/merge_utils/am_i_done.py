@@ -18,7 +18,7 @@ def am_i_done(did=None,descrip=None,DEBUG=False):
         metadata = meta["metadata"]
         local = True
         for key,value in descrip.items():
-            if key is "namespace":
+            if key == "namespace":
                 if str(meta[key]) != str(value):
                     if DEBUG: print(f"Value mismatch for key {key} in file {cdid}: expected {value}, found {meta['key']}")
                     local = False
