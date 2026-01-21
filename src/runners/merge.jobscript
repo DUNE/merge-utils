@@ -46,15 +46,17 @@ DUNE_QUALIFIER=${DUNE_QUALIFIER:-e26:prof}
 source /cvmfs/dune.opensciencegrid.org/products/dune/setup_dune.sh
 setup dunesw "$DUNE_VERSION" -q "$DUNE_QUALIFIER"
 
+# Setup HDF5
+pip install h5py
+
+# Run the merge
 python3 $CONFIG_DIR/do_merge.py $CONFIG_DIR/$config $OUT_DIR
 
-
-
-
+# Check for errors
 exitcode=$?
 if [ $exitcode -ne 0 ];
 then
-  echo "failed to merge $config $exitcode"
+  echo "failed to merge $config (exit code $exitcode)"
   exit $exitcode
 fi
 
