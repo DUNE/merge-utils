@@ -5,10 +5,11 @@ import os
 #import sys
 import collections
 
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Generator
 
 from merge_utils import io_utils, config
 from merge_utils.retriever import MetaRetriever, PathFinder
+from merge_utils.merge_set import MergeChunk
 
 logger = logging.getLogger(__name__)
 
@@ -161,3 +162,13 @@ class LocalPathFinder(PathFinder):
         lvl = logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL
         io_utils.log_list("Failed to locate {n} file path{s}:", unreachable, lvl)
         self.files.set_unreachable(unreachable)
+
+    def output_chunks(self) -> Generator[MergeChunk, None, None]:
+        """
+        Yield chunks of files for merging.
+        
+        :return: yields a series of MergeChunk objects
+        """
+        for chunk in super().output_chunks():
+            chunk.site = config.sites['local']
+            yield chunk
