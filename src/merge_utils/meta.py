@@ -552,11 +552,10 @@ def parents(files: dict) -> list[str]:
         logger.info("Listing direct parents")
         output = []
         for file in files.values():
-            output.append({
-                "fid": file.fid,
-                "name": file.name,
-                "namespace": file.namespace
-            })
+            if file.fid:
+                output.append({'fid': file.fid})
+            else:
+                output.append({"name": file.name, "namespace": file.namespace})
         return output
     logger.info("Listing grandparents instead of direct parents")
     grandparents = set()
