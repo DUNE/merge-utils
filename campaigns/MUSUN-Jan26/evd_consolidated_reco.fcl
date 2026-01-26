@@ -1,0 +1,20 @@
+#include "standard_reco2_dune10kt_1x2x6.fcl"
+
+#process_name: EventDisplay
+
+# Only run pandora
+#physics.eventDisplay: [ pandora ]
+#physics.trigger_paths: [ eventDisplay ]
+physics.reco: [ @sequence::dunefd_horizdrift_2dclustering, @sequence::dunefd_horizdrift_pandora ]
+
+# Don't produce any output ART root files
+#physics.end_paths: []
+
+# Do not drop reco products
+#source.inputCommands: [ "keep *_*_*_*" ]
+
+physics.producers.pandora.ConfigFile: "PandoraSettings_Cheating_Master_DUNEFD.xml"
+physics.producers.pandora.EnableMCParticles: true
+physics.producers.pandora.GeneratorModuleLabel: "generator"
+physics.producers.pandora.ShouldRunCosmicRecoOption: false
+physics.producers.pandora.ShouldRunNeutrinoRecoOption: true

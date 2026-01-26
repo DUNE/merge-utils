@@ -33,7 +33,8 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
         query = "files from " + basedataset + " where dune.output_status=confirmed"
         if DEBUG: print(query)
         result = mc_client.query(query=query,summary="count")
-        info = result
+        ### result returns a generator which is new .. so we need to convert to grab first item
+        info = next(result) 
         # for item in result:
         #     if DEBUG: print("   ",item)
         #     info = item
@@ -46,7 +47,7 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
         print(newrow)
     
 with open(newlist,'w') as csvfile:
-    fieldnames = ['TAG', 'FCL','NFILES','SIZE_GB','BATCH','FCL','CONFIG', 'CAMPAIGN','NAMESPACE', 'DATASET' ] 
+    fieldnames = ['TAG', 'FCL','NFILES','SIZE_GB','BATCH','CONFIG', 'CAMPAIGN','NAMESPACE', 'DATASET' ] 
     #fieldnames = reader.fieldnames + ['NFILES','SIZE_GB','NAMESPACE','CONFIG']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
