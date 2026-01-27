@@ -1,0 +1,17 @@
+root-config --arch
+root-config --platform
+root-config --libs
+root-config --cflags
+root-config --bindir
+root-config --libdir
+root-config --incdir
+root-config --etcdir
+root-config --tutdir
+root-config --srcdir
+root-config --config
+root-config --features
+root-config --git-revision
+root-config --python-version
+root-config --ncpu
+root-config --cc
+root-config --ld
