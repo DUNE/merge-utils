@@ -1,122 +1,163 @@
 # Default configuration settings for merging
 # Please create your own config files instead of modifying this one directly!
 
-inputs:
-    mode: dids              # Options: query, dids, files
-    namespace: "usertests"  # Default namespace for local input files
+version: ~  # Specify the merge-utils package version
+
+input:
+    mode: <opt(dids, files, dataset, query)>
     inputs: []              # List of inputs
-    search_dirs: []         # List of directories to search for metadata files
-    skip: ~                 # Skip a number of input files, overridden by '--skip #'
-    limit: ~                # Limit the number of input files, overridden by '--limit #'
-    tag: ~                  # Specify a tag to identify outputs, overridden by '--tag TAG'
-    comment: ~              # Add a comment to output metadata, overridden by '--comment COMMENT'
+    search_dirs: <set>      # List of directories to search for metadata files
+    namespace: "usertests"  # Default namespace for local input files without metadata
+    skip: <int>             # Skip a number of input files, overridden by '--skip #'
+    limit: <int>            # Limit the number of input files, overridden by '--limit #'
+    tag: <str>              # Specify a tag to identify outputs, overridden by '--tag TAG'
+    comment: <str>          # Add a comment to output metadata, overridden by '--comment COMMENT'
+    streaming: True         # Stream files from remote sites instead of making a local copy
 
 output:
-    scripts: "tmp"    # Directory for generated job scripts (relative to package dir)
-    mode: justin      # Options: dids, replicas, pfns, local, justin
-    namespace: "usertests" # Optionally specify a namespace different from the parents
+    mode: <opt(merge, validate, list_dids, list_replicas, list_pfns)>
+    local: False          # Run merging locally instead of submitting to JustIN
     name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
-    #name: "{core.run_type}_{core.file_type}_{dune.campaign}_{core.data_stream}_{dune.config_file}_{core.data_tier}"
-    grandparents: False # List the parents of the input files as the parents of the merged file
-    dir: "/pnfs/dune/scratch/users/${USER}/merge_test" # Directory for local output files
-    lifetime: 7      # Lifetime of output files (in days)
-    scratch:  # Settings for temporary files from 2-stage merging
-        namespace: "usertests" # Optionally specify a namespace different from the parents
-        lifetime: 7      # Lifetime of output files (in days)
+    namespace: <str>      # Optionally specify a namespace different from the parents
+    grandparents: False   # List the parents of the input files as the parents of the merged file
+    tmp_dir: "{PKG}/tmp"  # Directory for generated job scripts
+    out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test" # Local output directory
+    batch:                # Settings for batch merging
+        lifetime: 30      # Lifetime of output files (in days)
+    scratch:              # Settings for temporary files from 2-stage merging
+        namespace: <str>  # Optionally specify a different namespace for temporary files
+        lifetime: 7       # Lifetime of temporary files (in days)
 
-metadata:
-    optional:         # These metadata keys are optional (overrides required and conditional keys)
-      - "dune_mc.geometry_version"
-      - "dune_mc.gen_fcl_filename"
+#metadata:
+#    optional:         # These metadata keys are optional (overrides required and conditional keys)
+#      - "dune_mc.geometry_version"
+#      - "dune_mc.gen_fcl_filename"
 
 validation:
     batch_size: 100   # Number of files to query metacat about at once
     fast_fail: True   # Stop processing files as soon as one batch fails validation
-    skip:             # Continue processing files even if some fail validation
-        missing:      False # Skip files with missing metadata
-        duplicate:    False # Skip duplicated files
-        unreachable:  False # Skip files that are not accessible
-        invalid:      False # Skip files with invalid metadata
-        inconsistent: False # Skip files with inconsistent metadata
+    check_fids: True  # Make sure parent FIDs exist in MetaCat (DIDs are always checked)
+    error_handling:   # How to handle files with errors
+        duplicate:    <opt(quit,skip,gap)> # Duplicated files
+        missing:      <opt(quit,skip,gap)> # Files without metadata
+        undeclared:   <opt(quit,skip,gap)> # Files without a MetaCat record
+        retired:      <opt(quit,skip,gap)> # Retired files
+        invalid:      <opt(quit,skip,gap)> # Metadata failed validation
+        unreachable:  <opt(quit,skip,gap)> # Files without reachable replicas
+        inconsistent: <opt(quit,skip,gap)> # Metadata inconsistent with other files
     checksums:
       - "adler32"     # Adler32 should be the default checksum
 
 sites:
     justin_url: "https://justin-ui-fnal.dune.hep.ac.uk"
-    local: "US_FNAL-FermiGrid"          # Local site name
-    default: "US_FNAL-FermiGrid"        # Default site (eg for stage 2 jobs)
-    allowed_sites:                      # Sites where merging is allowed
-      - "US_FNAL-FermiGrid"
-      - "CERN"
-    max_distance: 1000.0                # Distances range from 0 to 101
-    rse_distances:                      # Distances offsets for specific RSEs
-        "DUNE_US_FNAL_DISK_STAGE": -5.0 # Increase priority 
-    nearline_distance:                  # Extra distance to account for staging
-        default:        100.0           # Default distance for all RSEs
+    default: "US_FNAL-FermiGrid"          # Default site (eg for stage 2 jobs)
+    max_distance: 1000.0                  # Distances range from 0 to 101
+    site_distances:                       # Distance offsets for merging sites
+        default: .inf                     # Do not allow merging except at specified sites
+        "US_FNAL-FermiGrid": -5.0         # Increase priority
+        "CERN": 0.0
+    rse_distances:                        # Distances offsets for specific RSEs
+        default: 0.0                      # No extra distance by default
+        "DUNE_US_FNAL_DISK_STAGE": -5.0   # Increase priority 
+    tape_distances:                       # Extra distance penalty to account for staging
+        default:        100.0             # Default distance for all RSEs
         "FNAL_DCACHE":  10.0
-    streaming: True                     # Stream files from remote sites instead of making a local copy
 
-merging:
-    target_mode: size     # Options: size, count
-    target_size: 10.0     # Target size (in GB) or number of files
-    equalize: True        # Try to equalize the size of the merged files
-    chunk_min: 2          # Minimum number of files to merge at once
-    chunk_max: 1000       # Maxiumum number of files to merge at once
-    dune_version: ~       # Optionally specify DUNE software version, defaults to DUNE_VERSION env var
-    dune_qualifier: ~     # Optionally specify DUNE software qualifier, defaults to DUNE_QUALIFIER env var
-    method:
-        name: auto        # Can be auto, a specific default method, or the path to a custom script
-        cmd: ~            # Optionally specify merging command, eg. '{script} {cfg} {output} {inputs}'
-        cfg: ~            # Optionally specify a config file for merging
-        script: ~         # Optionally specify a custom merging script
-        outputs: []       # List of output files produced by the merging method      
-        dependencies: []  # Optionally specify additional files required for merging
+local:
+    host: "FNAL"
+    site: "US_FNAL-FermiGrid"
+    xrootd:
+        "FNAL":
+            "/pnfs/dune/persistent/staging":
+                url: "root://fndcadoor.fnal.gov:1094/pnfs/fnal.gov/usr/dune/persistent/staging"
+                rse: "DUNE_US_FNAL_DISK_STAGE"
+            "/pnfs/dune/tape_backed/dunepro":
+                url: "root://fndcadoor.fnal.gov:1094/pnfs/fnal.gov/usr/dune/tape_backed/dunepro"
+                rse: "FNAL_DCACHE"
+            "/pnfs": 
+                url: "root://fndca1.fnal.gov:1094/pnfs/fnal.gov/usr"
+                rse: "FNAL_DCACHE"
+
+grouping:
+    mode: <opt(size, count)>
+    target: 10.0                  # Target size (in GB) or number of files"
+    equalize: True                # Try to equalize the size of the merged files
+    chunk_min: 2                  # Minimum number of files to merge at once
+    chunk_max: 100                # Maximum number of files to merge at once
+
+method:
+    method_name: auto             # Can be auto, a specific default method, or the path to a custom script
+    cmd: <str>                    # Optionally specify merging command, eg. '{script} {cfg} {output} {inputs}'
+    cfg: <str>                    # Optionally specify a config file for merging
+    script: <str>                 # Optionally specify a custom merging script
+    transform: <str>              # Optionally specify an application name for transform jobs
+    outputs: <list(output_file)>  # List of output files produced by the merging method      
+    dependencies: <set>           # Optionally specify additional files required for merging
+    environment:
+        dunesw_version: <str>     # DUNE software version, defaults to DUNESW_VERSION env var
+        dunesw_qualifier: <str>   # DUNE software qualifier, defaults to DUNE_QUALIFIER env var
+        vars: <map>               # Additional environment variables to set
+        image: <str>              # Apptainer image to use for batch jobs
+        products: <set>           # Extra products to load in the environment
     # Default settings for built-in merging methods, matched using 'cond' in reverse order
-    methods:
-      - name: "tar"
+    defaults:
+      - method_name: "tar"
         cond: "True"  # Always matches if no other method matches first
         script: "merge_tar.py"
         outputs:
           - name: "{NAME}_merged_{UUID}.tar"
             metadata:
                 core.file_format: "tar"
-      - name: "hadd"
+      - method_name: "hadd"
         cond: "'{core.file_format}' in ['root', 'rootntuple', 'tfile']"
         cmd: "hadd -f {output} {inputs}"
         outputs:
           - name: "{NAME}_merged_{UUID}.root"
-      - name: "lar"
+      - method_name: "lar"
         cond: "'{core.file_format}' in ['artroot']"
         cmd: "lar -c {cfg} -n 1000000 -o {output} {inputs}"
         cfg: "artcat.fcl"
         outputs:
           - name: "{NAME}_merged_{UUID}.root"
-      - name: "hdf5"
+      - method_name: "hdf5"
         cond: "'{core.file_format}' in ['hdf5']"
         script: "merge_hdf5.py"
         cfg: "hdf5.yaml"
         outputs:
           - name: "{NAME}_merged_{UUID}.hdf5"
       
+job:        # Populated at runtime
+    timestamp: <str>
+    dir: <str>
+    config_files: <list>
 
-schema:
+schema:     # Used to check validity of user config files
     type_defs:
         output_file:
-            name: <str>
-            metadata: <dict>
-            rename: <str>
-            method: <str>
+            name: <str>             # Output file name, shoud contain '{NAME}' and '{UUID}'
+            metadata: <map>         # Per-file metadata overrides
+            rename: <str>           # File name produced by merging method, if different from spec
+            pass2: <str>            # Basic merging method for pass 2+ of a transform job
+            size: <size_spec> sum   # Size estimate for output file
+            size_min: <float> 0     # Minimum size for output file, for error checking
+            checklist: <path>       # Optional checklist file to verify the output file contents
         merging_method:
-            name: <str>
-            cond: <str>
-            cmd: <str>
-            cfg: <str>
-            script: <str>
+            method_name: <str>      # Name of method, used for selection and in output metadata
+            cond: <cond>            # Condition to auto-select this method based on input metadata
+            cmd: <str>              # Bash command to run the merging method
+            cfg: <str>              # Optional config file to use for the merging method
+            script: <str>           # Optional script to run the merging method
+            transform: <str>        # Optional application name for transform jobs
+            dependencies: <set>     # Optionally specify additional files required for merging
+            metadata: <map>         # Per-method metadata overrides
             outputs: <list(output_file)>
-            dependencies: <set>
     key_defs:
-        merging.methods: <list(merging_method)>
-        merging.method.outputs: <list(output_file)>
+        output.tmp_dir: <path>
+        output.local.out_dir: <path>
+        method.defaults: <list(merging_method)>
+        sites.site_distances: <map(float)>
+        sites.site_distances[default]: <float>
         sites.rse_distances: <map(float)>
-        sites.nearline_distance: <map(float)>
-        sites.nearline_distance.default: <float>
+        sites.rse_distances[default]: <float>
+        sites.disk_distances: <map(float)>
+        sites.disk_distances[default]: <float>
