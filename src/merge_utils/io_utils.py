@@ -13,9 +13,9 @@ from collections.abc import Iterable
 try:
     import tomllib # type: ignore
 except ImportError:
-    import tomli as tomllib
+    import tomli as tomllib # type: ignore
 
-import yaml
+import yaml # type: ignore pylint: disable=import-error
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +64,9 @@ def expand_path(path: str, base_dir: str = None) -> str:
     :param base_dir: Base directory for relative paths
     :return: Expanded path
     """
-    path = os.path.expanduser(os.path.expandvars(path))
-    if not os.path.isabs(path) and base_dir is not None:
-        path = os.path.join(os.path.expanduser(os.path.expandvars(base_dir)), path)
+    path = os.path.expanduser(os.path.expandvars(str(path)))
+    if not os.path.isabs(path) and base_dir:
+        path = os.path.join(os.path.expanduser(os.path.expandvars(str(base_dir))), path)
     return os.path.abspath(path)
 
 def find_file(name: str, dirs: list[str] = None, recursive: bool = False) -> str:
@@ -79,8 +79,7 @@ def find_file(name: str, dirs: list[str] = None, recursive: bool = False) -> str
     :return: Full path to the located file
     :raises FileNotFoundError: If the file does not exist
     """
-    logger.debug("Searching for file %s", name)
-    path = os.path.expanduser(os.path.expandvars(name))
+    path = os.path.expanduser(os.path.expandvars(str(name)))
 
     # First, check if the path exists as given
     if os.path.exists(path):
@@ -91,12 +90,15 @@ def find_file(name: str, dirs: list[str] = None, recursive: bool = False) -> str
         raise FileNotFoundError(f"Failed to read file {path}")
 
     # Search the provided directories
+    logger.debug("Searching for file %s", name)
     if dirs is None:
         dirs = []
     for directory in dirs:
-        test_path = os.path.expanduser(os.path.expandvars(os.path.join(directory, name)))
+        directory = os.path.expanduser(os.path.expandvars(str(directory)))
+        test_path = os.path.join(directory, path)
         if not os.path.isabs(test_path):
-            test_path = os.path.join(pkg_dir(), test_path)
+            directory = os.path.join(pkg_dir(), directory)
+            test_path = os.path.join(directory, path)
         if os.path.exists(test_path):
             return os.path.abspath(test_path)
         if recursive:
@@ -151,15 +153,12 @@ def read_config_file(name: str = None) -> dict:
 
     suffix = pathlib.Path(path).suffix
     if suffix in [".json"]:
-        logger.debug("Reading JSON file %s", path)
         with open(path, encoding="utf-8") as f:
             cfg = json.load(f)
     elif suffix in [".toml"]:
-        logger.debug("Reading TOML file %s", path)
         with open(path, mode="rb") as f:
             cfg = tomllib.load(f)
     elif suffix in [".yaml", ".yml"]:
-        logger.debug("Reading YAML file %s", path)
         with open(path, encoding="utf-8") as f:
             cfg = yaml.safe_load(f)
     else:
@@ -167,7 +166,7 @@ def read_config_file(name: str = None) -> dict:
         raise ValueError(f"Unknown file type: {suffix}")
     return cfg
 
-def setup_log(name: str, log_file: str = None, verbosity: int = 0) -> None:
+def setup_log(name: str = None, log_file: str = None, verbosity: int = 0) -> None:
     """Configure logging"""
     logger_config = read_config_file("logging.json")
     if log_file:
@@ -184,7 +183,10 @@ def setup_log(name: str, log_file: str = None, verbosity: int = 0) -> None:
             logfile.write("\n")
 
     logging.config.dictConfig(logger_config)
-    logger.info("Starting script %s", os.path.basename(name))
+    if name:
+        logger.info("Starting merge script %s", os.path.basename(name))
+    else:
+        logger.info("Starting merge job")
     set_log_level(verbosity)
 
 def set_log_level(level: int) -> None:
@@ -203,6 +205,19 @@ def set_log_level(level: int) -> None:
             handler.setLevel(level)
             handler.addFilter(lambda record:
                               not hasattr(record, 'block') or record.block != "console")
+
+def setup_job_dir(path: str) -> None:
+    """Setup the tmp directory for this job"""
+    os.makedirs(path, exist_ok=True)
+
+    job_handler = logging.FileHandler(os.path.join(path, "job.log"))
+    job_handler.set_name("job")
+    job_handler.setLevel("DEBUG")
+    for handler in logging.getLogger().handlers:
+        if handler.get_name() == "file":
+            job_handler.setFormatter(handler.formatter)
+            break
+    logging.getLogger().addHandler(job_handler)
 
 def log_print(msg: str, level=logging.INFO) -> None:
     """Print a message and save it to the log file"""
@@ -231,7 +246,7 @@ def log_list(msg: str, items: Iterable, level=logging.WARNING) -> int:
     else:
         msg = [msg.format(n=total, s="s", es="es")]
 
-    msg += items
+    msg.extend([str(item) for item in items])
     logger.log(level, "\n  ".join(msg), stacklevel=2)
     return total
 
