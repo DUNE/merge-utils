@@ -6,29 +6,128 @@ import sys
 import collections
 import logging
 import subprocess
-import hashlib
 import math
+import enum
+import copy
 from typing import Iterable, Generator
 
 from merge_utils import io_utils, config, meta
 
 logger = logging.getLogger(__name__)
 
+class MergeFileError(enum.Flag):
+    """Enumeration of possible file errors"""
+    DUPLICATE    = enum.auto()
+    MISSING      = enum.auto()
+    UNDECLARED   = enum.auto()
+    RETIRED      = enum.auto()
+    INVALID      = enum.auto()
+    UNREACHABLE  = enum.auto()
+    INCONSISTENT = enum.auto()
+
+    @property
+    def first(self) -> MergeFileError:
+        """Get the first error in the enumeration"""
+        return MergeFileError(self.value & -self.value)
+
+    @property
+    def handling(self) -> str:
+        """Get the error handling method from the configuration"""
+        if self == MergeFileError(0):
+            return 'good'
+        return config.validation.error_handling[self.first.name.lower()]
+
+    @property
+    def group(self) -> str:
+        """Check if the file should count towards grouping"""
+        return self.handling in ['good', 'gap']
+
+    @classmethod
+    def critical(cls) -> MergeFileError:
+        """Get the set of errors that are considered critical"""
+        critical = cls(0)
+        for err in cls:
+            if config.validation.error_handling[err.name.lower()] == 'quit':
+                critical |= err
+        return critical
+
+ERROR_MESSAGES = {
+    'duplicate':    "Found {n} duplicated file{s}:",
+    'missing':      "Found {n} file{s} with missing metadata:",
+    'undeclared':   "Found {n} file{s} with undeclared metadata:",
+    'retired':      "Found {n} retired file{s}:",
+    'invalid':      "Found {n} file{s} with invalid metadata:",
+    'unreachable':  "Found {n} unreachable file{s}:"
+}
+
 class MergeFile:
     """A generic data file with metadata"""
+
     def __init__(self, data: dict):
-        self._did = data['namespace'] + ':' + data['name']
-        self.path = data.get('path', None)
+        """Initialize the MergeFile with a metadata dictionary"""
+        # Set name and check for errors
+        self._did = f"{data['namespace']}:{data['name']}"
+        self.errors = MergeFileError(0)
+        for err in data.get('errors', []):
+            self.errors |= MergeFileError[err.upper()]
+        if self.errors:
+            return
+        # Set FIDs and check for undeclared files
         self.fid = data.get('fid', None)
-        self.size = data['size']
+        self.parents = set()
+        if config.output.grandparents:
+            self.set_parents(data.get('parents', []))
+        elif self.fid is None:
+            self.errors |= MergeFileError.UNDECLARED
+        if self.errors:
+            return
+        # Check if the file is retired
+        if data.get('retired', False):
+            self.errors |= MergeFileError.RETIRED
+            return
+        # Set other metadata and validate
+        self.paths = data.get('paths', {})
+        self.size = data.get('size', None)
         self.checksums = data['checksums']
-        if len(self.checksums) == 0:
-            logger.warning("No checksums for %s", self)
-        elif 'adler32' not in self.checksums:
-            logger.warning("No adler32 checksum for %s", self)
         self.metadata = data['metadata']
-        self.parents = data.get('parents', [])
-        self.valid = meta.validate(self._did, self.metadata)
+        self.validate()
+
+    def set_parents(self, parents: Iterable) -> None:
+        """Set the parent FIDs for the file, checking for any missing FIDs"""
+        self.parents = set()
+        missing = set()
+        for parent in parents:
+            fid = parent.get('fid')
+            if fid:
+                self.parents.add(fid)
+                continue
+            if 'did' in parent:
+                missing.add(parent['did'])
+            elif 'namespace' in parent and 'name' in parent:
+                missing.add(f"{parent['namespace']}:{parent['name']}")
+            else:
+                missing.add(str(parent))
+        if missing:
+            self.errors |= MergeFileError.UNDECLARED
+            io_utils.log_list("File %s has {n} parent{s} without an FID:" % self.did,
+                              list(missing), logging.ERROR)
+
+    def validate(self) -> None:
+        """Check for errors or invalid metadata"""
+        if not self.size:
+            logger.error("No size for %s", self)
+            self.errors |= MergeFileError.INVALID
+            return
+        if len(self.checksums) == 0:
+            logger.error("No checksums for %s", self)
+            self.errors |= MergeFileError.INVALID
+            return
+        if not any(str(algo) in self.checksums for algo in config.validation.checksums):
+            logger.warning("No valid checksum for %s", self)
+            self.errors |= MergeFileError.INVALID
+            return
+        if not meta.validate(self.did, self.metadata):
+            self.errors |= MergeFileError.INVALID
 
     @property
     def did(self) -> str:
@@ -46,7 +145,7 @@ class MergeFile:
         return self.did.split(':', 1)[1]
 
     @property
-    def format(self):
+    def file_format(self):
         """The file format (core.file_format)"""
         return self.metadata['core.file_format']
 
@@ -72,503 +171,550 @@ class MergeFile:
         values = [self.namespace]
         for field in fields:
             value = self.metadata.get(field, "")
-            if isinstance(value, list):
-                value = tuple(value)
+            try:
+                hash(value)
+            except TypeError:
+                value = str(value)
             values.append(value)
         return tuple(values)
 
-class MergeSet(collections.UserDict):
+class MergeSet:
     """Class to keep track of a set of files for merging"""
-    def __init__(self, files: list[MergeFile] = None):
-        super().__init__()
 
-        self.invalid = {}
-        self.inconsistent = {}
-        self.unreachable = {}
-        self.missing = collections.defaultdict(int)
+    def __init__(self):
+        self.files = []
+        self.start_idx = config.input.skip or 0
+        self.dids = {}
+        self.good = {}
+        self.errors = MergeFileError(0)
+        self.consistent_fields = None
 
-        self.consistent_fields = config.metadata['consistent']
-        self.field_values = None
-        self.consistent = True
+    @property
+    def good_files(self) -> list:
+        """List of MergeFile objects for files without errors"""
+        return [self.files[idx] for idx in self.good.values()]
 
-        self.unique = True
-
-        if files:
-            self.add_files(files)
-
-    def set_unreachable(self, dids: Iterable[str]) -> None:
+    def get_by_idx(self, idx: int) -> MergeFile | None:
         """
-        Mark files as unreachable, e.g. not found in Rucio or not accessible.
+        Get a file by its index in the set.
 
-        :param dids: list of file DIDs to mark as unreachable
+        :param idx: index of the file
+        :return: MergeFile object or None if not found
         """
+        idx -= self.start_idx
+        if idx < 0 or idx >= len(self.files):
+            return None
+        return self.files[idx]
+
+    def get_by_did(self, did: str) -> MergeFile | None:
+        """
+        Get a file by its DID.
+
+        :param did: DID of the file
+        :return: MergeFile object or None if not found
+        """
+        idx = self.dids.get(did, None)
+        if idx is None:
+            return None
+        return self.files[idx]
+
+    def set_error(self, dids: Iterable[str], error: MergeFileError) -> None:
+        """
+        Mark files as having a specific error.
+
+        :param dids: list of file DIDs to mark
+        :param error: MergeFileError to set
+        """
+        if not isinstance(error, MergeFileError):
+            error = MergeFileError[error.upper()]
+        err_count = 0
         for did in dids:
-            file = self.data.pop(did)
-            file.valid = False
-            self.unreachable[did] = file
+            file = self.get_by_did(did)
+            if file:
+                file.errors |= error
+                self.good.pop(did, None)
+                err_count += 1
+        if err_count > 0:
+            logger.debug("Flagged %d file%s as %s",
+                         err_count, "s" if err_count != 1 else "", error.name.lower())
+            self.errors |= error
 
-    def add_file(self, file: MergeFile | dict) -> MergeFile:
+    def add_file(self, file: dict) -> MergeFile:
         """
-        Add a file to the set
+        Add a file to the set.
 
-        :param file: A MergeFile object or a dictionary with file metadata
-        :return: the added MergeFile object, or None if it was a duplicate
+        :param file: A dictionary with file metadata
+        :return: the added MergeFile object
         """
-        if isinstance(file, dict):
-            file = MergeFile(file)
+        # Convert to MergeFile and add to the list
+        file = MergeFile(file)
+        idx = len(self.files)
+        self.files.append(file)
+        # Add to the DID index unless it's a duplicate
         did = file.did
-
-        # Check if the file is valid
-        if not file.valid:
-            self.invalid[did] = file
-            return None
-
-        # Check if the file is already in the set
-        if did in self.data:
-            self.unique = False
-            self.data[did].count += 1
-            lvl = logging.ERROR if config.validation['skip']['duplicate'] else logging.CRITICAL
-            logger.log(lvl, "Found duplicate input file %s", did)
-            return None
-
-        # Actualy add the file
-        self.data[did] = file
-        self.data[did].count = 1
-        logger.debug("Added file %s", did)
-
-        # Check if the file metadata is consistent
-        vals = file.get_fields(self.consistent_fields)
-        if not self.field_values:
-            # First file, so set the field values
-            self.field_values = vals
-        elif self.field_values != vals:
-            self.consistent = False
-
+        if did in self.dids:
+            file.errors |= MergeFileError.DUPLICATE
+        else:
+            self.dids[did] = idx
+        # Check for errors and update good files
+        if file.errors:
+            self.errors |= file.errors
+            return file
+        self.good[did] = idx
+        # Check for consistency
+        if self.consistent_fields is None:
+            self.consistent_fields = file.get_fields(config.metadata.consistent)
+        elif MergeFileError.INCONSISTENT not in self.errors:
+            if file.get_fields(config.metadata.consistent) != self.consistent_fields:
+                self.errors |= MergeFileError.INCONSISTENT
         return file
 
-    def add_files(self, files: Iterable) -> dict:
+    def add(self, files: Iterable) -> dict:
         """
-        Add a collection of files to the set
+        Add a batch of files to the set.
 
-        :param files: collection of MergeFile objects or dictionaries with file metadata
-        :return: dict of MergeFile objects that were added
+        :param files: collection of dictionaries with file metadata
+        :return: dict of MergeFile objects that were added without errors
         """
         new_files = {}
         for file in files:
             new_file = self.add_file(file)
-            if new_file is not None:
+            if not new_file.errors:
                 new_files[new_file.did] = new_file
-        logger.info("Added %d unique files", len(new_files))
+        logger.info("Added %d valid files", len(new_files))
         return new_files
 
-    @property
-    def dupes(self) -> dict:
-        """Return counts of duplicate file DIDs"""
-        return {did:(file.count-1) for did, file in self.data.items() if file.count > 1}
-
-    @property
-    def files(self) -> list[MergeFile]:
-        """Return the list of files"""
-        return sorted(self.data.values())
-
-    def __iter__(self):
-        """Iterate over the files"""
-        return iter(self.files)
-
-    @property
-    def hash(self) -> str:
-        """Get a hash from the list of files"""
-        concat = '/'.join(sorted(self.data.keys()))
-        return hashlib.sha256(concat.encode('utf-8')).hexdigest()
-
-    @property
-    def size(self) -> int:
-        """Get the total size of the files"""
-        return sum(file.size for file in self.data.values())
-
-    def check_validity(self, final: bool = False) -> bool:
+    def check_consistency(self) -> list[str]:
         """
-        Check if the files in the set are valid and log any invalid files.
-        
-        :param final: print final summary of invalid files even if bad files are allowed
-        :return: True if all files are valid, False otherwise
-        """
-        skip = config.validation['skip']['invalid']
-        if len(self.invalid) == 0 or (skip and not final):
-            return True
-        lvl = logging.ERROR if skip else logging.CRITICAL
-        io_utils.log_list("Found {n} file{s} with invalid metadata:", self.invalid, lvl)
-        return skip
+        Pick out the largest consistent subset of files and log any inconsistencies.
 
-    def check_consistency(self, final: bool = False) -> bool:
+        :return: list of log messages about inconsistent files
         """
-        Check if the files in the set have consistent namespaces and metadata fields.
-        If not, log the inconsistencies and move the inconsistent files out of the set.
+        # Group good files by their checked field values
+        checked_fields = config.metadata.consistent
+        groups = collections.defaultdict(list)
+        for did, idx in self.good.items():
+            file = self.files[idx]
+            groups[file.get_fields(checked_fields)].append((did, idx))
+        # Find the largest consistent group
+        groups = sorted(groups.items(), key=lambda k: len(k[1]), reverse=True)
+        self.consistent_fields = groups[0][0]
+        self.good = dict(groups.pop(0)[1])
+        # Mark other files as inconsistent and log errors
+        if len(groups) == 0:
+            logger.info("All good files have consistent metadata, clearing inconsistency flag")
+            self.errors &= ~MergeFileError.INCONSISTENT
+            return []
+        msg = [
+            f"Found {len(groups)+1} file groups with inconsistent metadata:",
+            f"Group 1 ({len(self.good)} file{'s' if len(self.good) != 1 else ''}) metadata:"
+        ]
+        field_names = ['namespace'] + config.metadata.consistent
+        for field, value in zip(field_names, self.consistent_fields):
+            msg.append(f"  {field}: '{value}'")
+        for gid, (fields, group) in enumerate(groups, start=2):
+            msg.append(f"Group {gid} ({len(group)} file{'s' if len(group) > 1 else ''}):")
+            for did, idx in group:
+                msg.append(f"  {did}")
+                self.files[idx].errors |= MergeFileError.INCONSISTENT
+            msg.append(f"Group {gid} metadata inconsistencies:")
+            for field, good_val, bad_val in zip(field_names, self.consistent_fields, fields):
+                if good_val == bad_val:
+                    continue
+                msg.append(f"  {field}: '{bad_val}' (expected '{good_val}')")
+        return msg
 
-        :param final: do final check and log even if bad files are allowed
-        :return: True if the files are consistent, False otherwise
+    def check_errors(self, final: bool = False) -> None:
         """
-        skip = config.validation['skip']['inconsistent']
-        if self.consistent or (skip and not final):
-            return True
-        lvl = logging.ERROR if skip else logging.CRITICAL
-
-        # Figure out the most common values for the checked fields
-        counts = collections.defaultdict(int)
-        for file in self.files:
-            counts[file.get_fields(self.consistent_fields)] += 1
-        self.field_values = max(counts, key=counts.get)
-        n_errs = len(self.data) - counts[self.field_values]
-        s_errs = "s" if n_errs != 1 else ""
-        errs = [f"Found {n_errs} file{s_errs} in set with inconsistent metadata:"]
-
-        for file in self.files:
-            values = file.get_fields(self.consistent_fields)
-            if values != self.field_values:
-                file.valid = False
-                file_errs = []
-                if values[0] != self.field_values[0]:
-                    v1 = f"'{values[0]}'" if values[0] else "None"
-                    v2 = f"'{self.field_values[0]}'" if self.field_values[0] else "None"
-                    file_errs.append(f"  namespace: {v1} (expected {v2})")
-                for i, key in enumerate(self.consistent_fields, start=1):
-                    if values[i] != self.field_values[i]:
-                        v1 = f"'{values[i]}'" if values[i] else "None"
-                        v2 = f"'{self.field_values[i]}'" if self.field_values[i] else "None"
-                        file_errs.append(f"  {key}: {v1} (expected {v2})")
-                n_errs = len(file_errs)
-                s_errs = "s" if n_errs != 1 else ""
-                errs.append(f"File {file.did} has {n_errs} bad key{s_errs}:")
-                errs.extend(file_errs)
-        logger.log(lvl, "\n  ".join(errs))
-
-        # Move inconsistent files out of the set
-        self.inconsistent = {did: file for did, file in self.data.items() if not file.valid}
-        self.data = {did: file for did, file in self.data.items() if file.valid}
-
-        return skip
-
-    def check_reachability(self, final: bool = False) -> bool:
-        """
-        Check if the files in the set are reachable and log any unreachable files.
-        
-        :param final: print final summary of unreachable files even if bad files are allowed
-        :return: True if all files are reachable, False otherwise
-        """
-        skip = config.validation['skip']['unreachable']
-        if len(self.unreachable) == 0 or (skip and not final):
-            return True
-        lvl = logging.ERROR if skip else logging.CRITICAL
-        io_utils.log_list("Found {n} unreachable file{s}:", self.unreachable, lvl)
-        return skip
-
-    def check_missing(self, final: bool = False) -> bool:
-        """
-        Check if any files were missing metadata.
-        
-        :param final: print final summary of missing files even if bad files are allowed
-        :return: True if all files have metadata, False otherwise
-        """
-        skip = config.validation['skip']['missing']
-        if len(self.missing) == 0 or (skip and not final):
-            return True
-        lvl = logging.ERROR if skip else logging.CRITICAL
-        io_utils.log_dict("Failed to retrieve data for {n} file{s}:", self.missing, lvl)
-        return skip
-
-    def check_uniqueness(self, final: bool = False) -> bool:
-        """
-        Check if the files in the set are unique and log any duplicate files.
-        
-        :param final: print final summary of duplicate files even if bad files are allowed
-        :return: True if all files are unique, False otherwise
-        """
-        skip = config.validation['skip']['duplicate']
-        if self.unique or (skip and not final):
-            return True
-        lvl = logging.ERROR if skip else logging.CRITICAL
-        io_utils.log_dict("Found {n} duplicated file{s}:", self.dupes, lvl)
-        return skip
-
-    def check_errors(self, final: bool = False) -> bool:
-        """
-        Check for errors in the set and log them.
+        Check and log errors in the set.
         
         :param final: print final summary of errors even if bad files are allowed
-        :return: True if unskipped errors were found, False otherwise
         """
-        return not all([
-            self.check_missing(final),
-            self.check_validity(final),
-            self.check_consistency(final),
-            self.check_reachability(final),
-            self.check_uniqueness(final)
-        ])
+        if not self.errors:
+            return
+        # Check if we need to abort due to critical errors
+        fast_fail = config.validation.fast_fail
+        critical_errors = MergeFileError.critical()
+        abort = bool(self.errors & critical_errors) and (final or fast_fail)
+        if not final and not abort:
+            return
+        # Do final consistency check if needed
+        inconsistencies = []
+        if MergeFileError.INCONSISTENT in self.errors:
+            inconsistencies = self.check_consistency()
+            # Double-check if we still need to abort after consistency check
+            abort = bool(self.errors & critical_errors) and (final or fast_fail)
+            if not final and not abort:
+                logger.debug("No critical errors after consistency check, continuing")
+                return
+        # Log errors
+        for err in MergeFileError:
+            if err not in self.errors:
+                continue
+            lvl = logging.CRITICAL if err in critical_errors else logging.ERROR
+            if err == MergeFileError.INCONSISTENT:
+                logger.log(lvl, '\n  '.join(inconsistencies))
+                continue
+            err_dids = [file.did for file in self.files if file.errors.first() == err]
+            io_utils.log_list(ERROR_MESSAGES[err.name.lower()], err_dids, lvl)
+        # Quit if needed
+        if abort:
+            io_utils.log_nonzero(
+                "Found {n} total file{s} with critical errors!",
+                sum(1 for file in self.files if file.errors.first in critical_errors),
+                logging.CRITICAL
+            )
+            sys.exit(1)
+        # Check for empty set after errors
+        if final and len(self.good) == 0:
+            logger.critical("No valid files remain after error checking!")
+            sys.exit(1)
 
-    def count_errors(self) -> int:
+    def group_by_count(self, count: int) -> list[int]:
         """
-        Count the number of errors in the set.
+        Group input files by count
         
-        :return: total number of errors
+        :param count: Number of files to group
+        :return: List of group divisions
         """
-        return (len(self.invalid) +
-                len(self.inconsistent) +
-                len(self.unreachable) +
-                sum(self.missing.values()) +
-                sum(self.dupes.values()))
-
-    def group_count(self) -> list[int]:
-        """Group input files by count"""
-        target_size = config.merging['target_size']
-        total_size = len(self.data)
-        if total_size < target_size:
-            logger.info("Merging %d inputs into 1 group", len(self.data))
-            return [len(self.data)]
-
-        if config.merging['equalize']:
-            n_groups = math.ceil(total_size / target_size)
-            target_size = total_size / n_groups
-            divs = [round(i*target_size) for i in range(1, n_groups)]
+        # If there are fewer files than the target, just make one group
+        target = config.grouping.target
+        if count < target:
+            io_utils.log_print(f"Merging {count} inputs into 1 group")
+            return []
+        # Otherwise, make groups of the target count
+        if config.grouping.equalize:
+            n_groups = math.ceil(count / target)
+            target = count / n_groups
+            divs = [round(i*target) for i in range(1, n_groups)]
         else:
-            divs = list(range(target_size, total_size, target_size))
-        divs.append(len(self.data))
-        logger.info("Merging %d inputs into %d groups of %d files",
-                        len(self.data), len(divs), target_size)
+            divs = list(range(target, count, target))
+        io_utils.log_print(
+            f"Merging {count} inputs into {len(divs)+1} groups of {round(target)} files")
+        # Warn about small groups
+        if target < config.grouping.chunk_min:
+            io_utils.log_print(
+                "Target group count is smaller than recommended, did you mean to use size instead?",
+                logging.WARNING)
         return divs
 
-    def group_size(self) -> list[int]:
-        """Group input files by size"""
-        target_size = config.merging['target_size'] * 1024**3
-        total_size = self.size
-        if total_size < target_size:
-            logger.info("Merging %d inputs into 1 group", len(self.data))
-            return [len(self.data)]
-
-        avg_size = total_size / len(self.data)
-        if avg_size > target_size / config.merging['chunk_min']:
-            logger.error("%.2f GB input files are too large to merge into %.2f GB groups",
-                            avg_size/1024**3, target_size/1024**3)
+    def group_by_size(self, indices: list[int]) -> list[int]:
+        """
+        Group input files by size
+        
+        :param indices: Indices of files to group
+        :return: List of group divisions
+        """
+        # Get sizes of input files
+        sizes = [self.files[i].size for i in indices]
+        count = sum(1 for size in sizes if size)
+        total = sum(size for size in sizes if size)
+        avg = total / count
+        if io_utils.log_nonzero("Found {s} file{s} with no size, using average", len(sizes)-count):
+            sizes = [s or avg for s in sizes]
+            total += avg * (len(sizes) - count)
+            count = len(sizes)
+        # If the estimated size is smaller than the target, just make one group
+        spec = config.method.outputs[0].size
+        fixed = spec.b + avg*spec.a
+        estimate = fixed + count*spec.n + total*spec.s
+        target = config.grouping.target * 1024**3
+        if estimate < target:
+            io_utils.log_print(f"Merging {count} inputs into 1 group")
             return []
-
-        size = 0
+        # Build list of divisions and group size estimates
+        group_sizes = []
         divs = []
-        if config.merging['equalize']:
-            max_size = target_size
-            n_groups = math.ceil(total_size / target_size)
-            target_size = total_size / n_groups
-            err = 0
-            for idx, file in enumerate(self.files):
-                # Try to get just above target_size without exceeding max_size
-                if size >= target_size - err or size + file.size > max_size:
-                    divs.append(idx)
-                    err += size - target_size # distribute error across groups
-                    size = 0
-                size += file.size
-        else:
-            for idx, file in enumerate(self.files):
-                if size + file.size > target_size:
-                    divs.append(idx)
-                    size = 0
-                size += file.size
-
-        divs.append(len(self.data))
-        logger.info("Merging %d inputs into %d groups of %.2f GB",
-                        len(self.data), len(divs), target_size / 1024**3)
+        estimate = fixed
+        for idx, size in enumerate(sizes):
+            delta = spec.n + size*spec.s
+            if estimate + delta > target:
+                divs.append(idx)
+                group_sizes.append(estimate)
+                estimate = fixed
+            estimate += delta
+        group_sizes.append()
+        # If we're not equalizing the groups then we're done
+        if not config.grouping.equalize:
+            return divs
+        # Try to shuffle files between groups if it will improve equality
+        while True:
+            max_err = 0
+            max_idx = -1
+            max_delta = 0
+            for idx, div in enumerate(divs):
+                err = group_sizes[idx+1] - group_sizes[idx]
+                if err > 0:
+                    delta = spec.n + sizes[div]*spec.s
+                    new_err = abs(err - 2*delta)
+                    err = max(err - new_err, 0)
+                else:
+                    delta = -(spec.n + sizes[div-1]*spec.s)
+                    new_err = abs(err - 2*delta)
+                    err = min(err + new_err, 0)
+                if abs(err) > abs(max_err):
+                    max_err = err
+                    max_idx = idx
+                    max_delta = delta
+            if max_idx == -1:
+                break
+            divs[max_idx] += 1 if max_err > 0 else -1
+            group_sizes[max_idx] += max_delta
+            group_sizes[max_idx+1] -= max_delta
         return divs
 
     def groups(self) -> Generator[dict, None, None]:
         """Split the files into groups for merging"""
-        meta.make_names(self.data)
-        merge_hash = self.hash
-
+        # Finish expanding all names before making groups
+        meta.make_names(self.good_files)
+        # Get indices of files that should count towards grouping
+        start = config.input.skip - self.start_idx if config.input.skip else 0
+        end = start + config.input.limit if config.input.limit else len(self.files)
+        if start != 0 or end != len(self.files):
+            logger.debug("Grouping subset of files with idx from %d to %d", start, end)
+        indices = [i for i, f in enumerate(self.files[start:end], start) if f.errors.group]
         # Get the group divisions
-        if config.merging['target_mode'] == 'count':
-            divs = self.group_count()
-        elif config.merging['target_mode'] == 'size':
-            divs = self.group_size()
+        if len(indices) == 0:
+            logger.critical("No files to group")
+            sys.exit(1)
+        if config.grouping.mode == 'count':
+            divs = self.group_by_count(len(indices))
+        elif config.grouping.mode == 'size':
+            divs = self.group_by_size(indices)
         else:
-            logger.error("Unknown target mode: %s", config.merging['target_mode'])
-            return
+            logger.critical("Unknown target mode: %s", config.grouping.mode)
+            sys.exit(1)
+        # Check if we have a single output group
         if len(divs) == 0:
+            group = MergeChunk(config.input.skip.value, config.input.limit.value,
+                               self.files[start:end])
+            logger.debug("Yielding single group with %d files", len(group))
+            yield group
             return
+        # Otherwise, yield groups with appropriate skip and limit
+        small_groups = False
+        for gid, div in enumerate(divs):
+            div = indices[div]
+            group = MergeChunk(self.start_idx + start, div - start, self.files[start:div])
+            start = div
+            if len(group) < config.grouping.chunk_min:
+                small_groups = True
+            if len(group) == 0:
+                logger.warning("Skipping group %d with 0 good files", gid)
+                continue
+            logger.debug("Yielding group %d with %d good files", gid, len(group))
+            yield group
+        # Yield the final group
+        group = MergeChunk(self.start_idx + start, end - start, self.files[start:end])
+        if len(group) == 0:
+            logger.warning("Skipping group %d with 0 good files", len(divs))
+        else:
+            logger.debug("Yielding group %d with %d good files", len(divs), len(group))
+            yield group
+        # Warn about small groups
+        if len(group) < config.grouping.chunk_min and config.grouping.equalize:
+            small_groups = True
+        if small_groups:
+            io_utils.log_print(
+                "Some groups were smaller than the minimum chunk size, "
+                "consider adjusting grouping parameters",
+                logging.WARNING)
+        elif len(group) < config.grouping.chunk_min:
+            io_utils.log_print(
+                f"Last group has only {len(group)} file{'s' if len(group) != 1 else ''}, "
+                "consider adjusting target or using equalize option",
+                logging.WARNING)
 
-        # Actually output the groups
-        group_id = 0
-        group = MergeChunk(merge_hash)
-        if len(divs) > 1:
-            group.group_id = group_id
-        for i, file in enumerate(self.files):
-            group.add(file)
-            # Check if we need to yield the group
-            if i+1 == divs[group_id]:
-                logger.debug("Yielding group %d with %d files", group_id, len(group))
-                yield group
-                group_id += 1
-                group = MergeChunk(merge_hash, group=group_id)
-
-
-class MergeChunk(collections.UserDict):
+class MergeChunk:
     """Class to keep track of a chunk of files for merging"""
-    def __init__(self, merge_hash: str, group: int = -1):
-        super().__init__()
-        self.merge_hash = merge_hash
+
+    def __init__(self, skip: int = None, limit: int = None, files: list = None):
+        self.skip = skip
+        self.limit = limit
+        self.files = []
+        self.gaps = set()
+        for i, f in enumerate(files or []):
+            if not f.errors:
+                self.files.append(f)
+            elif f.errors.group:
+                self.gaps.add(i)
+        self.parent = None
+        self.children = []
         self.site = None
-        self.group_id = group
-        self.chunk_id = -1
-        self.chunks = 0
-        self.output_id = -1
 
     @property
     def namespace(self) -> str:
         """Get the namespace for the chunk"""
-        if self.chunk_id >= 0:
-            return config.output['scratch']['namespace']
-        return config.output['namespace']
+        if self.parent is None:
+            return config.output.namespace
+        return config.output.scratch.namespace
 
     @property
     def tier(self) -> int:
-        """Get the pass number for the chunk"""
-        if self.chunks == 0:
-            return 1
-        return 2
-
-    def make_name(self, name: str, group: int = None, chunk: int = None) -> str:
-        """The name of the chunk"""
-        name, ext = os.path.splitext(name)
-        if group is None:
-            group = self.group_id
-        if group >= 0:
-            name = f"{name}_f{group}"
-        if chunk is None:
-            chunk = self.chunk_id
-        if chunk >= 0:
-            name = f"{name}_c{chunk}"
-        return f"{name}{ext}"
+        """Get the tier for the chunk"""
+        if not self.children:
+            return 0
+        return max(child.tier for child in self.children) + 1
 
     @property
-    def inputs(self) -> list[str]:
-        """Get the list of input files"""
-        # Tier 1 uses the original input files
-        if self.tier == 1:
-            return [file.path for file in self.data.values()]
-        # Tier 2 uses the outputs from tier 1
-        name_spec = config.merging['method']['outputs'][self.output_id]['name']
-        inputs = [f"{self.make_name(name_spec, chunk=c)}" for c in range(self.chunks)]
-        if config.output['mode'] != 'local':
-            namespace = config.output['scratch']['namespace']
+    def chunk_id(self) -> list[int]:
+        """Get the chunk indices for the chunk"""
+        if self.parent is None:
+            return []
+        return self.parent.chunk_id + [self.parent.children.index(self)]
+
+    def make_name(self, name: str, chunk: list[int]) -> str:
+        """Get the name for a chunk output"""
+        return name.format(UUID=config.uuid(self.skip, self.limit, chunk))
+
+    def inputs(self, output_id = None) -> list[str]:
+        """
+        Get the list of input files
+        
+        :param output_id: individual output stream for pass 2+
+        :return: list of input file paths or DIDs
+        """
+        # If this is the first pass, the inputs are the original input files
+        if output_id is None:
+            inputs = []
+            for file in self.files:
+                # Get the path for this site
+                path, _ = file.paths.get(self.site, (None, None))
+                # Local merge with rucio input needs to check paths for local site from config
+                if path is None and self.site is None:
+                    path, _ = file.paths.get(config.local.site, (None, None))
+                if path is None:
+                    logger.critical("No path from %s to file %s", self.site or "local site", file)
+                    sys.exit(1)
+                inputs.append(path)
+            return inputs
+        # Otherwise, the inputs are the outputs from the previous pass
+        base_name = str(config.method.outputs[output_id].name)
+        cid = self.chunk_id
+        inputs = [self.make_name(base_name, cid + [c]) for c in range(len(self.children))]
+        # For batch jobs, just list the DIDs and we'll get the paths later
+        if config.output.mode != 'local':
+            namespace = config.output.scratch.namespace
             return [f"{namespace}:{name}" for name in inputs]
-        output_dir = config.output['dir']
+        # For local jobs, return the full paths to the output files
+        output_dir = config.output.out_dir
         return [os.path.join(output_dir, name) for name in inputs]
 
-    def get_output(self, spec: dict) -> dict:
+    def outputs(self, output_id = None) -> list[dict]:
         """
-        Take an output specification and concretize it for this chunk.
-
-        :param spec: output specification dictionary
-        :return: concretized output dictionary
+        Get the list of output file specifications for the chunk
+        
+        :param output_id: individual output stream for pass 2+
+        :return: list of output specifications
         """
-        output = {'name': self.make_name(spec['name'])}
-        for key in ['metadata', 'rename']:
-            if key in spec and spec[key] is not None:
-                output[key] = spec[key]
-        return output
-
-    @property
-    def outputs(self) -> list[dict]:
-        """Get the list of output files"""
-        # Tier 1 uses the original output specifications
-        if self.tier == 1:
-            return [self.get_output(spec) for spec in config.merging['method']['outputs']]
-        # Tier 2 merges each output stream separately
-        spec = config.merging['method']['outputs'][self.output_id]
-        output = self.get_output(spec)
-        # Override 'rename' and 'metadata' if a different stage-2 method is specified
-        if 'method' in spec:
-            spec2 = meta.match_method(name=spec['method'])
-            output.pop('rename', None)
-            rename = spec2['outputs'][0].get('rename', None)
-            if rename:
-                output['rename'] = rename
-            metadata = output.pop('metadata', {})
-            metadata.update(spec2['outputs'][0].get('metadata', {}))
-            if metadata:
-                output['metadata'] = metadata
-        return [output]
+        if output_id is None:
+            specs = config.method.outputs
+        else:
+            specs = [config.method.outputs[output_id]]
+        # Concretize the output specifications for this chunk
+        outputs = []
+        chunk = self.chunk_id
+        for spec in specs:
+            output = {'name': self.make_name(spec.name, chunk)}
+            md = copy.deepcopy(spec.metadata) if spec.metadata else {}
+            if output_id is not None and spec.pass2:
+                pass2 = meta.match_method(name=spec.pass2)
+                md.update(pass2.metadata or {})
+                md.update(pass2.outputs[0].metadata or {})
+                if pass2.outputs[0].rename:
+                    output['rename'] = pass2.outputs[0].rename
+            elif spec.rename:
+                output['rename'] = spec.rename
+            if md:
+                output['metadata'] = md
+            outputs.append(output)
+        return outputs
 
     @property
     def metadata(self) -> dict:
         """Get the metadata for the chunk"""
-        md = meta.merged_keys(self.data)
-        md['merge.hash'] = self.merge_hash
-        if self.group_id >= 0:
-            md['merge.group'] = self.group_id
-        if self.chunk_id >= 0:
-            md['merge.chunk'] = self.chunk_id
+        md = meta.merged_keys(self.files)
+        if self.skip is not None:
+            md['merge.skip'] = self.skip
+        if self.limit is not None:
+            md['merge.limit'] = self.limit
+        chunk_id = self.chunk_id
+        if chunk_id:
+            md['merge.chunk'] = chunk_id
         return md
 
     @property
     def parents(self) -> list[str]:
         """Get the list of parent dids"""
-        return meta.parents(self.data)
+        return meta.parents(self.files)
 
-    @property
-    def settings(self) -> dict:
-        """Get the merging settings for the chunk"""
-        # Tier 1 uses the main merging method
-        spec = config.merging['method']
-        # Tier 2 may use a different method per output
-        if self.tier == 2:
-            method = spec['outputs'][self.output_id].get('method', None)
-            if method:
-                spec = meta.match_method(name=method)
-                if spec is None:
-                    logger.critical("Unknown merging method: %s", method)
-                    sys.exit(1)
+    def settings(self, output_id = None) -> dict:
+        """
+        Get the merging settings for the chunk
+        
+        :param output_id: individual output stream for pass 2+
+        :return: settings dictionary
+        """
+        spec = config.method
+        # Pass 2 may use a different method per output
+        if output_id is not None and spec.outputs[output_id].pass2:
+            method = spec.outputs[output_id].pass2
+            spec = meta.match_method(name=method)
+            if spec is None:
+                logger.critical("Unknown merging method: %s", method)
+                sys.exit(1)
         # Build the settings dictionary from the spec
         settings = {
-            'streaming': config.sites['streaming'],
-            'method': spec['name']
+            'streaming': config.input.streaming,
+            'method': spec.name
         }
         for key in ['cfg', 'script', 'cmd']:
-            if key in spec and spec[key] is not None:
+            if spec[key]:
                 settings[key] = spec[key]
         return settings
 
-    @property
-    def json(self) -> dict:
-        """Get the chunk metadata as a JSON-compatible dictionary"""
+    def spec(self, output_id = None) -> dict:
+        """
+        Get the merging specification dictionary for a given output stream
+
+        :param output_id: individual output stream for pass 2+
+        :return: merging specification dictionary
+        """
         data = {
             'namespace': self.namespace,
             'metadata': self.metadata,
             'parents': self.parents,
-            'inputs': self.inputs,
-            'outputs': self.outputs,
-            'settings': self.settings
+            'inputs': self.inputs(output_id),
+            'outputs': self.outputs(output_id),
+            'settings': self.settings(output_id)
         }
         return data
 
-    def add(self, file: MergeFile) -> None:
-        """Add a file to the chunk"""
-        self.data[file.did] = file
+    @property
+    def specs(self) -> list[dict]:
+        """
+        Get the list of merging specification dictionaries for all output streams
 
-    def chunk(self) -> MergeChunk:
-        """Create a subset of the chunk with the same metadata"""
-        chunk = MergeChunk(self.merge_hash, self.group_id)
-        chunk.site = self.site
-        chunk.chunk_id = self.chunks
-        self.chunks += 1
-        return chunk
+        :return: list of merging specification dictionaries
+        """
+        # For the first pass we just have one spec with all outputs
+        if len(self.children) == 0:
+            return [self.spec()]
+        # For later passes we have one spec per output stream
+        return [self.spec(output_id) for output_id in range(len(config.method.outputs))]
 
-    def tier2_chunks(self) -> Generator[MergeChunk, None, None]:
-        """Split the chunk into tier 2 chunks for each output stream"""
-        for output_id in range(len(config.merging['method']['outputs'])):
-            chunk = MergeChunk(self.merge_hash, self.group_id)
-            chunk.site = self.site
-            chunk.chunk_id = self.chunk_id
-            chunk.chunks = self.chunks
-            chunk.output_id = output_id
-            chunk.data = self.data
-            yield chunk
+    def make_child(self, files: list) -> MergeChunk:
+        """Make a child chunk with the given files"""
+        for file in files:
+            if file not in self.files:
+                logger.critical("Child chunk contains file not in parent chunk: %s", file)
+                sys.exit(1)
+        child = MergeChunk(self.skip, self.limit, files=files)
+        child.site = self.site
+        child.parent = self
+        self.children.append(child)
+        return child
+
 
 
 def check_remote_path(path: str, timeout: float = 5) -> bool:
