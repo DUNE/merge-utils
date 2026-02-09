@@ -9,12 +9,16 @@ from merge_utils import config, io_utils
 logger = logging.getLogger(__name__)
 
 CONFIG_KEYS = {
-    "CFG": "config_dict",
-    "TIMESTAMP": "timestamp",
-    "UUID": "uuid",
+    "CFG": "",
+    "TIMESTAMP": "job.timestamp",
     "NAME": "output.name",
-    "DUNESW_VERSION": "merging.dunesw_version",
-    "DUNESW_QUALIFIER": "merging.dunesw_qualifier"
+    "DUNESW_VERSION": "merging.environment.dunesw_version",
+    "DUNESW_QUALIFIER": "merging.environment.dunesw_qualifier",
+}
+
+FUNC_KEYS = {
+    "UUID": config.uuid,
+    "PKG": io_utils.pkg_dir
 }
 
 KEY_BLACKLIST = {
@@ -80,6 +84,13 @@ class Formatter:
         self.metadata = metadata
         self.errors = []
         self.metadata_err = False
+        self.defer_uuid = False
+
+    def reset(self):
+        """Reset the formatter state."""
+        self.errors = []
+        self.metadata_err = False
+        self.defer_uuid = False
 
     def get(self, key, idx=None):
         """
@@ -104,7 +115,7 @@ class Formatter:
                 val, errors = read_dict(val, idx)
             elif hasattr(val, '__getitem__'):
                 try:
-                    val = val[self._idx]
+                    val = val[idx]
                 except (KeyError, IndexError, TypeError):
                     errors = ["invalid index"]
                     val = None
@@ -113,7 +124,7 @@ class Formatter:
                 val = None
             self.errors.extend([f"Metadata key '{key}[{idx}]' has {err}" for err in errors])
         return val
-    
+
     def format_key(self, key: str, val: any, spec: str) -> str:
         """
         Format a metadata key with a given specification.
@@ -123,18 +134,20 @@ class Formatter:
         :param spec: format specification
         :return: formatted string
         """
-        #logger.debug("Formatting metadata key '%s' with spec '%s'", key, format_spec)
-        val = self.value
         if val is None:
             if spec:
                 return f"{{{key}:{spec}}}"
             return f"{{{key}}}"
         if isinstance(val, str):
             # Apply specific abbreviations
-            val = config.metadata['abbreviations'].get(key, {}).get(val, val)
+            abbr = str(config.naming.abbreviations.get(key, {}).get(val, ''))
+            if abbr:
+                logger.debug("Abbreviating key '%s' value '%s' to '%s'", key, val, abbr)
+                val = abbr
             # Remove known extensions
-            for ext in config.metadata['abbreviations'].get('extensions', []):
+            for ext in config.naming.extensions:
                 if val.endswith(f".{ext}"):
+                    logger.debug("Stripping extension '.%s' from '%s'", ext, val)
                     val = val[:-(len(ext)+1)]
                     break
         # Apply formatting
@@ -145,12 +158,12 @@ class Formatter:
             self.errors.append(f"Invalid format spec '{output}' for value '{val}'")
             return output
         # Apply general substitutions
-        for old, new in config.metadata['abbreviations'].get('substitutions', {}).items():
-            output = output.replace(old, new)
+        for old, new in config.naming.substitutions.items():
+            output = output.replace(str(old), str(new))
         return output
 
-    class MetaReader:
-        """Class to read metadata values."""
+    class MetaFormatter:
+        """Class to format metadata keys."""
 
         def __init__(self, head, key, idx=None, valid=True):
             self._head = head
@@ -161,39 +174,28 @@ class Formatter:
         def __getattr__(self, name):
             if self._idx is not None:
                 new_name = f"{self._key}[{self._idx}].{name}"
-                return Formatter.MetaReader(self._head, new_name, valid=False)
-            return Formatter.MetaReader(self._head, f"{self._key}.{name}", valid=self._valid)
+                return Formatter.MetaFormatter(self._head, new_name, valid=False)
+            return Formatter.MetaFormatter(self._head, f"{self._key}.{name}", valid=self._valid)
 
         def __getitem__(self, name):
             if self._idx is not None:
                 new_name = f"{self._key}[{self._idx}][{name}]"
-                return Formatter.MetaReader(self._head, new_name, valid=False)
-            return Formatter.MetaReader(self._head, self._key, name, valid=self._valid)
-        
+                return Formatter.MetaFormatter(self._head, new_name, valid=False)
+            return Formatter.MetaFormatter(self._head, self._key, name, valid=self._valid)
+
         def __format__(self, spec):
             key = self._key if self._idx is None else f"{self._key}[{self._idx}]"
             if not self._valid:
                 self._head.errors.append(f"Metadata key '{key}' failed parsing")
                 return self._head.format_key(key, None, spec)
             val = self._head.get(self._key, self._idx)
-            return self._head.format_key(key, val, spec)
+            out = self._head.format_key(key, val, spec)
+            logger.debug("Key '%s' with value '%s' formatted to '%s'", key, val, out)
+            return out
 
-    class EnvReader:
-        """Class to read environment variable values."""
-    
-        def __init__(self, head, key):
-            self._head = head
-            self._key = key
-        
-        def __format__(self, format_spec):
-            val = os.getenv(self._key[1:], None)
-            if val is None:
-                self._head.errors.append(f"Environment var '{self._key[1:]}' not found")
-            return self._head.format_key(self._key, val, format_spec)
-    
-    class CfgReader:
-        """Class to read configuration values."""
-    
+    class CfgFormatter:
+        """Class to format configuration keys."""
+
         def __init__(self, head, key, val):
             self._head = head
             self._key = key
@@ -207,7 +209,7 @@ class Formatter:
                     new_val = getattr(self._val, name)
                 except AttributeError:
                     self._head.errors.append(f"Config key '{new_key}' not found")
-            return Formatter.CfgReader(self._head, new_key, new_val)
+            return Formatter.CfgFormatter(self._head, new_key, new_val)
 
         def __getitem__(self, name):
             new_key = f"{self._key}[{name}]"
@@ -217,77 +219,91 @@ class Formatter:
                     new_val = self._val[name]
                 except (KeyError, IndexError, TypeError):
                     self._head.errors.append(f"Config key '{new_key}' not found")
-            return Formatter.CfgReader(self._head, new_key, new_val)
-        
+            return Formatter.CfgFormatter(self._head, new_key, new_val)
+
         def __format__(self, spec):
+            if isinstance(self._val, config.ConfigString):
+                logger.debug("Recursively formatting config key '%s'", self._key)
+                Formatter(self._head.metadata).format(self._val, self._head.defer_uuid)
             val = self._val
-            if self._val is not None and hasattr(self._val, '_value'):
-                val = self._val._value
-            if isinstance(val, str) and '{' in val:
-                self._head.errors.append(f"Config key '{self._key}' contains unexpanded template")
-                val = None
-            return self._head.format_key(self._key, self._val, spec)
+            if val is not None:
+                val = val._value # pylint: disable=protected-access
+            return self._head.format_key(self._key, val, spec)
+
+    class ValFormatter:
+        """Class to format generic values."""
+
+        def __init__(self, head, key, value, no_format=False):
+            self._head = head
+            self._key = key
+            self._val = value
+            self._no_format = no_format
+
+        def __format__(self, format_spec):
+            if self._no_format and format_spec:
+                if format_spec:
+                    self._head.errors.append(f"Formatting not allowed for key '{self._key}'")
+                    return self._head.format_key(self._key, None, format_spec)
+                return str(self._val)
+            return self._head.format_key(self._key, self._val, format_spec)
 
     def __getitem__(self, name):
         if name in KEY_BLACKLIST:
             new_name = KEY_BLACKLIST[name]
             if new_name:
-                logger.warning("Name substitution with '%s' is not allowed, use '%s' instead", name, new_name)
+                logger.warning("Name substitution '%s' is not allowed, use '%s'", name, new_name)
                 name = new_name
             else:
                 self.errors.append(f"Name substitution with '{name}' is not allowed")
-                return Formatter.CfgReader(self, name, None)
+                return Formatter.CfgFormatter(self, name, None)
+        if self.defer_uuid and name == "UUID":
+            return Formatter.ValFormatter(self, name, "{UUID}", no_format=True)
+        if name in FUNC_KEYS:
+            return Formatter.ValFormatter(self, name, FUNC_KEYS[name]())
         if name in CONFIG_KEYS:
-            obj = getattr(config, CONFIG_KEYS[name], None)
-            if obj is None:
-                self.errors.append(f"Config key '{name}' not found")
-            return Formatter.CfgReader(self, name, obj)
+            obj = config.get_key(CONFIG_KEYS[name])
+            return Formatter.CfgFormatter(self, name, obj)
         if name.startswith('$'):
-            return Formatter.EnvReader(self, name)
-        return Formatter.MetaReader(self, name)
+            val = os.getenv(name[1:], None)
+            if val is None:
+                self.errors.append(f"Environment var '{name[1:]}' not found")
+            return Formatter.ValFormatter(self, name, val)
+        return Formatter.MetaFormatter(self, name)
 
-    def format(self, template: config.ConfigString):
+    def format(self, template: config.ConfigString, defer_uuid: bool = False):
         """
-        Format a string using the metadata dictionary.
+        Format a config string using the metadata dictionary.
 
         :param template: config string template
         """
+        name = template._name # pylint: disable=protected-access
         # Validate input
         if not isinstance(template, config.ConfigKey):
-            logger.critical(f"The name formatter expects a config key, got '{type(template)}'")
+            logger.critical("The name formatter expects a config key, got '%s'", type(template))
             sys.exit(1)
         if not isinstance(template, config.ConfigString):
-            logger.critical(f"Config key '{template._name}' is not a string and cannot be formatted")
+            logger.critical("Config key '%s' is not a string and cannot be formatted", name)
             sys.exit(1)
-        config.string_keys.discard(template._name) # Remove from unformatted keys
+        config.string_keys.discard(name) # Remove from unformatted keys
         # Skip keys witout any {...} fields
-        if '{' not in template._value or '}' not in template._value:
+        val = template.value
+        if val is None or '{' not in val or '}' not in val:
             return
+        logger.debug("Formatting config key '%s'", name)
         # Perform formatting
-        self.errors = []
-        self.metadata_err = False
-        result = template.format_map(self)
+        self.reset()
+        self.defer_uuid = defer_uuid
+        result = str(template).format_map(self)
         if self.errors:
             io_utils.log_list(
-                f"Config key '{template._name}' could not be formatted:\n  (got '{result}')",
+                f"Config key '{name}' could not be formatted:\n  (got '{result}')",
                 self.errors, logging.CRITICAL)
             sys.exit(1)
         # Expand paths if needed
-        if template._type == 'path':
-            result = os.path.expanduser(os.path.expandvars(result))
-        template._value = result
-        logger.debug("Config key '%s' formatted to '%s'", template._name, result)
-    
-    def format_all(self):
-        """
-        Format all string configuration keys using the metadata dictionary.
-        """
-        while config.string_keys:
-            key_name = config.string_keys.pop()
-            key = getattr(config, key_name, None)
-            if key is None:
-                continue
-            self.format(key)
+        if template._type == 'path': # pylint: disable=protected-access
+            result = io_utils.expand_path(result)
+        template._set(result) # pylint: disable=protected-access
+        logger.debug("Config key '%s' formatted to '%s'", name, result)
 
     def eval(self, condition: str) -> bool:
         """
@@ -296,9 +312,9 @@ class Formatter:
         :param condition: condition string to evaluate
         :return: evaluated value
         """
-        self.errors = []
-        self.metadata_err = False
-        expr = condition.format_map(self)
+        self.reset()
+        logger.debug("Evaluating condition '%s'", condition)
+        expr = str(condition).format_map(self)
         if self.errors:
             io_utils.log_list(
                 f"Error evaluating condition expression '{condition}':",
@@ -309,4 +325,5 @@ class Formatter:
         except Exception as exc:
             logger.critical("Error evaluating condition expression '%s':\n  %s", expr, exc)
             sys.exit(1)
+        logger.debug("Condition expression '%s' evaluated to '%s'", expr, val)
         return val
