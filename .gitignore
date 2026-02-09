@@ -173,3 +173,4 @@ cython_debug/
 
 # Temporary submit files
 tmp/
+backup/
