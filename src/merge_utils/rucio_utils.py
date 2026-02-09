@@ -6,7 +6,8 @@ import math
 import asyncio
 from typing import Generator
 
-from rucio.client.replicaclient import ReplicaClient
+from rucio.client import Client #type: ignore pylint: disable=import-error
+from rucio.client.replicaclient import ReplicaClient #type: ignore pylint: disable=import-error
 
 from merge_utils.merge_set import MergeFile, MergeChunk
 from merge_utils.retriever import MetaRetriever, PathFinder
@@ -24,9 +25,8 @@ class RucioFinder (PathFinder):
         
         :param source: FileRetriever object to use as the source of file metadata
         """
-        super().__init__(source)
+        super().__init__('rucio', source)
 
-        self.checksums = config.validation['checksums']
         self.rses = MergeRSEs()
 
         self.client = None
@@ -34,10 +34,11 @@ class RucioFinder (PathFinder):
     async def connect(self) -> None:
         """Connect to the Rucio web API"""
         if not self.client:
-            logger.debug("Connecting to Rucio")
             src_connect = asyncio.create_task(self.meta.connect())
-            rse_connect = asyncio.create_task(self.rses.connect())
-            self.client = ReplicaClient()
+            logger.debug("Connecting to Rucio")
+            rucio_client = Client()
+            rse_connect = asyncio.create_task(self.rses.connect(rucio_client))
+            self.client = ReplicaClient(rucio_client)
             await rse_connect
             await src_connect
         else:
@@ -53,48 +54,56 @@ class RucioFinder (PathFinder):
         """
         # Check the file size
         if file.size != rucio['bytes']:
-            lvl = logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL
+            crit = config.validation.error_handling.unreachable == 'quit'
+            lvl = logging.CRITICAL if crit else logging.ERROR
             logger.log(lvl, "Size mismatch for %s: %d != %d", file.did, file.size, rucio['bytes'])
             return False
         # See if we should skip the checksum check
-        if len(self.checksums) == 0:
+        if len(config.validation.checksums) == 0:
             return True
         # Check the checksum
-        for algo in self.checksums:
+        for algo in config.validation.checksums:
             if algo in file.checksums and algo in rucio:
                 csum1 = file.checksums[algo]
                 csum2 = rucio[algo]
                 if csum1 == csum2:
                     logger.debug("Found matching %s checksum for %s", algo, file.did)
                     return True
-                logger.log(
-                    logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL,
-                    "%s checksum mismatch for %s: %s != %s", algo, file.did, csum1, csum2
-                )
+                crit = config.validation.error_handling.unreachable == 'quit'
+                lvl = logging.CRITICAL if crit else logging.ERROR
+                logger.log(lvl, "%s checksum err for %s: %s != %s", algo, file.did, csum1, csum2)
                 return False
             if algo not in file.checksums:
                 logger.debug("MetaCat missing %s checksum for %s", algo, file.did)
             if algo not in rucio:
                 logger.debug("Rucio missing %s checksum for %s", algo, file.did)
         # If we get here, we have no matching checksums
-        logger.log(
-            logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL,
-            "No matching checksums for %s", file.did
-        )
+        crit = config.validation.error_handling.unreachable == 'quit'
+        lvl = logging.CRITICAL if crit else logging.ERROR
+        logger.log(lvl, "No matching checksums for %s", file.did)
         return False
 
-    async def process(self, files: dict) -> None:
+    async def get_paths(self, files: dict) -> list:
         """
-        Process a batch of files to find their physical locations in Rucio.
-        
-        :param files: dictionary of files to process
+        Asynchronously retrieve paths for a specific batch of files.
+
+        :param files: dictionary of files to retrieve paths for
+        :return: list of file path dictionaries
         """
-        logger.debug("Retrieving physical file paths from Rucio")
-        found = set()
-        unreachable = []
         query = [{'scope':file.namespace, 'name':file.name} for file in files.values()]
         res = await asyncio.to_thread(self.client.list_replicas, query, ignore_availability=False)
-        for replicas in res:
+        return list(res)
+
+    async def process(self, files: dict, paths: list) -> None:
+        """
+        Process a batch of files to assign paths.
+        
+        :param files: dictionary of files to process
+        :param paths: list of file path dictionaries from Rucio
+        """
+        found = set()
+        unreachable = []
+        for replicas in paths:
             did = replicas['scope'] + ':' + replicas['name']
             found.add(did)
             count = len(replicas['pfns'])
@@ -104,19 +113,22 @@ class RucioFinder (PathFinder):
                 continue
 
             file = files[did]
-            added, csum = await asyncio.gather(
+            pfns, csum = await asyncio.gather(
                 self.rses.add_replicas(did, replicas),
                 self.checksum(file, replicas)
             )
             if not csum:
-                added = 0
-            if not added:
+                pfns = {}
+            if pfns:
+                file.paths = pfns
+            else:
                 unreachable.append(did)
 
-            logger.debug("Added %d replicas for %s", added, did)
+            logger.debug("Added %d replicas for %s", len(pfns), did)
 
         missing = [did for did in files if did not in found]
-        lvl = logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL
+        crit = config.validation.error_handling.unreachable == 'quit'
+        lvl = logging.CRITICAL if crit else logging.ERROR
         io_utils.log_list("Failed to find {n} file{s} in Rucio database:", missing, lvl)
         unreachable.extend(missing)
         io_utils.log_list("Failed to retrieve {n} file{s} from Rucio:", unreachable, lvl)
@@ -127,7 +139,7 @@ class RucioFinder (PathFinder):
         super().run()
         self.rses.cleanup()
 
-    def output_chunks(self) -> Generator[MergeChunk, None, None]:
+    def output_chunks_old(self) -> Generator[MergeChunk, None, None]:
         """
         Yield chunks of files for merging.
         
@@ -139,15 +151,16 @@ class RucioFinder (PathFinder):
                 for did, pfn in pfns[site].items():
                     group[did].path = pfn[0]
 
+            chunk_max = config.grouping.chunk_max
             if len(pfns) == 1:
                 site = next(iter(pfns))
                 group.site = site
-                if len(pfns[site]) <= config.merging['chunk_max']:
+                if len(pfns[site]) <= chunk_max:
                     yield group
                     continue
 
             for site in pfns:
-                n_chunks = math.ceil(len(group) / config.merging['chunk_max'])
+                n_chunks = math.ceil(len(group) / chunk_max)
                 target_size = math.ceil(len(group) / n_chunks)
                 chunk = group.chunk()
                 chunk.site = site
@@ -160,5 +173,5 @@ class RucioFinder (PathFinder):
                 yield chunk
 
             if not group.site:
-                group.site = config.sites['default']
+                group.site = config.sites.default
             yield from group.tier2_chunks()
