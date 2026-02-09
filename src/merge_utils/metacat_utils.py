@@ -1,37 +1,20 @@
 """Utility functions for interacting with the MetaCat web API."""
 
 import logging
-import itertools
+import sys
 import asyncio
-from typing import AsyncGenerator
 
-import metacat.webapi as metacat
+import metacat.webapi as metacat #pylint: disable=import-error
 
-from merge_utils import config
-from merge_utils.retriever import MetaRetriever
+#from merge_utils import config
 
 logger = logging.getLogger(__name__)
 
-class MetaCatRetriever(MetaRetriever):
-    """Class for managing asynchronous queries to the MetaCat web API."""
+class MetaCatWrapper:
+    """Class for sending asynchronous requests to the MetaCat web API."""
 
-    def __init__(self, query: str = None, dids: list = None):
-        """
-        Initialize the MetaCatRetriever with a query or a list of files.
-
-        :param query: MQL query to find files
-        :param dids: list of file DIDs to find
-        """
-        super().__init__()
-
-        self.query = query
-        self.filelist = dids
-        self.parents = config.output['grandparents']
-        if query and dids:
-            logger.warning("Both query and file list provided, was this intended?")
-        if not self.filelist:
-            self.filelist = []
-
+    def __init__(self):
+        """Initialize the MetaCatWrapper."""
         self.client = None
 
     async def connect(self) -> None:
@@ -42,108 +25,68 @@ class MetaCatRetriever(MetaRetriever):
         else:
             logger.debug("Already connected to MetaCat")
 
-    async def _get_files(self, idx: int, dids: list) -> list:
+    async def query(self, query: str, metadata: bool = True, provenance: bool = True) -> list:
         """
-        Asynchronously request file data from MetaCat
-        
-        :param idx: batch number (for logging)
-        :param dids: list of DIDs to request
-        :return: list of results from the request
+        Asynchronously query MetaCat.
+
+        :param query: MQL query to execute
+        :param metadata: whether to include metadata in the results
+        :param provenance: whether to include provenance in the results
+        :return: list of file metadata dictionaries
         """
-        if len(dids) == 0:
-            return []
-        logger.info("Retrieving files from MetaCat for batch %d", idx)
-        dictlist = [{'did':did} for did in dids]
-        logger.debug("Requesting dids:\n  %s", "\n  ".join([f['did'] for f in dictlist]))
         try:
-            res = await asyncio.to_thread(self.client.get_files, dictlist,
-                                          with_metadata = True, with_provenance = self.parents)
+            res = await asyncio.to_thread(self.client.query, query,
+                                          with_metadata = metadata,
+                                          with_provenance = provenance)
+        except metacat.webapi.BadRequestError as err:
+            logger.critical("Malformed MetaCat query:\n  %s\n%s", query, err)
+            sys.exit(1)
+        return list(res)
+
+    async def files(self, files: list, metadata: bool = True, provenance: bool = True) -> list:
+        """
+        Asynchronously request a list of DIDs from MetaCat
+
+        :param files: list of files to find
+        :param metadata: whether to include metadata in the results
+        :param provenance: whether to include provenance in the results
+        :return: list of file metadata dictionaries
+        """
+        if len(files) == 0:
+            logger.debug("No files to request")
+            return []
+        try:
+            res = await asyncio.to_thread(self.client.get_files, files,
+                                          with_metadata = metadata,
+                                          with_provenance = provenance)
         except (ValueError, metacat.webapi.BadRequestError) as err:
             logger.critical("%s", err)
-            raise ValueError(f"MetaCat error for batch {idx}: {err}") from err
+            raise ValueError(f"MetaCat error: {err}") from err
         return list(res)
 
-    async def _get_query(self, idx: int) -> list:
-        """
-        Asynchronously query MetaCat
-        
-        :param idx: batch number to query
-        :return: list of results from the query
-        """
-        if not self.query:
-            return []
-        logger.info("Querying MetaCat for batch %d", idx)
-        query_batch = self.query + f" skip {idx*self.step} limit {self.step}"
-        logger.debug("Query: %s", query_batch)
-        try:
-            # async_query exists but does not seem to be compatible with asyncIO
-            res = await asyncio.to_thread(self.client.query, query_batch,
-                                          with_metadata = True, with_provenance = self.parents)
-        except metacat.webapi.BadRequestError as err:
-            logger.critical("Malformed MetaCat query:\n  %s\n%s", self.query, err)
-            raise ValueError(f"Failed to query MetaCat for batch {idx}: {err}") from err
-        return list(res)
-
-    async def input_batches(self) -> AsyncGenerator[dict, None]:
-        """
-        Asynchronously retrieve metadata for the next batch of files.
-
-        :return: dict of MergeFile objects that were added
-        """
-        # request first batch from filelist
-        dids = self.filelist[0:self.step]
-        task = asyncio.create_task(self._get_files(0, dids))
-        # loop over batches from filelist
-        for idx in range(1, len(self.filelist)//self.step + 1):
-            old_dids = dids
-            dids = self.filelist[idx*self.step:(idx+1)*self.step]
-            res = await task
-            task = asyncio.create_task(self._get_files(idx, dids))
-            added = await self.add(res, old_dids)
-            logger.debug("yielding file batch %d", idx-1)
-            yield added
-        res = await task
-        # request first batch from query
-        task = asyncio.create_task(self._get_query(0))
-        # finish processing last batch from filelist
-        if dids:
-            added = await self.add(res, dids)
-            logger.debug("yielding last file batch")
-            yield added
-        # loop over batches from query
-        for idx in itertools.count(1):
-            res = await task
-            if len(res) < self.step:
-                break
-            task = asyncio.create_task(self._get_query(idx))
-            added = await self.add(res)
-            logger.debug("yielding query batch %d", idx-1)
-            yield added
-        # yield last partial batch from query
-        if res:
-            added = await self.add(res)
-            logger.debug("yielding last query batch")
-            yield added
-
-def list_field_values(field: str) -> list:
+def list_field_values(field: str, date: str = None, vals: list = None) -> list:
     """
     Get a list of all values for a given field in the MetaCat database.
 
     :param field: field to query
+    :param date: limit results to those created after this date (yyyy-mm-dd)
     :return: list of values for the field
     """
     client = metacat.MetaCatClient()
-    query = f"files where {field} present limit 1"
-    vals = []
+    vals = vals or []
     while True:
-        res = client.query(query, with_metadata=True)
+        query = f"files where {field} present"
+        if date:
+            query = f"{query} and created_timestamp > '{date}'"
+        if vals:
+            query = f"{query} and {field} not in ('{"','".join(vals)}')"
+        res = client.query(f"{query} limit 1", with_metadata=True)
         data = next(res, None)
         if not data:
             break
         value = data['metadata'][field]
         print(value)
         vals.append(value)
-        query = f"""files where {field} present and {field} not in ('{"','".join(vals)}') limit 1"""
         #time.sleep(1)
     return vals
 
