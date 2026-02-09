@@ -1,21 +1,21 @@
 metadata:
     fixes:  # Fix common issues with the metadata
-        keys:       # Misspelled keys
+        bad_keys:       # Misspelled keys
             "DUNE.requestid": "dune.requestid"
-        missing:    # Default values for missing keys
+        missing_keys:   # Default values for missing keys
             "core.file_content_status": "good"
             "retention.status": "active"
             "retention.class": "unknown"
-        # Misspelled values
-        "core.data_tier":
-            "pandora_info": "pandora-info"
-            "trigger-primitives": "trigprim"
-        "core.data_stream":
-            "Test": "test"
-            "Cosmics": "cosmics"
-            "pdstl": "pedestal" # Not completely sure about this one
-        "core.file_format":
-            "tfile": "root"     # 
+        bad_values:     # Misspelled values
+            "core.data_tier":
+                "pandora_info": "pandora-info"
+                "trigger-primitives": "trigprim"
+            "core.data_stream":
+                "Test": "test"
+                "Cosmics": "cosmics"
+                "pdstl": "pedestal" # Not completely sure about this one
+            "core.file_format":
+                "tfile": "root"     # 
     types:   # These keys must have the correct types
         "core.application.family":  'str'
         "core.application.name":    'str'
@@ -151,23 +151,23 @@ metadata:
       - "retention.status"
       - "retention.class"
     conditional:  # These keys are required for some file types
-        "'{core.file_type}' == 'mc'":
-            - "dune_mc.gen_fcl_filename"
-            - "dune_mc.geometry_version"
-        "'{core.data_tier}' == 'raw'": &raw_requirements
-            - "core.event_count"
-            - "core.first_event_number"
-            - "core.last_event_number"
-        "'{core.data_tier}' == 'binary-raw'": *raw_requirements
-        "'{core.data_tier}' == 'trigprim'": *raw_requirements
-        "'{core.data_tier}' == 'root-tuple'": &tuple_requirements
-            - "dune.config_file"
-            - "core.application.family"
-            - "core.application.name"
-            - "core.application.version"
-        "'{core.data_tier}' == 'root-tuple-virtual'": *tuple_requirements
-    optional: []  # These metadata keys are optional (overrides required and conditional keys)
-    consistent:   # These metadata keys must be the same for all input files
+      - cond: "'{core.file_type}' == 'mc'"
+        required:
+          - "dune_mc.gen_fcl_filename"
+          - "dune_mc.geometry_version"
+      - cond: "'{core.data_tier}' in ['raw', 'binary-raw', 'trigprim']"
+        required:
+          - "core.event_count"
+          - "core.first_event_number"
+          - "core.last_event_number"
+      - cond: "'{core.data_tier}' in ['root-tuple', 'root-tuple-virtual']"
+        required:
+          - "dune.config_file"
+          - "core.application.family"
+          - "core.application.name"
+          - "core.application.version"
+    optional: <set> # These metadata keys are optional (overrides required and conditional keys)
+    consistent:     # These metadata keys must be the same for all input files
       - "core.run_type"
       - "core.file_type"
       - "core.file_format"
@@ -195,6 +195,8 @@ metadata:
         "core.events":              union
         "core.runs":                union
         "core.runs_subruns":        union
+        "art.first_event":          min
+        "art.last_event":           max
         "dune.workflow":            subset
         # Skip values that don't make sense to merge
         "core.start_time":          skip
@@ -203,17 +205,18 @@ metadata:
         "Offline.machine":          skip
     overrides: # Set keys to specific values
         "retention.status":         "active"
-    abbreviations:  # Try to shorten long output file names
-        "extensions":   # Automatically remove these extensions from all keys
-          - "fcl"
-          - "json"
-          - "yaml"
-          - "root"
-        "substitutions": # Substitute these values in all keys
-            ", ": ","
-            ".": "-"
-            " ": "_"
-            "/": "-"
+
+naming:  # Settings for generating name components from metadata
+    extensions:     # Automatically remove these extensions from all keys
+      - "fcl"
+      - "json"
+      - "yaml"
+      - "root"
+    substitutions:  # Substitute these values in all keys
+        ", ": ","
+        ".": "-"
+        " ": "_"
+    abbreviations:  # Per-key abbreviations for specific values
         "core.run_type":
             "protodune-sp":             "pd-sp"
             "protodune-dp":             "pd-dp"
@@ -271,7 +274,27 @@ metadata:
             "root-tuple-virtual":       "tuple-v"
             "binary-raw":               "binary"
             "sam-user":                 "sam"
-        "core.file_format":
-            "artroot":                  "art"
-            "binary":                   "bin"
-            "rootntuple":               "tuple"
+      # "core.file_format":
+      #     "artroot":                  "art"
+      #     "binary":                   "bin"
+      #     "rootntuple":               "tuple"
+
+schema:
+    type_defs:
+        cond_metadata:
+            cond: <cond>
+            required: <set>
+    key_defs:
+        metadata.required: <set>
+        metadata.consistent: <set>
+        metadata.overrides: <map>
+        metadata.types: <map>
+        metadata.restricted: <map(list)>
+        metadata.conditional: <list(cond_metadata)>
+        metadata.fixes.bad_keys: <map>
+        metadata.fixes.missing_keys: <map>
+        metadata.fixes.bad_values: <map(map)>
+        metadata.merging: <map(opt(unique,all,min,max,sum,union,subset,skip))>
+        naming.extensions: <set>
+        naming.substitutions: <map>
+        naming.abbreviations: <map(map)>
