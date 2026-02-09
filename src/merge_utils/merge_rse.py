@@ -7,15 +7,12 @@ import collections
 import itertools
 import math
 import subprocess
-import csv
 import asyncio
 from typing import Iterable
 
-import requests
+from rucio.client.rseclient import RSEClient #type: ignore pylint: disable=import-error
 
-from rucio.client.rseclient import RSEClient
-
-from merge_utils import io_utils, config
+from merge_utils import io_utils, config, justin_utils
 
 logger = logging.getLogger(__name__)
 
@@ -73,12 +70,12 @@ def check_path(path: str) -> str:
 
 class MergeRSE:
     """Class to store information about an RSE"""
-    def __init__(self, valid: bool, nearline_dist: float = 0):
+    def __init__(self, valid: bool, tape_dist: float = 0):
         self.valid = valid
         self.disk = {}
         self.tape = {}
         self.distances = {}
-        self.nearline_dist = nearline_dist
+        self.tape_dist = tape_dist
         self.ping = float('inf')
 
     @property
@@ -129,144 +126,148 @@ class MergeRSEs(collections.UserDict):
     """Class to keep track of a set of RSEs"""
     def __init__(self):
         super().__init__()
-        if config.output['mode'] == 'local':
-            self.sites = [config.sites['local']]
-            logger.info("Running locally on site %s", self.sites[0])
+        if config.output.local:
+            site = str(config.local.site)
+            self.sites = [site]
+            logger.info("Running locally on site %s", site)
+            default_dist = config.sites.site_distances['default']
+            dist = config.sites.site_distances.get(site, default_dist)
+            if dist != 0:
+                logger.warning("Ignoring distance offset %s for local site %s", dist, site)
+            config.sites.site_distances[site] = 0
         else:
-            self.sites = config.sites['allowed_sites']
+            self.sites = [s for s in config.sites.site_distances.keys() if s != 'default']
             io_utils.log_list("Running on {n} allowed merging site{s}:", self.sites, logging.INFO)
-        self.max_distance = config.sites['max_distance']
-        self.nearline_distances = config.sites['nearline_distance']
+        self.max_distance = config.sites.max_distance
 
         self.disk = set()
         self.tape = set()
 
-    async def connect(self) -> None:
+    async def set_distances(self, distances) -> set:
+        """
+        Assign site-RSE distances
+        
+        :param distances: dictionary of (site, rse) -> distance
+        :return: set of accessible RSE names
+        """
+        default_site_dist = config.sites.site_distances['default']
+        add_sites = not config.output.local and default_site_dist <= self.max_distance
+        accessible = set()
+        for (site, rse), dist in distances.items():
+            if site not in self.sites:
+                if not add_sites:
+                    continue
+                self.sites.append(site)
+                logger.info("Adding site %s with default distance %s", site, default_site_dist)
+            self[rse].distances[site] = dist
+            if dist <= self.max_distance:
+                accessible.add(rse)
+
+    async def connect(self, rucio_client) -> None:
         """Download the RSE list from Rucio and determine their distances"""
         # Get the list of RSEs from Rucio
-        rse_client = RSEClient()
+        rse_client = RSEClient(rucio_client)
         rses = await asyncio.to_thread(rse_client.list_rses)
+        valid_rses = set()
+        default_tape_dist = config.sites.tape_distances.get('default', 100.0)
         for rse in rses:
+            name = rse['rse']
             valid = (
                 rse['availability_read']
                 and not rse['staging_area']
                 and not rse['deleted']
             )
-            if rse['rse'] in self.nearline_distances:
-                nearline_dist = self.nearline_distances[rse['rse']]
-            else:
-                nearline_dist = self.nearline_distances['default']
-            self[rse['rse']] = MergeRSE(valid, nearline_dist)
+            tape_dist = config.sites.tape_distances.get(rse['rse'], default_tape_dist)
+            self[name] = MergeRSE(valid, tape_dist)
+            if valid:
+                valid_rses.add(name)
 
         # Get site distances from justIN web API
         accessible = set()
-        try:
-            res = await asyncio.to_thread(
-                requests.get, config.sites['justin_url']+SITE_STORAGE_URL, verify=False, timeout=10
-            )
-            connected = res.ok
-        except requests.ConnectionError as err:
-            logger.error("JustIN connection error: %s", err)
-            connected = False
-        if connected:
-            text = res.iter_lines(decode_unicode=True)
-            fields = ['site', 'rse', 'dist', 'site_enabled', 'rse_read', 'rse_write']
-            reader = csv.DictReader(text, fields)
-            for row in reader:
-                if not row['site_enabled'] or not row['rse_read']:
-                    continue
-                site = row['site']
-                rse = row['rse']
-                if site not in self.sites or rse not in self or not self[rse].valid:
-                    continue
-                dist = 100*float(row['dist']) + config.sites['rse_distances'].get(rse, 0)
-                self[rse].distances[site] = dist
-                if dist <= self.max_distance:
-                    accessible.add(rse)
+        site_rse_distances = await justin_utils.get_site_rse_distances(valid_rses)
+        if site_rse_distances:
+            accessible = await self.set_distances(site_rse_distances)
             io_utils.log_list("Found {n} accessible RSE{s} in JustIN database:",
                               accessible, logging.INFO)
         else:
             logger.error("Failed to retrieve RSE-site distances from JustIN!\n"
                          "  Falling back to RSEs located directly at merging sites.")
             # fall back to rucio RSE attributes
+            default_site_dist = config.sites.site_distances['default']
+            default_rse_dist = config.sites.rse_distances['default']
+            site_rse_distances = {}
             for name, rse in self.items():
                 if not rse.valid:
                     continue
                 attr = await asyncio.to_thread(rse_client.list_rse_attributes, name)
                 site = attr.get('site', None)
-                if site not in self.sites:
-                    continue
-                rse.distances[site] = 0
-                accessible.add(name)
+                site_dist = config.sites.site_distances.get(site, default_site_dist)
+                rse_dist = config.sites.rse_distances.get(name, default_rse_dist)
+                site_rse_distances[(site, name)] = site_dist + rse_dist
+            accessible = await self.set_distances(site_rse_distances)
             io_utils.log_list("Found {n} accessible RSE{s} in Rucio:", accessible, logging.INFO)
         if len(accessible) == 0:
             logger.critical("No accessible RSEs found in JustIN or Rucio!")
             sys.exit(1)
 
-    async def add_pfn(self, did: str, pfn: str, info: dict) -> float:
+    async def add_pfn(self, did: str, pfn: str, info: dict) -> dict:
         """Add a file PFN to the corresponding RSE
         
         :param did: file DID
         :param pfn: physical file name
         :param info: dictionary with RSE information
-        :return: distance from the RSE to the nearest site
+        :return: dictionary of site -> distance for the file
         """
         # Check if the RSE is valid
         rse = info['rse']
-        if rse not in self or not self[rse].valid:
+        if rse not in self:
             logger.warning("RSE %s does not exist?", rse)
-            return float('inf')
+            return {}
         if not self[rse].valid:
             logger.warning("RSE %s is invalid", rse)
-            return float('inf')
-        _, dist = self[rse].nearest_site()
-        if dist > self.max_distance:
-            logger.debug("RSE %s is too far from merging sites (%s > %s)",
-                           rse, dist, self.max_distance)
-            return dist
-
+            return {}
+        # Get distances to merging sites
+        sites = {s: d for s, d in self[rse].distances.items() if d <= self.max_distance}
+        if not sites:
+            logger.debug("RSE %s is not accessible from any merging site", rse)
+            return {}
         # Check file status
         if info['type'] == 'DISK':
             status = 'ONLINE'
         else:
             status = await asyncio.to_thread(check_path, pfn)
-
         # Actually add the file to the RSE
         if status == 'ONLINE':
             self.disk.add(did)
             self.data[rse].disk[did] = pfn
         elif status == 'NEARLINE':
-            dist += self.data[rse].nearline_dist
-            if dist > self.max_distance:
-                logger.debug("RSE %s (tape) is too far from merging sites (%s > %s)",
-                               rse, dist, self.max_distance)
-            else:
-                self.tape.add(did)
-                self.data[rse].tape[did] = pfn
+            penalty = self.data[rse].tape_dist
+            sites = {s: d + penalty for s, d in sites.items() if d + penalty <= self.max_distance}
+            if not sites:
+                logger.debug("RSE %s (tape) is not accessible from any merging site", rse)
+                return {}
+            self.tape.add(did)
+            self.data[rse].tape[did] = pfn
         else:
             # File is not accessible
-            return float('inf')
+            return {}
+        return sites
 
-        return dist
-
-    async def add_replicas(self, did: str, replicas: dict) -> int:
+    async def add_replicas(self, did: str, replicas: dict) -> dict:
         """Add a set of file replicas to the RSEs
         
         :param did: file DID
         :param replicas: Rucio replica dictionary
-        :return: number of PFNs added
+        :return: dictionary mapping sites to (PFN, distance) for the file
         """
         tasks = [self.add_pfn(did, pfn, info) for pfn, info in replicas['pfns'].items()]
         results = await asyncio.gather(*tasks)
-        best_dist = min(results)
-        if best_dist > self.max_distance:
-            if best_dist == float('inf'):
-                logger.error("Could not retrieve file %s from Rucio", did)
-                raise ValueError("File not found")
-            logger.error("File %s is too far from merging sites (%s > %s)",
-                         did, best_dist, self.max_distance)
-            raise ValueError("File exceeds max distance")
-        return sum(1 for dist in results if dist <= self.max_distance)
+        pfns = {}
+        for pfn, sites in zip(replicas['pfns'].keys(), results):
+            for site, dist in sites.items():
+                if site not in pfns or dist < pfns[site][1]:
+                    pfns[site] = (pfn, dist)
+        return pfns
 
     def cleanup(self) -> None:
         """Remove RSEs with no files"""
@@ -310,7 +311,7 @@ class MergeRSEs(collections.UserDict):
                 if distance < pfns[did][1]:
                     pfns[did] = (pfn, distance)
 
-            distance += rse.nearline_dist
+            distance += rse.tape_dist
             if distance > self.max_distance:
                 logger.info("RSE %s (tape) is too far away from site %s (%s > %s)",
                             name, site, distance, self.max_distance)
@@ -335,7 +336,7 @@ class MergeRSEs(collections.UserDict):
             return {sites[0]: pfns[sites[0]]}
         best_pfns = {site: {} for site in sites}
 
-        chunk_max = config.merging['chunk_max']
+        chunk_max = config.grouping.chunk_max
         def chunk_err(counts):
             """Calculate how far we are from optimal chunk sizes"""
             total_err = 0
