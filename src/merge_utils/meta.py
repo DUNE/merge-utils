@@ -5,211 +5,9 @@ import sys
 import logging
 import collections
 
-from merge_utils import config, io_utils, __version__
+from merge_utils import config, io_utils, naming
 
 logger = logging.getLogger(__name__)
-
-class MetaNameDict:
-    """Wrapper class to access metadata dictionary."""
-
-    def __init__(self, metadata: dict):
-        """
-        Initialize the MetaNameDict with a metadata dictionary.
-        """
-        self.data = metadata
-        self.errors = []
-
-    def get(self, key, default=None):
-        """
-        Get a metadata value by key.
-
-        :param key: metadata key
-        :param default: default value if key not found
-        :return: metadata value
-        """
-        return self.data.get(key, default)
-
-    class MetaVal:
-        """Class to read metadata values."""
-
-        def __init__(self, meta, key, idx=None):
-            self._dict = meta
-            self._key = key
-            self._idx = idx
-
-        @property
-        def key(self) -> str:
-            """
-            Get the metadata key.
-
-            :return: metadata key
-            """
-            if self._idx is not None:
-                return f"{self._key}[{self._idx}]"
-            return self._key
-
-        def read_list(self, data) -> any:
-            """
-            Try to extract a value from a list.
-            
-            :param data: list of data
-            :return: extracted value
-            """
-            if isinstance(self._idx, int):
-                if self._idx >= 0 and self._idx < len(data):
-                    return data[self._idx]
-                self._dict.errors.append(f"Metadata key '{self.key}' index out of range")
-            elif isinstance(self._idx, str):
-                try:
-                    idx = [int(i) if i else None for i in self._idx.split(':')]
-                    if len(idx) == 1:
-                        return data[idx[0]]
-                    if len(idx) == 2:
-                        return data[slice(idx[0], idx[1])]
-                    if len(idx) == 3:
-                        return data[slice(idx[0], idx[1], idx[2])]
-                except ValueError:
-                    pass
-                self._dict.errors.append(f"Metadata key '{self.key}' has invalid slice")
-            else:
-                self._dict.errors.append(f"Metadata key '{self.key}' has invalid index")
-            return None
-
-        def read_dict(self, data) -> any:
-            """
-            Try to extract a value from a dictionary.
-            
-            :param data: dictionary of data
-            :return: extracted value
-            """
-            key = self._idx
-            if key.startswith("'") and key.endswith("'"):
-                key = key[1:-1]
-            elif key.startswith('"') and key.endswith('"'):
-                key = key[1:-1]
-            val = data.get(key)
-            if val is None:
-                self._dict.errors.append(f"Metadata key '{self.key}' has invalid index")
-            return val
-
-        @property
-        def value(self) -> any:
-            """
-            Get the metadata value.
-
-            :return: metadata value
-            """
-            if self._key.startswith('$'):
-                val = os.getenv(self._key[1:], None)
-                if val is None:
-                    self._dict.errors.append(f"Environment variable '{self._key[1:]}' not found")
-                return val
-            val = self._dict.get(self._key)
-            if val is None:
-                self._dict.errors.append(f"Metadata key '{self._key}' not found")
-            elif self._idx is not None:
-                if isinstance(val, list):
-                    val = self.read_list(val)
-                elif isinstance(val, dict):
-                    val = self.read_dict(val)
-                elif hasattr(val, '__getitem__'):
-                    try:
-                        val = val[self._idx]
-                    except (KeyError, IndexError, TypeError):
-                        self._dict.errors.append(f"Metadata key '{self.key}' has invalid index")
-                        val = None
-                else:
-                    self._dict.errors.append(f"Metadata key '{self._key}' is not subscriptable")
-                    val = None
-            return val
-
-        def __format__(self, format_spec):
-            key = self.key
-            #logger.debug("Formatting metadata key '%s' with spec '%s'", key, format_spec)
-            val = self.value
-            if val is None:
-                if format_spec:
-                    return f"{{{key}:{format_spec}}}"
-                return f"{{{key}}}"
-            if isinstance(val, str):
-                # Apply specific abbreviations
-                val = config.metadata['abbreviations'].get(key, {}).get(val, val)
-                # Remove known extensions
-                for ext in config.metadata['abbreviations'].get('extensions', []):
-                    if val.endswith(f".{ext}"):
-                        val = val[:-(len(ext)+1)]
-                        break
-            # Apply formatting
-            try:
-                output = format(val, format_spec)
-            except (ValueError, TypeError):
-                self._dict.errors.append(
-                    f"Failed to format key '{key}' ({val}) with spec '{format_spec}'"
-                )
-                return f"{{{key}:{format_spec}}}"
-            # Apply general substitutions
-            for old, new in config.metadata['abbreviations'].get('substitutions', {}).items():
-                output = output.replace(old, new)
-            return output
-
-    class MetaKey:
-        """Class to parse metadata keys."""
-
-        def __init__(self, meta, key: str):
-            self._dict = meta
-            self._key = key
-
-        def __getattr__(self, name):
-            return MetaNameDict.MetaKey(self._dict, self._key + '.' + name)
-
-        def __format__(self, format_spec):
-            return format(MetaNameDict.MetaVal(self._dict, self._key), format_spec)
-
-        def __getitem__(self, name):
-            return MetaNameDict.MetaVal(self._dict, self._key, name)
-
-    def __getitem__(self, name):
-        if name.startswith('$'):
-            return MetaNameDict.MetaVal(self, name)
-        if name == "TIMESTAMP":
-            return config.timestamp
-        if name == "UUID":
-            return config.uuid()
-        if name == "NAME":
-            return config.output['name']
-        return MetaNameDict.MetaKey(self, name)
-
-    def format(self, template: str, strict: bool = True) -> str:
-        """
-        Format a string using the metadata dictionary.
-
-        :param template: template string
-        :return: formatted string
-        """
-        self.errors = []
-        output = template.format_map(self)
-        if self.errors:
-            errors = [output] + self.errors
-            if strict:
-                io_utils.log_list("Failed to parse name template:", errors, logging.CRITICAL)
-                sys.exit(1)
-            io_utils.log_list("Failed to parse name template:", errors, logging.ERROR)
-            self.errors = []
-        return output
-
-    def eval(self, condition: str) -> bool:
-        """
-        Evaluate a condition using the metadata dictionary.
-
-        :param condition: condition string to evaluate
-        :return: evaluated value
-        """
-        expr = self.format(condition)
-        try:
-            val = eval(expr) #pylint: disable=eval-used
-        except Exception as exc:
-            raise ValueError(f"Error evaluating condition ({condition})") from exc
-        return val
 
 def fix(name: str, metadata: dict) -> None:
     """
@@ -220,26 +18,24 @@ def fix(name: str, metadata: dict) -> None:
     """
     fixes = []
     # Fix misspelled keys
-    for bad_key, good_key in config.metadata['fixes']['keys'].items():
-        if bad_key in metadata:
-            fixes.append(f"Key '{bad_key}' -> '{good_key}'")
-            metadata[good_key] = metadata.pop(bad_key)
+    for key, replacement in config.metadata.fixes.bad_keys.items():
+        if key in metadata:
+            fixes.append(f"Key '{key}' -> '{replacement}'")
+            metadata[str(replacement)] = metadata.pop(key)
 
     # Fix missing keys
-    for key, value in config.metadata['fixes']['missing'].items():
+    for key, value in config.metadata.fixes.missing_keys.items():
         if key not in metadata:
             fixes.append(f"Key '{key}' value None -> '{value}'")
-            metadata[key] = value
+            metadata[key] = value._value # pylint: disable=protected-access
 
     # Fix misspelled values
-    for key in config.metadata['fixes']:
-        if key in ['keys', 'missing'] or key not in metadata:
-            continue
-        value = metadata[key]
-        if value in config.metadata['fixes'][key]:
-            new_value = config.metadata['fixes'][key][value]
-            fixes.append(f"Key '{key}' value '{value}' -> '{new_value}'")
-            metadata[key] = new_value
+    for key, replacements in config.metadata.fixes.bad_values.items():
+        value = metadata.get(key, None)
+        replacement = replacements.get(value, None)
+        if replacement is not None:
+            fixes.append(f"Key '{key}' value '{value}' -> '{replacement}'")
+            metadata[key] = replacement._value # pylint: disable=protected-access
 
     if fixes:
         io_utils.log_list("Applying {n} metadata fix{es} to file %s:" % name, fixes, logging.DEBUG)
@@ -254,25 +50,26 @@ def check_required(metadata: dict) -> list:
     errs = []
     # Check for required keys
     required = set()
-    for key in config.metadata['required']:
+    for key in [str(k) for k in config.metadata.required]:
         required.add(key)
         if key not in metadata:
-            if key in config.metadata['optional']:
+            if key in config.metadata.optional:
                 continue
             errs.append(f"Missing required key: {key}")
 
     # Check for conditionally required keys
-    name_dict = MetaNameDict(metadata)
-    for condition, keys in config.metadata['conditional'].items():
+    name_dict = naming.Formatter(metadata)
+    for spec in config.metadata.conditional:
+        condition = spec.cond
         if not name_dict.eval(condition):
             #logger.debug("Skipping condition: %s", condition)
             continue
         logger.debug("Matched condition: %s", condition)
-        for key in keys:
+        for key in [str(k) for k in spec.required]:
             if key in required:
                 continue
             required.add(key)
-            if key not in metadata and key not in config.metadata['optional']:
+            if key not in metadata and key not in config.metadata.optional:
                 errs.append(f"Missing conditionally required key: {key} (from {condition})")
 
     return errs
@@ -294,7 +91,7 @@ def validate(name: str, metadata: dict, requirements: bool = True) -> bool:
         errs.extend(check_required(metadata))
 
     # Check for restricted keys
-    for key, options in config.metadata['restricted'].items():
+    for key, options in config.metadata.restricted.items():
         if key not in metadata:
             continue
         value = metadata[key]
@@ -302,8 +99,8 @@ def validate(name: str, metadata: dict, requirements: bool = True) -> bool:
             errs.append(f"Invalid value for {key}: {value}")
 
     # Check value types
-    for key, expected_type in config.metadata['types'].items():
-        if key not in metadata or key in config.metadata['restricted']:
+    for key, expected_type in config.metadata.types.items():
+        if key not in metadata or key in config.metadata.restricted:
             continue
         value = metadata[key]
         type_name = type(value).__name__
@@ -312,7 +109,8 @@ def validate(name: str, metadata: dict, requirements: bool = True) -> bool:
         errs.append(f"Invalid type for {key}: {value} (expected {expected_type})")
 
     if errs:
-        lvl = logging.ERROR if config.validation['skip']['invalid'] else logging.CRITICAL
+        crit = config.validation.error_handling.invalid == 'quit'
+        lvl = logging.CRITICAL if crit else logging.ERROR
         io_utils.log_list("File %s has {n} invalid metadata key{s}:" % name, errs, lvl)
         return False
 
@@ -488,46 +286,119 @@ def merge_cfg_keys() -> dict:
     :return: dictionary of merging configuration keys
     """
     keys = {
-        'version': __version__,
-        'method': config.merging['method']['name'],
-        'timestamp': config.timestamp
+        'version': config.version,
+        'method': config.method.method_name,
+        'timestamp': config.job.timestamp
     }
     for key in ['cmd', 'script', 'cfg']:
-        val = config.merging['method'].get(key)
-        if val is not None:
+        val = config.method[key]
+        if val:
             if key in ['script', 'cfg']:
-                val = os.path.basename(val)
+                val = os.path.basename(str(val))
             keys[key] = val
-    for key in ['skip', 'limit', 'tag', 'comment', 'query', 'dataset']:
-        val = config.inputs.get(key)
-        if val is not None:
+    for key in ['skip', 'limit', 'tag', 'comment']:
+        val = config.input[key]
+        if val:
             keys[key] = val
+    if config.input.mode == 'query':
+        keys['query'] = config.input.inputs[0]
+    elif config.input.mode == 'dataset':
+        keys['dataset'] = config.input.inputs[0]
     return keys
 
-def merged_keys(files: dict, warn: bool = False) -> dict:
+def add_origin(metadata: dict, app: str) -> None:
+    """
+    Add origin information to the metadata dictionary for transform jobs.
+
+    :param metadata: metadata dictionary
+    :param app: name of the application
+    """
+    # Get existing application information
+    name = metadata.get('core.application.name')
+    ver = metadata.get('core.application.version')
+    cfg = metadata.get('dune.config_file') #TODO: make sure this is correct for all applications
+
+    # If missing, should be raw data
+    if name is None:
+        tier = metadata.get('core.data_tier')
+        if tier not in ['raw']:
+            logger.critical("Transform job missing core.application.name for %s data!", tier)
+            sys.exit(1)
+        for key in ['names', 'versions', 'config_files']:
+            full_key = f"origin.applications.{key}"
+            if full_key in metadata:
+                logger.critical("Transform job missing core.application.name but has origin info!")
+                sys.exit(1)
+        metadata['origin.applications.names'] = []
+        metadata['origin.applications.versions'] = {}
+        metadata['origin.applications.config_files'] = {}
+
+    # Add current application information
+    metadata['core.application'] = app
+    metadata['core.application.family'], metadata['core.application.name'] = app.split('.', 1)
+    metadata['core.application.version'] = str(config.method.environment.dunesw_version)
+    if not config.method.cfg:
+        io_utils.log_print("Running a transform job without a config file!", logging.WARNING)
+    metadata['dune.config_file'] = str(config.method.cfg)
+
+    # if there is no origin application then we're done
+    if name is None:
+        return
+
+    # Increment stage until we find a unique name
+    names = set(metadata.get('origin.applications.names', []))
+    if 'origin.applications.versions' in metadata:
+        names.update(metadata['origin.applications.versions'].keys())
+    if 'origin.applications.config_files' in metadata:
+        names.update(metadata['origin.applications.config_files'].keys())
+    if name in names:
+        stage = 2
+        if '_stage' in name:
+            name, stage = name.split('_stage', 1)
+            stage = int(stage) + 1
+        while f"{name}_stage{stage}" in names:
+            stage += 1
+        name = f"{name}_stage{stage}"
+
+    # Add origin information
+    if 'origin.applications.names' in metadata:
+        metadata['origin.applications.names'].append(name)
+    else:
+        metadata['origin.applications.names'] = [name]
+    if 'origin.applications.versions' in metadata:
+        metadata['origin.applications.versions'][name] = ver
+    else:
+        metadata['origin.applications.versions'] = {name: ver}
+    if 'origin.applications.config_files' in metadata:
+        metadata['origin.applications.config_files'][name] = cfg
+    else:
+        metadata['origin.applications.config_files'] = {name: cfg}
+
+def merged_keys(files: list, warn: bool = False) -> dict:
     """
     Merge metadata from multiple files into a single dictionary.
 
-    :param files: set of files to merge
+    :param files: list of files to merge
     :param warn: whether to warn about inconsistent metadata
     :return: merged metadata
     """
     metadata = collections.defaultdict(
-        MERGE_META_CLASSES[config.metadata['merging']['default']]
+        MERGE_META_CLASSES[str(config.metadata.merging['default'])]
     )
-    for key, mode in config.metadata['merging'].items():
-        if key in ['default', 'overrides']:
+    for key, mode in config.metadata.merging.items():
+        if key == 'default':
             continue
-        if mode in MERGE_META_CLASSES:
-            metadata[key] = MERGE_META_CLASSES[mode]()
+        merge_class = MERGE_META_CLASSES.get(str(mode), None)
+        if merge_class is not None:
+            metadata[key] = merge_class()
         else:
             metadata[key] = MergeMetaOverride()
-    for key, value in config.metadata['overrides'].items():
-        metadata[key] = MergeMetaOverride(value)
+    for key, value in config.metadata.overrides.items():
+        metadata[key] = MergeMetaOverride(value._value)  # pylint: disable=protected-access
     for key, value in merge_cfg_keys().items():
-        metadata[f"merge.{key}"] = MergeMetaOverride(value)
+        metadata[f"merge.{key}"] = MergeMetaOverride(str(value))
 
-    for file in files.values():
+    for file in files:
         for key, value in file.metadata.items():
             metadata[key].add(value)
 
@@ -536,34 +407,31 @@ def merged_keys(files: dict, warn: bool = False) -> dict:
             [k for k, v in metadata.items() if v.warn]
         )
     metadata = {k: v.value for k, v in metadata.items() if v.valid}
+
+    if config.method.transform:
+        add_origin(metadata, str(config.method.transform))
+
     if not validate("output", metadata, requirements=False):
         logger.critical("Merged metadata is invalid, cannot continue!")
         raise ValueError("Merged metadata is invalid")
     return metadata
 
-def parents(files: dict) -> list[str]:
+def parents(files: list) -> list:
     """
     Retrieve all the parents from a set of files.
 
-    :param files: set of files to merge
-    :return: set of parents
+    :param files: list of files to merge
+    :return: list of parent dictionaries of the form {"fid": fid}
     """
-    if not config.output['grandparents']:
+    if not config.output.grandparents:
         logger.info("Listing direct parents")
-        output = []
-        for file in files.values():
-            output.append({
-                "fid": file.fid,
-                "name": file.name,
-                "namespace": file.namespace
-            })
-        return output
-    logger.info("Listing grandparents instead of direct parents")
-    grandparents = set()
-    for file in files.values():
-        for grandparent in file.parents:
-            grandparents.add(tuple(sorted(grandparent.items())))
-    return [dict(t) for t in grandparents]
+        fids = {file.fid for file in files}
+    else:
+        logger.info("Listing grandparents instead of direct parents")
+        fids = set()
+        for file in files:
+            fids.update(file.parents)
+    return [{"fid": fid} for fid in fids]
 
 def match_method(name: str = None, metadata: dict = None) -> dict:
     """
@@ -575,22 +443,51 @@ def match_method(name: str = None, metadata: dict = None) -> dict:
     """
     # Match by name
     if name:
-        methods = [m for m in config.merging['methods'] if m['name'] == name]
+        methods = [m for m in config.method.defaults if m.method_name == name]
         if not methods:
             return None
         return methods[-1]
     # Match by conditions
     if metadata:
-        name_dict = MetaNameDict(metadata)
-        for method in reversed(config.merging['methods']):
-            condition = method.get('cond', 'False')
+        name_dict = naming.Formatter(metadata)
+        for method in reversed(config.method.defaults):
+            condition = method.cond
             if name_dict.eval(condition):
                 if condition == 'True':
                     condition = "unconditional"
-                logger.info("Auto-selected merging method '%s' (%s)", method['name'], condition)
+                logger.info("Auto-selected merging method '%s' (%s)", method.method_name, condition)
                 return method
     # No match found
     return None
+
+def set_method(method: dict, warn: bool = False) -> None:
+    """
+    Set merging method parameters.
+
+    :param method: merging method dictionary
+    """
+    lvl = logging.WARNING if warn else logging.INFO
+    explicit = False
+    method_name = method.method_name
+    for key in ['script', 'cmd', 'cfg', 'transform']:
+        if config.method[key]:
+            logger.log(lvl, "Explicit value for merge.%s overrides %s default", key, method_name)
+            explicit = True
+        else:
+            config.method[key] = method[key]
+    if config.method.dependencies:
+        logger.log(lvl, "Explicity adding merge.dependencies:\n  %s",
+                       "\n  ".join(config.method.dependencies))
+        explicit = True
+    config.method.dependencies |= method.dependencies
+    if config.method.outputs:
+        logger.log(lvl, "Explicit list of merge.outputs overrides %s default", method_name)
+        explicit = True
+    else:
+        config.method.outputs = method.outputs
+    config.metadata.overrides.update(method.metadata)
+    if warn and explicit:
+        logger.warning("Consider explicitly specifying a merging method instead of using 'auto'!")
 
 def set_method_auto(metadata: dict) -> None:
     """
@@ -604,72 +501,29 @@ def set_method_auto(metadata: dict) -> None:
         sys.exit(1)
 
     # Set merging method parameters
-    config.merging['method']['name'] = method['name']
-    explicit = False
-    for key in ['script', 'cmd', 'cfg']:
-        if key in config.merging['method'] and config.merging['method'][key] is not None:
-            logger.warning("Explicit value for merge.%s overrides %s default", key, method['name'])
-            explicit = True
-        else:
-            config.merging['method'][key] = method.get(key, None)
-    if config.merging['method']['dependencies']:
-        logger.warning("Explicity adding merge.dependencies:\n  %s",
-                       "\n  ".join(config.merging['method']['dependencies']))
-        explicit = True
-    config.merging['method']['dependencies'].extend(method.get('dependencies', []))
-    if config.merging['method']['outputs']:
-        logger.warning("Explicit list of merge.outputs overrides %s default", method['name'])
-        explicit = True
-    else:
-        config.merging['method']['outputs'] = method.get('outputs', [])
-    if explicit:
-        logger.warning("Consider specifying an explicity merging method instead of using 'auto'!")
-
-def set_method(method: dict) -> None:
-    """
-    Set merging method parameters.
-
-    :param method: merging method dictionary
-    """
-    logger.info("Using built-in merging method '%s'", method['name'])
-    for key in ['script', 'cmd', 'cfg']:
-        if key in config.merging['method'] and config.merging['method'][key] is not None:
-            logger.info("Explicit value for merge.%s overrides %s default", key, method['name'])
-        else:
-            config.merging['method'][key] = method.get(key, None)
-    if config.merging['method']['dependencies']:
-        logger.info("Explicity adding merge.dependencies:\n  %s",
-                       "\n  ".join(config.merging['method']['dependencies']))
-    config.merging['method']['dependencies'].extend(method.get('dependencies', []))
-    if config.merging['method']['outputs']:
-        logger.info("Explicit list of merge.outputs overrides %s default", method['name'])
-    else:
-        config.merging['method']['outputs'] = method.get('outputs', [])
+    config.method.method_name = method.method_name
+    set_method(method, warn=True)
 
 def set_method_custom() -> None:
     """
     Set merging method parameters for a custom script.
     """
-    name = config.merging['method']['name']
-    cmd = config.merging['method'].setdefault('cmd')
-    script = config.merging['method'].setdefault('script')
+    name = config.method.method_name
+    cmd = config.method.cmd
+    script = config.method.script
     if not script and (not cmd or '{script}' in cmd):
         # Assume the name is a script
-        config.merging['method']['script'] = name
-        config.merging['method']['name'] = os.path.basename(name)
+        config.method.script = name
+        config.method.method_name = os.path.basename(name)
     logger.info("Using custom merging method: %s", name)
 
-    config.merging['method'].setdefault('cfg', None)
-    config.merging['method'].setdefault('dependencies', [])
-    config.merging['method'].setdefault('outputs', [])
-
-def auto_output(files: dict) -> None:
+def auto_output(files: list) -> None:
     """
     Auto-generate an output file name with the same extension as the inputs, if needed.
 
-    :param files: set of files to merge
+    :param files: list of files to merge
     """
-    if config.merging['method']['outputs']:
+    if config.method.outputs:
         return
     extensions = set()
     for file in files:
@@ -678,38 +532,43 @@ def auto_output(files: dict) -> None:
         logger.critical("Cannot determine extension for merged files!")
         sys.exit(1)
     ext = extensions.pop()
-    config.merging['method']['outputs'] = [{'name': f"{{name}}_merged{ext}"}]
+    config.method.outputs = [{'name': f"{{NAME}}_merged_{{UUID}}{ext}"}]
     logger.info("Auto-detected file extension '%s' from input files", ext)
 
 def log_method() -> None:
     """
     Log the final merging method configuration.
     """
-    msg = [f"Final settings for merging method '{config.merging['method']['name']}':"]
-    for key in ['cmd', 'script', 'cfg']:
-        msg.append(f"{key}: {config.merging['method'][key]}")
+    msg = [f"Final settings for merging method '{config.method.method_name}':"]
+    for key in ['cmd', 'script', 'cfg', 'transform']:
+        msg.append(f"{key}: {config.method[key]}")
     msg.append("dependencies:")
-    msg.extend([f"  {dep}" for dep in config.merging['method']['dependencies']])
+    msg.extend([f"  {dep}" for dep in config.method.dependencies])
     msg.append("outputs:")
-    for output in config.merging['method']['outputs']:
-        if 'rename' in output:
-            msg.append(f"  {output['name']} (renamed from {output['rename']})")
+    for output in config.method.outputs:
+        if output.rename:
+            msg.append(f"  {output.name} (renamed from {output.rename})")
         else:
-            msg.append(f"  {output['name']}")
-        if 'metadata' in output:
-            msg.extend([f"    {k}: {v}" for k, v in output['metadata'].items()])
-        if 'method' in output:
-            msg.append(f"    method: {output['method']}")
+            msg.append(f"  {output.name}")
+        msg.append(f"    size: {output.size}")
+        if output.size_min:
+            msg.append(f"    size_min: {output.size_min}")
+        if output.checklist:
+            msg.append(f"    checklist: {output.checklist}")
+        if output.metadata:
+            msg.extend([f"    {k}: {v}" for k, v in output.metadata.items()])
+        if output.pass2:
+            msg.append(f"    pass2 method: {output.pass2}")
     logger.info("\n  ".join(msg))
 
-def check_method(files: dict) -> None:
+def check_method(files: list) -> None:
     """
     Check and set the merging method based on the input file metadata.
 
-    :param files: set of files to merge
+    :param files: list of files to merge
     """
     # Figure out merging method
-    name = config.merging['method']['name']
+    name = config.method.method_name
     if name == 'auto':
         set_method_auto(merged_keys(files, warn=False))
     else:
@@ -723,72 +582,101 @@ def check_method(files: dict) -> None:
     # Set the output file name if not provided
     auto_output(files)
 
-    # Convert dependencies to a unique set of full paths
-    dependencies = set()
-    if config.merging['method']['script']:
-        dependencies.add(io_utils.find_runner(config.merging['method']['script']))
-    if config.merging['method']['cfg']:
-        dependencies.add(io_utils.find_cfg(config.merging['method']['cfg']))
-    for dep in config.merging['method']['dependencies']:
-        dependencies.add(io_utils.find_file(dep, ["config", "src"], recursive=True))
-    config.merging['method']['dependencies'] = list(dependencies)
+    # Locate full paths for any dependencies
+    deps = set()
+    if config.method.script:
+        deps.add(io_utils.find_runner(config.method.script))
+    if config.method.cfg:
+        deps.add(io_utils.find_cfg(config.method.cfg))
+    for dep in config.method.dependencies:
+        deps.add(io_utils.find_file(dep, ["config", "src"], recursive=True))
 
     # Check for issues with the merging command
-    cmd = config.merging['method']['cmd']
+    cmd = config.method.cmd
     if cmd:
-        if config.merging['method']['script'] and '{script}' not in cmd:
+        if config.method.script and '{script}' not in cmd:
             logger.warning("Merging command does not call provided '{script}'")
-        if config.merging['method']['cfg'] and '{cfg}' not in cmd:
+        if config.method.cfg and '{cfg}' not in cmd:
             logger.warning("Merging command does not use provided '{cfg}'")
         if '{inputs}' not in cmd:
             logger.critical("Merging command does not specify '{inputs}'")
             sys.exit(1)
-        n_out = sum(1 for output in config.merging['method']['outputs'] if 'rename' not in output)
+        n_out = sum(1 for output in config.method.outputs if not output.rename)
         if n_out > 0 and '{output' not in cmd:
             logger.critical("Merging command does not specify '{output}' (or '{outputs[#]}')")
             sys.exit(1)
 
-    # Make sure stage-2 merging only produces 1 output
-    for idx, output in enumerate(config.merging['method']['outputs']):
-        if 'method' in output:
-            method2 = match_method(name=output['method'])
+    # Check for issues with the merging outputs, and add any additional dependencies
+    for idx, output in enumerate(config.method.outputs):
+        if output.checklist:
+            deps.add(io_utils.find_file(output.checklist, ["config", "src"], recursive=True))
+        if output.pass2:
+            method2 = match_method(name=output.pass2)
             if method2 is None:
-                logger.critical("Output %d has unknown merging method '%s'", idx, output['method'])
+                logger.critical("Output %d has unknown merging method '%s'", idx, output.method)
                 sys.exit(1)
-            if len(method2['outputs']) != 1:
+            if len(method2.outputs) != 1:
                 logger.critical("Output %d merging method '%s' must produce exactly 1 output!",
-                                idx, output['method'])
+                                idx, output.method)
                 sys.exit(1)
-        elif len(config.merging['method']['outputs']) != 1:
+            if method2.script:
+                deps.add(io_utils.find_runner(method2.script))
+            if method2.cfg:
+                deps.add(io_utils.find_cfg(method2.cfg))
+        elif len(config.method.outputs) != 1:
             logger.critical("Output %d must specify a merging method for stage-2 merges!", idx)
             sys.exit(1)
+
+    # Convert dependencies set back to a list and store in config
+    config.method.dependencies = list(deps)
 
     # Log final merging method configuration
     log_method()
 
-def make_names(files: dict) -> str:
+def make_names(files: list):
     """
     Update merging method and create a name for the merged files.
 
-    :param files: set of files to merge
-    :return: merged file name
+    :param files: list of files to merge
     """
     check_method(files)
     metadata = merged_keys(files, warn=True) # recalculate with correct method settings
     # Set output namespaces if they are not given
-    if not config.output.get('namespace'):
-        config.output['namespace'] = next(iter(files.values())).namespace
-    if not config.output['scratch'].get('namespace'):
-        config.output['scratch']['namespace'] = config.output['namespace']
-    name_dict = MetaNameDict(metadata)
-    name = name_dict.format(config.output['name'])
-    config.output['name'] = name
-    for output in config.merging['method']['outputs']:
-        #name, ext = os.path.splitext(name_dict.format(output['name']))
-        #output['name'] = f"{name}_{config.timestamp}{ext}"
-        output['name'] = name_dict.format(output['name'])
+    if not config.output.namespace:
+        config.output.namespace = files[0].namespace
+    if not config.output.scratch.namespace:
+        config.output.scratch.namespace = config.output.namespace
+    # Format output file names
+    formatter = naming.Formatter(metadata)
+    if '{UUID}' in config.output.name:
+        logger.critical("File {UUID} should go in merging.method.outputs, not output.name")
+        sys.exit(1)
+    formatter.format(config.output.name)
+    for idx, output in enumerate(config.method.outputs):
+        missing_field = False
+        for field in ['{NAME}', '{UUID}']:
+            if field not in output.name:
+                logger.critical("Output %d name must contain '%s'", idx, field)
+                missing_field = True
+        if missing_field:
+            sys.exit(1)
+        formatter.format(output.name, defer_uuid=True)
     io_utils.log_list(
         "Output file name{s}:",
-        [output['name'] for output in config.merging['method']['outputs']],
+        [output.name for output in config.method.outputs],
         logging.INFO
     )
+    # Format any other strings in the config that may use metadata keys
+    while config.string_keys:
+        key_name = config.string_keys.pop()
+        skip = False
+        for prefix in ['method.cmd', 'method.defaults', 'naming', 'metadata']:
+            if key_name.startswith(prefix):
+                skip = True
+                break
+        if skip:
+            continue
+        key = config.get_key(key_name)
+        if not key:
+            continue
+        formatter.format(key)
