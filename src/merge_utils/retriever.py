@@ -8,6 +8,7 @@ import json
 import asyncio
 from abc import ABC, abstractmethod
 import collections
+from dataclasses import dataclass
 
 from typing import AsyncGenerator, Generator
 
@@ -16,6 +17,24 @@ from merge_utils.merge_set import MergeSet, MergeChunk
 from merge_utils.metacat_utils import MetaCatWrapper
 
 logger = logging.getLogger(__name__)
+
+@dataclass
+class InputBatch:
+    """Class representing a batch of input file data, starting at a specific skip index."""
+    skip: int
+    files: list = None
+
+    def __post_init__(self):
+        if self.files is None:
+            self.files = []
+
+    def __len__(self):
+        """Return the number of files in the batch."""
+        return len(self.files)
+
+    def __iter__(self):
+        """Iterate over the files in the batch."""
+        return iter(self.files)
 
 class MetaRetriever(ABC):
     """Base class for retrieving metadata from a source"""
@@ -38,43 +57,36 @@ class MetaRetriever(ABC):
         await self.client.connect()
 
     @abstractmethod
-    async def get_metadata(self, skip: int, limit: int) -> list:
+    async def get_metadata(self, batch: InputBatch, limit: int) -> list:
         """
         Asynchronously retrieve metadata for a specific batch of files.
 
-        :param skip: number of files to skip
+        :param batch: empty InputBatch object with the skip index set
         :param limit: maximum number of files to retrieve
         :return: list of file metadata dictionaries
         """
         # retrieve specific batch
 
-    async def load_cache(self, idx: int) -> list:
+    async def get_batch(self, getter: callable, batch: InputBatch, **kwargs) -> InputBatch:
         """
-        Load a cached batch of file metadata from disk.
+        Asynchronously retrieve a batch of input data, with caching.
 
-        :param idx: batch number to load
-        :return: list of file metadata dictionaries if cache exists, else None
+        :param getter: function to call to retrieve inputs
+        :param batch: InputBatch object to retrieve data for
+        :param kwargs: additional arguments to pass to getter
+        :return: list of file dictionaries
         """
-        path = os.path.join(self.dir, f"batch_{idx}.json")
-        if os.path.exists(path):
-            logger.debug("Loading cached %s input batch %d", self.name, idx)
-            json_dict = io_utils.read_config_file(path)
-            files = json_dict.get('files', [])
-            return files
-        return None
-
-    async def save_cache(self, idx: int, files: list) -> None:
-        """
-        Save a batch of file metadata to a cache file.
-
-        :param idx: batch number to save
-        :param files: list of file metadata dictionaries to save
-        """
-        logger.debug("Saving cached %s input batch %d", self.name, idx)
-        path = os.path.join(self.dir, f"batch_{idx}.json")
-        json_dict = {'files': files}
-        with open(path, 'w', encoding="utf-8") as f:
-            f.write(json.dumps(json_dict, indent=2))
+        skip = batch.skip
+        cache = os.path.join(self.dir, f"batch_{skip}.json")
+        if os.path.exists(cache):
+            logger.debug("Loading cached %s input batch %d", self.name, skip)
+            files = io_utils.read_config_file(cache).get('files', [])
+        else:
+            logger.debug("Retrieving new %s input batch %d", self.name, skip)
+            files = await getter(batch=batch, **kwargs)
+            with open(cache, 'w', encoding="utf-8") as f:
+                f.write(json.dumps({'files': files}, indent=2))
+        return InputBatch(skip=skip, files=files)
 
     async def check_existence(self, files: list) -> None:
         """
@@ -146,41 +158,46 @@ class MetaRetriever(ABC):
         if missing:
             io_utils.log_list("MetaCat missing {n} grandparent record{s}:", missing, logging.ERROR)
 
-    async def input_batches(self) -> AsyncGenerator[tuple[int, dict], None]:
+    async def input_batches(self) -> AsyncGenerator[InputBatch, None]:
         """
-        Asynchronously retrieve metadata for the next batch of files.
+        Asynchronously retrieve input file metadata in batches.
 
-        :return: tuple of (skip, dict of MergeFile objects that were added)
+        :return: InputBatch object containing skip index and list of MergeFile objects
         """
         skip0 = int(config.input.skip or 0)
         skip = skip0
         step = int(config.validation.batch_size)
+        batch = None
+        task = None
         while True:
-            # Determine file limit for this batch
+            # Determine file limit for next batch
             limit = step
             if config.input.limit:
                 limit = min(limit, config.input.limit + skip0 - skip)
-                if limit <= 0:
-                    break
-            # Retrieve batch, using cache if available
-            batch = await self.load_cache(skip)
-            if batch is None:
-                logger.debug("Retrieving %s input batch %d", self.name, skip)
-                batch = await self.get_metadata(skip, limit)
-                if config.output.grandparents:
-                    await self.check_parents(batch)
-                await self.save_cache(skip, batch)
-            # If no files were retrieved, we're done
-            if len(batch) == 0:
-                break
-            # Add files to merge set
-            added = await asyncio.to_thread(self.files.add, batch)
-            yield (skip, added)
-            # If the last batch was a partial batch, we're done
-            if len(batch) < step:
-                break
+            # Get previous batch to process, if we have a request in flight
+            if task is not None:
+                batch = await task
+            task = None
+            # Start request for next batch
+            if limit > 0:
+                req = InputBatch(skip=skip)
+                task = asyncio.create_task(self.get_batch(self.get_metadata, req, limit=limit))
             # Increment skip for next batch
             skip += step
+            # Process previous batch while we wait, if we have one
+            if batch is None:
+                continue
+            logger.debug("Processing new %s input batch %d", self.name, batch.skip)
+            # Add file to merge set, and yield if we added any
+            added = await asyncio.to_thread(self.files.add, batch.skip, batch.files)
+            if added:
+                yield InputBatch(skip=batch.skip, files=added)
+            # If the last batch was a partial batch, we're done
+            if len(batch) < limit:
+                # If we started a request for the next batch, wait for it to finish
+                if task is not None:
+                    await task
+                break
 
     async def _loop(self) -> None:
         """Repeatedly get input_batches until all files are retrieved."""
@@ -212,15 +229,15 @@ class QueryRetriever(MetaRetriever):
         super().__init__('mc_query')
         self.query = query
 
-    async def get_metadata(self, skip: int, limit: int) -> list:
+    async def get_metadata(self, batch: InputBatch, limit: int) -> list:
         """
         Asynchronously query MetaCat for a specific batch of files
 
-        :param skip: number of files to skip
+        :param batch: InputBatch object with skip index set
         :param limit: maximum number of files to retrieve
         :return: list of file metadata dictionaries
         """
-        query_batch = self.query + f" skip {skip} limit {limit}"
+        query_batch = self.query + f" skip {batch.skip} limit {limit}"
         return await self.client.query(query_batch, metadata = True,
                                        provenance = config.output.grandparents)
 
@@ -287,14 +304,15 @@ class DidRetriever(MetaRetriever):
             sys.exit(1)
         return dupes
 
-    async def get_metadata(self, skip: int, limit: int) -> list:
+    async def get_metadata(self, batch: InputBatch, limit: int) -> list:
         """
         Asynchronously request a batch of DIDs from MetaCat
 
-        :param skip: number of files to skip
+        :param batch: InputBatch object with skip index set
         :param limit: maximum number of files to retrieve
         :return: list of file metadata dictionaries
         """
+        skip = batch.skip
         dids = self.dids[skip:skip+limit]
         if len(dids) == 0:
             logger.debug("No DIDs to request for skip=%d, limit=%d", skip, limit)
@@ -306,7 +324,7 @@ class DidRetriever(MetaRetriever):
         for idx, did in enumerate(dids):
             namespace, name = did.split(':')
             placeholder = {'namespace': namespace, 'name': name}
-            if (skip + idx) in self.dupes:
+            if skip+idx in self.dupes:
                 logger.debug("Skipping duplicate DID: %s", did)
                 placeholder['duplicate'] = True
             else:
@@ -343,41 +361,56 @@ class PathFinder(MetaRetriever):
         # connect to source
         await self.meta.connect()
 
-    async def get_metadata(self, skip: int, limit: int) -> list:
+    async def get_metadata(self, batch: InputBatch, limit: int) -> list:
         raise NotImplementedError("PathFinder does not implement get_metadata")
 
     @abstractmethod
-    async def get_paths(self, files: dict) -> list:
+    async def get_paths(self, batch: InputBatch) -> list:
         """
         Asynchronously retrieve paths for a specific batch of files.
 
-        :param files: dictionary of files to retrieve paths for
+        :param batch: InputBatch object containing files to retrieve paths for
         :return: list of file path dictionaries
         """
         # retrieve paths for specific batch
 
     @abstractmethod
-    async def process(self, files: dict, paths: list) -> None:
+    async def set_paths(self, batch: InputBatch, paths: list) -> None:
         """
-        Process a batch of files to assign paths.
+        Asynchronously set paths for a specific batch of files.
         
-        :param files: dictionary of files to process
+        :param batch: InputBatch object containing files to process
+        :param paths: list of file path dictionaries to use for setting paths
         """
         # process files to find paths
 
-    async def input_batches(self) -> AsyncGenerator[tuple[int, dict], None]:
+    async def input_batches(self) -> AsyncGenerator[InputBatch, None]:
         """
         Asynchronously retrieve paths for the next batch of files.
 
-        :return: tuple of (skip, dict of MergeFile objects that were processed)
+        :return: InputBatch object containing skip index and list of MergeFile objects
         """
-        async for skip, batch in self.meta.input_batches():
-            # Retrieve paths, using cache if available
-            paths = await self.load_cache(skip)
-            if paths is None:
-                logger.debug("Retrieving %s input batch %d", self.name, skip)
-                good_files = {did: file for did, file in batch.items() if not file.errors}
-                paths = await self.get_paths(good_files)
-                await self.save_cache(skip, paths)
-            await self.process(batch, paths)
-            yield (skip, batch)
+        batch = None
+        task = None
+        paths = None
+        async for new_batch in self.meta.input_batches():
+            # Get paths for previous batch, if we have a request in flight
+            if task is not None:
+                paths = await task
+            # Start request for next batch
+            task = asyncio.create_task(self.get_batch(self.get_paths, new_batch))
+            # Process previous batch while we wait, if we have one
+            if batch is not None:
+                await self.set_paths(batch, paths)
+                good_files = [f for f in batch if not f.errors]
+                if good_files:
+                    yield InputBatch(skip=batch.skip, files=good_files)
+            # Save new batch for next iteration
+            batch = new_batch
+        # Process last batch
+        if batch is not None:
+            paths = await task
+            await self.set_paths(batch, paths)
+            good_files = [f for f in batch if not f.errors]
+            if good_files:
+                yield InputBatch(skip=batch.skip, files=good_files)
