@@ -16,7 +16,7 @@ from merge_utils import io_utils, config, meta
 logger = logging.getLogger(__name__)
 
 class MergeFileError(enum.Flag):
-    """Enumeration of possible file errors"""
+    """Enumeration of possible file error flags"""
     DUPLICATE    = enum.auto()
     MISSING      = enum.auto()
     UNDECLARED   = enum.auto()
@@ -182,7 +182,7 @@ class MergeSet:
     """Class to keep track of a set of files for merging"""
 
     def __init__(self):
-        self.files = []
+        self._files = []
         self.start_idx = config.input.skip or 0
         self.dids = {}
         self.good = {}
@@ -190,9 +190,9 @@ class MergeSet:
         self.consistent_fields = None
 
     @property
-    def good_files(self) -> list:
-        """List of MergeFile objects for files without errors"""
-        return [self.files[idx] for idx in self.good.values()]
+    def end_idx(self) -> int:
+        """Get the index of the end of the set (one past the last file)"""
+        return self.start_idx + len(self._files)
 
     def get_by_idx(self, idx: int) -> MergeFile | None:
         """
@@ -201,10 +201,12 @@ class MergeSet:
         :param idx: index of the file
         :return: MergeFile object or None if not found
         """
+        if idx < 0:
+            raise IndexError("MergeSet indices must be non-negative")
         idx -= self.start_idx
-        if idx < 0 or idx >= len(self.files):
+        if idx < 0 or idx >= len(self._files):
             return None
-        return self.files[idx]
+        return self._files[idx]
 
     def get_by_did(self, did: str) -> MergeFile | None:
         """
@@ -215,8 +217,98 @@ class MergeSet:
         """
         idx = self.dids.get(did, None)
         if idx is None:
-            return None
-        return self.files[idx]
+            raise KeyError(f"Unknown file DID: {did}")
+        return self._files[idx - self.start_idx]
+
+    def get_slice(self, start: int = None, end: int = None, step: int = None) -> list[MergeFile]:
+        """
+        Get a slice of files by their indices.
+
+        :param start: starting index of the slice
+        :param end: ending index of the slice (exclusive)
+        :param step: step size for the slice
+        :return: list of MergeFile objects or None for missing indices
+        """
+        start = start or self.start_idx
+        end = end or self.end_idx
+        step = step or 1
+        if start < 0 or end < 0:
+            raise IndexError("MergeSet indices must be non-negative")
+        files = []
+        for idx in range(start, end, step):
+            file = self.get_by_idx(idx)
+            if file is not None:
+                files.append(file)
+        return files
+
+    def insert(self, idx: int, file: MergeFile = None) -> None:
+        """
+        Insert a file at the specified index.
+
+        :param idx: index of the file
+        :param file: MergeFile object to set at the index
+        """
+        # Index must be non-negative
+        if idx < 0:
+            raise IndexError(f"Index {idx} is out of bounds for setting file")
+        # If the index is before the start index, shift the existing files and pad with None
+        if idx < self.start_idx:
+            pad = self.start_idx - idx - 1
+            logger.debug("Shifting MergeSet start by %d to add file at index %d", pad + 1, idx)
+            self._files = [file] + [None]*pad + self._files
+            self.start_idx = idx
+        # If the index is beyond the current list, extend the list and pad with None
+        elif idx >= self.end_idx:
+            pad = idx - self.end_idx
+            logger.debug("Extending MergeSet end by %d to add file at index %d", pad + 1, idx)
+            self._files.extend([None]*pad + [file])
+        # Otherwise, just set the file at the index
+        else:
+            old_file = self._files[idx - self.start_idx]
+            if old_file is not None:
+                raise IndexError(f"MergeSet index {idx} already contains file {old_file.did}")
+            logger.debug("Inserting file into MergeSet at index %d", idx)
+            self._files[idx - self.start_idx] = file
+        # Add to the DID index if the file is not None and not a duplicate
+        if file is None:
+            return
+        did = file.did
+        if did in self.dids:
+            file.errors |= MergeFileError.DUPLICATE
+        else:
+            self.dids[did] = idx
+        # Check for errors and update good files
+        if file.errors:
+            self.errors |= file.errors
+            return
+        self.good[did] = idx
+        # Check for consistency
+        if self.consistent_fields is None:
+            self.consistent_fields = file.get_fields(config.metadata.consistent)
+        elif MergeFileError.INCONSISTENT not in self.errors:
+            if file.get_fields(config.metadata.consistent) != self.consistent_fields:
+                self.errors |= MergeFileError.INCONSISTENT
+
+    def add(self, skip: int, files: Iterable) -> list:
+        """
+        Add a batch of files to the set.
+
+        :param files: collection of dictionaries with file metadata
+        :return: list of MergeFile objects that were added without errors
+        """
+        new_files = []
+        for idx, file in enumerate(files, start=skip):
+            new_file = MergeFile(file)
+            self.insert(idx, new_file)
+            if not new_file.errors:
+                new_files.append(new_file)
+        logger.info("Added %d valid files from batch %d", len(new_files), skip)
+        return new_files
+
+    @property
+    def good_files(self) -> list:
+        """List of MergeFile objects for files without errors"""
+        return [f for f in self._files if f and not f.errors]
 
     def set_error(self, dids: Iterable[str], error: MergeFileError) -> None:
         """
@@ -230,59 +322,13 @@ class MergeSet:
         err_count = 0
         for did in dids:
             file = self.get_by_did(did)
-            if file:
-                file.errors |= error
-                self.good.pop(did, None)
-                err_count += 1
+            file.errors |= error
+            self.good.pop(did, None)
+            err_count += 1
         if err_count > 0:
             logger.debug("Flagged %d file%s as %s",
                          err_count, "s" if err_count != 1 else "", error.name.lower())
             self.errors |= error
-
-    def add_file(self, file: dict) -> MergeFile:
-        """
-        Add a file to the set.
-
-        :param file: A dictionary with file metadata
-        :return: the added MergeFile object
-        """
-        # Convert to MergeFile and add to the list
-        file = MergeFile(file)
-        idx = len(self.files)
-        self.files.append(file)
-        # Add to the DID index unless it's a duplicate
-        did = file.did
-        if did in self.dids:
-            file.errors |= MergeFileError.DUPLICATE
-        else:
-            self.dids[did] = idx
-        # Check for errors and update good files
-        if file.errors:
-            self.errors |= file.errors
-            return file
-        self.good[did] = idx
-        # Check for consistency
-        if self.consistent_fields is None:
-            self.consistent_fields = file.get_fields(config.metadata.consistent)
-        elif MergeFileError.INCONSISTENT not in self.errors:
-            if file.get_fields(config.metadata.consistent) != self.consistent_fields:
-                self.errors |= MergeFileError.INCONSISTENT
-        return file
-
-    def add(self, files: Iterable) -> dict:
-        """
-        Add a batch of files to the set.
-
-        :param files: collection of dictionaries with file metadata
-        :return: dict of MergeFile objects that were added without errors
-        """
-        new_files = {}
-        for file in files:
-            new_file = self.add_file(file)
-            if not new_file.errors:
-                new_files[new_file.did] = new_file
-        logger.info("Added %d valid files", len(new_files))
-        return new_files
 
     def check_consistency(self) -> list[str]:
         """
@@ -294,7 +340,7 @@ class MergeSet:
         checked_fields = config.metadata.consistent
         groups = collections.defaultdict(list)
         for did, idx in self.good.items():
-            file = self.files[idx]
+            file = self.get_by_idx(idx)
             groups[file.get_fields(checked_fields)].append((did, idx))
         # Find the largest consistent group
         groups = sorted(groups.items(), key=lambda k: len(k[1]), reverse=True)
@@ -316,7 +362,7 @@ class MergeSet:
             msg.append(f"Group {gid} ({len(group)} file{'s' if len(group) > 1 else ''}):")
             for did, idx in group:
                 msg.append(f"  {did}")
-                self.files[idx].errors |= MergeFileError.INCONSISTENT
+                self.get_by_idx(idx).errors |= MergeFileError.INCONSISTENT
             msg.append(f"Group {gid} metadata inconsistencies:")
             for field, good_val, bad_val in zip(field_names, self.consistent_fields, fields):
                 if good_val == bad_val:
@@ -355,13 +401,13 @@ class MergeSet:
             if err == MergeFileError.INCONSISTENT:
                 logger.log(lvl, '\n  '.join(inconsistencies))
                 continue
-            err_dids = [file.did for file in self.files if file.errors.first() == err]
+            err_dids = [file.did for file in self._files if file.errors.first() == err]
             io_utils.log_list(ERROR_MESSAGES[err.name.lower()], err_dids, lvl)
         # Quit if needed
         if abort:
             io_utils.log_nonzero(
                 "Found {n} total file{s} with critical errors!",
-                sum(1 for file in self.files if file.errors.first in critical_errors),
+                sum(1 for file in self._files if file.errors.first in critical_errors),
                 logging.CRITICAL
             )
             sys.exit(1)
@@ -406,7 +452,7 @@ class MergeSet:
         :return: List of group divisions
         """
         # Get sizes of input files
-        sizes = [self.files[i].size for i in indices]
+        sizes = [self.get_by_idx(i).size for i in indices]
         count = sum(1 for size in sizes if size)
         total = sum(size for size in sizes if size)
         avg = total / count
@@ -468,11 +514,13 @@ class MergeSet:
         # Finish expanding all names before making groups
         meta.make_names(self.good_files)
         # Get indices of files that should count towards grouping
-        start = config.input.skip - self.start_idx if config.input.skip else 0
-        end = start + config.input.limit if config.input.limit else len(self.files)
-        if start != 0 or end != len(self.files):
-            logger.debug("Grouping subset of files with idx from %d to %d", start, end)
-        indices = [i for i, f in enumerate(self.files[start:end], start) if f.errors.group]
+        start = config.input.skip or self.start_idx
+        end = start + config.input.limit if config.input.limit else self.end_idx
+        indices = []
+        for i in range(start, end):
+            file = self.get_by_idx(i)
+            if file and file.errors.group:
+                indices.append(i)
         # Get the group divisions
         if len(indices) == 0:
             logger.critical("No files to group")
@@ -487,15 +535,15 @@ class MergeSet:
         # Check if we have a single output group
         if len(divs) == 0:
             group = MergeChunk(config.input.skip.value, config.input.limit.value,
-                               self.files[start:end])
-            logger.debug("Yielding single group with %d files", len(group))
+                               self.get_slice(start, end))
+            logger.debug("Yielding single group with %d good files", len(group))
             yield group
             return
         # Otherwise, yield groups with appropriate skip and limit
         small_groups = False
         for gid, div in enumerate(divs):
             div = indices[div]
-            group = MergeChunk(self.start_idx + start, div - start, self.files[start:div])
+            group = MergeChunk(start, div - start, self.get_slice(start, div))
             start = div
             if len(group) < config.grouping.chunk_min:
                 small_groups = True
@@ -505,7 +553,7 @@ class MergeSet:
             logger.debug("Yielding group %d with %d good files", gid, len(group))
             yield group
         # Yield the final group
-        group = MergeChunk(self.start_idx + start, end - start, self.files[start:end])
+        group = MergeChunk(start, end - start, self.get_slice(start, end))
         if len(group) == 0:
             logger.warning("Skipping group %d with 0 good files", len(divs))
         else:
