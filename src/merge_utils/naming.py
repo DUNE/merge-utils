@@ -318,12 +318,12 @@ class Formatter:
         if self.errors:
             io_utils.log_list(
                 f"Error evaluating condition expression '{condition}':",
-                self.errors, logging.CRITICAL)
-            sys.exit(1)
+                self.errors, logging.ERROR)
+            return False
         try:
             val = eval(expr) #pylint: disable=eval-used
         except Exception as exc:
-            logger.critical("Error evaluating condition expression '%s':\n  %s", expr, exc)
-            sys.exit(1)
+            logger.error("Error evaluating condition expression '%s':\n  %s", expr, exc)
+            return False
         logger.debug("Condition expression '%s' evaluated to '%s'", expr, val)
         return val
