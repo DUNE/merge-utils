@@ -11,12 +11,13 @@ logger = logging.getLogger(__name__)
 
 SITE_STORAGE_URL = "/api/info/sites_storages.csv"
 
-async def get_site_rse_distances(valid_rses: set = None) -> dict:
+async def get_site_rse_distances() -> dict:
     """
     Retrieve site-RSE distances from the JustIN web API.
+    Adds site distance offsets from the config
+    Does NOT add RSE distance offsets, since those are already accounted for by the PathFinder
 
-    :param valid_rses: set of valid RSE names to consider
-    :return: dictionary of distances for each site-rse pair
+    :return: dictionary of {rse: {site: distance}} for all reachable site-RSE pairs
     """
     # Query JustIN for site-RSE distances
     try:
@@ -34,24 +35,23 @@ async def get_site_rse_distances(valid_rses: set = None) -> dict:
     text = res.iter_lines(decode_unicode=True)
     fields = ['site', 'rse', 'dist', 'site_enabled', 'rse_read', 'rse_write']
     reader = csv.DictReader(text, fields)
-    default_site_dist = config.sites.site_distances['default']
-    default_rse_dist = config.sites.rse_distances['default']
+    default_dist = config.sites.site_distances['default']
     for row in reader:
-        if not row['site_enabled'] or not row['rse_read']:
+        # Skip disabled sites and RSEs with no read/write access
+        if not row['site_enabled']:
+            continue
+        if not row['rse_read'] and not row['rse_write']:
             continue
         # Get site distance offset
         site = row['site']
-        site_dist = config.sites.site_distances.get(site, default_site_dist)
+        site_dist = config.sites.site_distances.get(site, default_dist)
         if site_dist > config.sites.max_distance:
             continue
-        # Get RSE distance offset
+        # Get total distance
+        distance = 100*float(row['dist']) + site_dist
         rse = row['rse']
-        if valid_rses is not None and rse not in valid_rses:
-            continue
-        rse_dist = config.sites.rse_distances.get(rse, default_rse_dist)
-        if rse_dist > config.sites.max_distance:
-            continue
-        # Compute total distance
-        dist = 100*float(row['dist']) + site_dist + rse_dist
-        distances[(site, rse)] = dist
+        if rse in distances:
+            distances[rse][site] = distance
+        else:
+            distances[rse] = {site: distance}
     return distances
