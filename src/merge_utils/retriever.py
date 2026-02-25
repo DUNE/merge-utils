@@ -21,12 +21,16 @@ logger = logging.getLogger(__name__)
 @dataclass
 class InputBatch:
     """Class representing a batch of input file data, starting at a specific skip index."""
-    skip: int
+    skip: int = -1
     files: list = None
 
     def __post_init__(self):
         if self.files is None:
             self.files = []
+
+    def __bool__(self):
+        """Return True if the batch contains any files."""
+        return len(self.files) > 0
 
     def __len__(self):
         """Return the number of files in the batch."""
@@ -38,10 +42,11 @@ class InputBatch:
 
 class MetaRetriever(ABC):
     """Base class for retrieving metadata from a source"""
+    name: str = "metadata"
+    file_owner: bool = True
 
-    def __init__(self, name, file_owner: bool = True):
-        self.name = name
-        if file_owner:
+    def __init__(self):
+        if self.file_owner:
             self._files = MergeSet()
         self.dir = os.path.join(str(config.job.dir), 'cache', self.name)
         os.makedirs(self.dir, exist_ok=True)
@@ -167,16 +172,15 @@ class MetaRetriever(ABC):
         skip0 = int(config.input.skip or 0)
         skip = skip0
         step = int(config.validation.batch_size)
-        batch = None
         task = None
         while True:
             # Determine file limit for next batch
             limit = step
             if config.input.limit:
                 limit = min(limit, config.input.limit + skip0 - skip)
+            print(limit)
             # Get previous batch to process, if we have a request in flight
-            if task is not None:
-                batch = await task
+            batch = await task if task is not None else None
             task = None
             # Start request for next batch
             if limit > 0:
@@ -193,11 +197,13 @@ class MetaRetriever(ABC):
             if added:
                 yield InputBatch(skip=batch.skip, files=added)
             # If the last batch was a partial batch, we're done
-            if len(batch) < limit:
+            if len(batch) < step:
                 # If we started a request for the next batch, wait for it to finish
                 if task is not None:
                     await task
                 break
+        # Yield empty batch to signal completion
+        yield InputBatch()
 
     async def _loop(self) -> None:
         """Repeatedly get input_batches until all files are retrieved."""
@@ -219,6 +225,7 @@ class MetaRetriever(ABC):
 
 class QueryRetriever(MetaRetriever):
     """Class for retrieving metadata from MetaCat using an MQL query."""
+    name = "metacat_query"
 
     def __init__(self, query: str):
         """
@@ -226,7 +233,7 @@ class QueryRetriever(MetaRetriever):
 
         :param query: MQL query to find files
         """
-        super().__init__('mc_query')
+        super().__init__()
         self.query = query
 
     async def get_metadata(self, batch: InputBatch, limit: int) -> list:
@@ -243,6 +250,7 @@ class QueryRetriever(MetaRetriever):
 
 class DidRetriever(MetaRetriever):
     """Class for retrieving metadata from MetaCat using a list of DIDs."""
+    name: str = "metacat_dids"
 
     def __init__(self, dids: list, dupes: set = None):
         """
@@ -251,7 +259,7 @@ class DidRetriever(MetaRetriever):
         :param dids: list of file DIDs to find
         :param dupes: set of indices of duplicate DIDs
         """
-        super().__init__('mc_dids')
+        super().__init__()
         self.dids = dids
         self.check_namespaces()
         self.dupes = dupes if dupes is not None else self.check_duplicates()
@@ -275,7 +283,7 @@ class DidRetriever(MetaRetriever):
             if count < len(self.dids):
                 logger.warning("Some DIDs missing namespaces, assuming shared namespace '%s'", ns)
                 self.dids = [f"{ns}:{did}" if ':' not in did else did for did in self.dids]
-        elif config.validation.error_handling.inconsistent == 'quit':
+        elif config.validation.handling.inconsistent == 'quit':
             io_utils.log_list("DID list contains multiple namespaces:",
                               namespaces, logging.CRITICAL)
             sys.exit(1)
@@ -298,7 +306,7 @@ class DidRetriever(MetaRetriever):
             if did in seen:
                 dupes.add(idx)
             seen.add(did)
-        if dupes and config.validation.error_handling.duplicate == 'quit':
+        if dupes and config.validation.handling.duplicate == 'quit':
             io_utils.log_list("DID list contains {n} duplicate file{s}:",
                               list(self.dupes), logging.CRITICAL)
             sys.exit(1)
@@ -345,9 +353,11 @@ class DidRetriever(MetaRetriever):
 
 class PathFinder(MetaRetriever):
     """Base class for finding paths to files"""
+    name: str = "replicas"
+    file_owner: bool = False
 
-    def __init__(self, name: str, meta: MetaRetriever):
-        super().__init__(name, file_owner=False)
+    def __init__(self, meta: MetaRetriever):
+        super().__init__()
         self.meta = meta
         self.client = None
 
@@ -392,25 +402,21 @@ class PathFinder(MetaRetriever):
         """
         batch = None
         task = None
-        paths = None
         async for new_batch in self.meta.input_batches():
             # Get paths for previous batch, if we have a request in flight
-            if task is not None:
-                paths = await task
+            paths = await task if task is not None else None
+            task = None
             # Start request for next batch
-            task = asyncio.create_task(self.get_batch(self.get_paths, new_batch))
+            if new_batch:
+                task = asyncio.create_task(self.get_batch(self.get_paths, new_batch))
             # Process previous batch while we wait, if we have one
-            if batch is not None:
+            if batch:
+                logger.debug("Processing new %s input batch %d", self.name, batch.skip)
                 await self.set_paths(batch, paths)
                 good_files = [f for f in batch if not f.errors]
                 if good_files:
                     yield InputBatch(skip=batch.skip, files=good_files)
-            # Save new batch for next iteration
+            # Save new batch for processing in the next iteration
             batch = new_batch
-        # Process last batch
-        if batch is not None:
-            paths = await task
-            await self.set_paths(batch, paths)
-            good_files = [f for f in batch if not f.errors]
-            if good_files:
-                yield InputBatch(skip=batch.skip, files=good_files)
+        # Yield empty batch to signal completion
+        yield InputBatch()

@@ -109,7 +109,7 @@ def validate(name: str, metadata: dict, requirements: bool = True) -> bool:
         errs.append(f"Invalid type for {key}: {value} (expected {expected_type})")
 
     if errs:
-        crit = config.validation.error_handling.invalid == 'quit'
+        crit = config.validation.handling.invalid == 'quit'
         lvl = logging.CRITICAL if crit else logging.ERROR
         io_utils.log_list("File %s has {n} invalid metadata key{s}:" % name, errs, lvl)
         return False

@@ -5,7 +5,7 @@ import os
 import sys
 
 from merge_utils import io_utils, config
-from merge_utils.retriever import MetaRetriever, PathFinder, DidRetriever
+from merge_utils.retriever import MetaRetriever, PathFinder, DidRetriever, InputBatch
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def get_local_files(files: list, dirs: list) -> PathFinder:
         else:
             paths[idx] = str(path)
     if dupes:
-        if config.validation.error_handling.duplicate == 'quit':
+        if config.validation.handling.duplicate == 'quit':
             io_utils.log_list("Found {n} duplicate input file{s}:", list(dupes), logging.CRITICAL)
             sys.exit(1)
         io_utils.log_list("Ignoring {n} duplicate input file{s}:", list(dupes), logging.ERROR)
@@ -113,6 +113,7 @@ def get_local_files(files: list, dirs: list) -> PathFinder:
 
 class LocalMetaRetriever(MetaRetriever):
     """MetaRetriever for local files"""
+    name = "local_meta"
 
     def __init__(self, names: list, paths: list, dupes: set = None):
         """
@@ -121,21 +122,22 @@ class LocalMetaRetriever(MetaRetriever):
         :param names: list of input file names
         :param paths: list of metadata file paths
         """
-        super().__init__("local_meta")
+        super().__init__()
 
         self.names = names
         self.paths = paths
         self.dupes = dupes or set()
 
-    async def get_metadata(self, skip: int, limit: int) -> list:
+    async def get_metadata(self, batch: InputBatch, limit: int) -> list:
         """
         Asynchronously retrieve metadata for a specific batch of files.
 
-        :param skip: number of files to skip
+        :param batch: InputBatch object containing skip index and list of file names
         :param limit: maximum number of files to retrieve
         :return: list of file metadata dictionaries
         """
         files = []
+        skip = batch.skip
         end = min(skip + limit, len(self.names))
         namespace = str(config.input.namespace)
         missing = {}
@@ -172,6 +174,7 @@ class LocalMetaRetriever(MetaRetriever):
 
 class LocalPathFinder(PathFinder):
     """PathFinder for local files"""
+    name = "local_data"
 
     def __init__(self, source: MetaRetriever, files: dict = None, dirs: list = None):
         """
@@ -181,38 +184,39 @@ class LocalPathFinder(PathFinder):
         :param files: dictionary of metadata file names and paths
         :param dirs: list of directories to search for data files
         """
-        super().__init__('local_data', source)
+        super().__init__(source)
 
         self.paths = files or {}
         self.dirs = dirs or []
 
-    async def get_paths(self, files: dict) -> list:
+    async def get_paths(self, batch: InputBatch) -> list:
         """
         Asynchronously retrieve paths for a specific batch of files.
 
-        :param files: dictionary of files to retrieve paths for
+        :param batch: InputBatch object containing list of files to retrieve paths for
         :return: list of file path dictionaries
         """
         paths = []
-        for file in files.values():
+        for file in batch.files:
             name = file.name
             path = self.paths.get(name, None)
             if path is not None:
                 paths.append({name: path})
         return paths
 
-    async def process(self, files: dict, paths: list) -> None:
+    async def set_paths(self, batch: InputBatch, paths: list) -> None:
         """
-        Process a batch of files to assign paths.
+        Asynchronously set paths for a specific batch of files.
         
-        :param files: dictionary of files to process
+        :param batch: InputBatch object containing files to process
+        :param paths: list of file path dictionaries to use for setting paths
         """
         path_dict = {}
         for path in paths:
             path_dict.update(path)
 
         unreachable = []
-        for file in files.values():
+        for file in batch.files:
             name = file.name
             path = path_dict.get(name, None)
             if path is None:
@@ -224,7 +228,7 @@ class LocalPathFinder(PathFinder):
                     continue
             file.paths = get_xrootd_path(path)
 
-        crit = config.validation.error_handling.unreachable == 'quit'
+        crit = config.validation.handling.unreachable == 'quit'
         lvl = logging.CRITICAL if crit else logging.ERROR
         io_utils.log_list("Failed to locate {n} file path{s}:", unreachable, lvl)
         self.files.set_unreachable(unreachable)

@@ -35,7 +35,7 @@ class MergeFileError(enum.Flag):
         """Get the error handling method from the configuration"""
         if self == MergeFileError(0):
             return 'good'
-        return config.validation.error_handling[self.first.name.lower()]
+        return config.validation.handling[self.first.name.lower()]
 
     @property
     def group(self) -> str:
@@ -47,7 +47,7 @@ class MergeFileError(enum.Flag):
         """Get the set of errors that are considered critical"""
         critical = cls(0)
         for err in cls:
-            if config.validation.error_handling[err.name.lower()] == 'quit':
+            if config.validation.handling[err.name.lower()] == 'quit':
                 critical |= err
         return critical
 
