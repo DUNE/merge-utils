@@ -40,8 +40,7 @@
                         "core.application.name": "triggerAna",
                         "core.file_format": "root",
                         "dune.campaign": "triggersim_study"
-                    },
-                   
+                    }                  
                 }
             ]
         },
