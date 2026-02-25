@@ -197,6 +197,10 @@ class MergeSet:
         """Get the index of the end of the set (one past the last file)"""
         return self.start_idx + len(self._files)
 
+    def __len__(self) -> int:
+        """Get the number of files in the set"""
+        return len([f for f in self._files if f is not None])
+
     def get_by_idx(self, idx: int) -> MergeFile | None:
         """
         Get a file by its index in the set.

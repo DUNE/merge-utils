@@ -174,7 +174,7 @@ def main():
         metadata.run()
         good_files = metadata.files.good_files
         ngood = len(good_files)
-        nerrs = len(metadata.files.files) - ngood
+        nerrs = len(metadata.files) - ngood
         io_utils.log_print(f"{ngood} inputs passed validation")
         if nerrs:
             io_utils.log_print(f"{nerrs} inputs failed validation")
@@ -191,7 +191,7 @@ def main():
         io_utils.log_print(f"Found {ngood} valid files:")
         for file in good_files:
             print(f"  {file.did}")
-        nerrs = len(metadata.files.files) - ngood
+        nerrs = len(metadata.files) - ngood
         if nerrs:
             io_utils.log_print(f"An additional {nerrs} files failed validation!")
         return
