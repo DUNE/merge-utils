@@ -5,7 +5,6 @@ import os
 import sys
 import collections
 import logging
-import subprocess
 import math
 import enum
 import copy
@@ -18,10 +17,11 @@ logger = logging.getLogger(__name__)
 class MergeFileError(enum.Flag):
     """Enumeration of possible file error flags"""
     DUPLICATE    = enum.auto()
-    MISSING      = enum.auto()
+    NO_METADATA  = enum.auto()
     UNDECLARED   = enum.auto()
     RETIRED      = enum.auto()
     INVALID      = enum.auto()
+    NO_REPLICAS  = enum.auto()
     UNREACHABLE  = enum.auto()
     INCONSISTENT = enum.auto()
 
@@ -53,11 +53,12 @@ class MergeFileError(enum.Flag):
 
 ERROR_MESSAGES = {
     'duplicate':    "Found {n} duplicated file{s}:",
-    'missing':      "Found {n} file{s} with missing metadata:",
+    'no_metadata':  "Found {n} file{s} with missing metadata:",
     'undeclared':   "Found {n} file{s} with undeclared metadata:",
     'retired':      "Found {n} retired file{s}:",
     'invalid':      "Found {n} file{s} with invalid metadata:",
-    'unreachable':  "Found {n} unreachable file{s}:"
+    'no_replicas':  "Found {n} file{s} without replicas:",
+    'unreachable':  "Found {n} file{s} without reachable replicas:"
 }
 
 class MergeFile:
@@ -122,7 +123,9 @@ class MergeFile:
             logger.error("No checksums for %s", self)
             self.errors |= MergeFileError.INVALID
             return
-        if not any(str(algo) in self.checksums for algo in config.validation.checksums):
+        algos = set(str(algo) for algo in config.validation.checksums)
+        self.checksums = {algo: csum for algo, csum in self.checksums.items() if algo in algos}
+        if len(self.checksums) == 0:
             logger.warning("No valid checksum for %s", self)
             self.errors |= MergeFileError.INVALID
             return
@@ -762,27 +765,3 @@ class MergeChunk:
         child.parent = self
         self.children.append(child)
         return child
-
-
-
-def check_remote_path(path: str, timeout: float = 5) -> bool:
-    """Check if a remote path is accessible via xrootd"""
-    components = path.split('/', 3)
-    url = '/'.join(components[0:3])
-    path = '/'+components[3]
-    cmd = ['xrdfs', url, 'ls', '-l', path]
-    try:
-        ret = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        logger.debug("Timeout accessing %s%s", url, path)
-        return False
-    if ret.returncode == 51:
-        logger.debug("Invalid xrootd server %s", url)
-        return False
-    if ret.returncode == 54:
-        logger.debug("No such file %s%s", url, path)
-        return False
-    if ret.returncode != 0:
-        logger.debug("Failed to access %s%s\n  %s", url, path, ret.stderr.strip().split(' ', 1)[1])
-        return False
-    return True
