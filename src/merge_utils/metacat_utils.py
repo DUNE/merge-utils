@@ -47,7 +47,7 @@ class MetaCatWrapper:
         """
         Asynchronously request a list of DIDs from MetaCat
 
-        :param files: list of files to find
+        :param files: list of file dicts, with either 'fid', 'did', or 'namespace' & 'name' keys
         :param metadata: whether to include metadata in the results
         :param provenance: whether to include provenance in the results
         :return: list of file metadata dictionaries
@@ -63,50 +63,3 @@ class MetaCatWrapper:
             logger.critical("%s", err)
             raise ValueError(f"MetaCat error: {err}") from err
         return list(res)
-
-def list_field_values(field: str, date: str = None, vals: list = None) -> list:
-    """
-    Get a list of all values for a given field in the MetaCat database.
-
-    :param field: field to query
-    :param date: limit results to those created after this date (yyyy-mm-dd)
-    :return: list of values for the field
-    """
-    client = metacat.MetaCatClient()
-    vals = vals or []
-    while True:
-        query = f"files where {field} present"
-        if date:
-            query = f"{query} and created_timestamp > '{date}'"
-        if vals:
-            query = f"{query} and {field} not in ('{"','".join(vals)}')"
-        res = client.query(f"{query} limit 1", with_metadata=True)
-        data = next(res, None)
-        if not data:
-            break
-        value = data['metadata'][field]
-        print(value)
-        vals.append(value)
-        #time.sleep(1)
-    return vals
-
-def list_extensions() -> list:
-    """
-    Get a list of all file extensions in the MetaCat database.
-
-    :return: list of file extensions
-    """
-    client = metacat.MetaCatClient()
-    query = "files where name ~ '\\.[a-z]' limit 1"
-    and_name = "' and name !~ '\\."
-    values = []
-    while True:
-        res = client.query(query, with_metadata=False)
-        data = next(res, None)
-        if not data:
-            break
-        ext = data['name'].split('.')[-1]
-        print(data['namespace']+":"+data['name'])
-        values.append(ext)
-        query = f"files where name ~ '\\.[a-z]{and_name}{and_name.join(values)}' limit 1"
-    return values

@@ -4,6 +4,8 @@ import logging
 import json
 import os
 import sys
+import socket
+import fnmatch
 from datetime import datetime, timezone
 from abc import ABC, abstractmethod
 
@@ -113,7 +115,8 @@ class ConfigKey(ABC):
         if errors:
             if len(errors) == 1:
                 raise TypeError(errors[0])
-            raise TypeError(f"Failed to set config key '{self._name}':\n  {'\n  '.join(errors)}")
+            err_str = '\n  '.join(errors)
+            raise TypeError(f"Failed to set config key '{self._name}':\n  {err_str}")
 
     def _err(self, msg: str) -> str:
         """Format an error message for this config key"""
@@ -723,7 +726,8 @@ class ConfigMap(ConfigCollection):
         if errors:
             if len(errors) == 1:
                 raise TypeError(errors[0])
-            raise TypeError(self._err(f"Failed to update config map:\n  {'\n  '.join(errors)}"))
+            err_str = '\n  '.join(errors)
+            raise TypeError(self._err(f"Failed to update config map:\n  {err_str}"))
 
 class ConfigList(ConfigCollection):
     """Class to manage a configuration list"""
@@ -760,7 +764,8 @@ class ConfigList(ConfigCollection):
         if errs:
             if len(errs) == 1:
                 raise TypeError(errs[0])
-            raise TypeError(self._err(f"Failed to append:\n  {'\n  '.join(errs)}"))
+            err_str = '\n  '.join(errs)
+            raise TypeError(self._err(f"Failed to append:\n  {err_str}"))
 
     def extend(self, items: list) -> None:
         """Extend the list with new items"""
@@ -770,7 +775,8 @@ class ConfigList(ConfigCollection):
         if errs:
             if len(errs) == 1:
                 raise TypeError(errs[0])
-            raise TypeError(self._err(f"Failed to extend:\n  {'\n  '.join(errs)}"))
+            err_str = '\n  '.join(errs)
+            raise TypeError(self._err(f"Failed to extend:\n  {err_str}"))
 
 class ConfigDict(ConfigKey):
     """Class to manage a configuration dictionary"""
@@ -788,7 +794,8 @@ class ConfigDict(ConfigKey):
             errors = self._update(type_defs[type_name])
             self._locked = True
             if errors:
-                raise TypeError(f"Invalid config spec for '{type_name}':\n  {'\n  '.join(errors)}")
+                err_str = '\n  '.join(errors)
+                raise TypeError(f"Invalid config spec for '{type_name}':\n  {err_str}")
 
     def _lock(self) -> None:
         self._locked = True
@@ -864,18 +871,15 @@ def get_key(name: str) -> ConfigKey:
     remaining = f".{name}"
     obj = cfg_dict
     while remaining:
-        obj_name = obj._name if obj._name else "root"
+        obj_name = obj._name if obj._name else "root" # pylint: disable=protected-access
         if remaining.startswith('.'):
             dot_idx = remaining.find('.', 1)
+            if dot_idx == -1:
+                dot_idx = len(remaining)
             sub_idx = remaining.find('[', 1)
-            if dot_idx == -1 and sub_idx == -1:
-                idx = len(remaining)
-            elif dot_idx == -1:
-                idx = sub_idx
-            elif sub_idx == -1:
-                idx = dot_idx
-            else:
-                idx = min(dot_idx, sub_idx)
+            if sub_idx == -1:
+                sub_idx = len(remaining)
+            idx = min(dot_idx, sub_idx)
             attr = remaining[1:idx]
             remaining = remaining[idx:]
             obj = getattr(obj, attr, None)
@@ -1004,6 +1008,43 @@ def uuid(skip: int = None, limit: int = None, chunk: list[int] = None) -> str:
         out = f"{tag}_{out}"
 
     return out
+
+def set_host() -> None:
+    """
+    Set the host name in the configuration.
+
+    :return: None
+    """
+    # Match hostname against patterns in config, using longest pattern first
+    hostname = socket.gethostname()
+    hosts = sorted(cfg_dict.local.hosts.items(), key=lambda x: len(x[0]), reverse=True)
+    match = None
+    for pattern, site in hosts:
+        if not fnmatch.fnmatch(hostname, pattern):
+            continue
+        # We have a match
+        if cfg_dict.local.site:
+            # If a local site is already configured, check for agreement
+            if cfg_dict.local.site != site:
+                if match is None:
+                    match = site
+                continue
+            logger.info("Configured local site %s matches host '%s'", site, hostname)
+        else:
+            logger.info("Selected local site '%s' based on host '%s'", site, hostname)
+            cfg_dict.local.site = site
+        return
+    # See if we have a match that doesn't agree with the configured local site
+    if match is not None:
+        logger.error("Configured local site %s does not match site %s for host '%s'",
+                     cfg_dict.local.site, match, hostname)
+    # If we have a configured local site but no match, warn about potential misconfiguration
+    elif cfg_dict.local.site:
+        logger.warning("Configured local site %s does not match unknown host '%s'",
+                       cfg_dict.local.site, hostname)
+    # No match found
+    else:
+        logger.info("No local site available for unknown host '%s'", hostname)
 
 def check_environment() -> None:
     """
@@ -1165,6 +1206,7 @@ def load(args: dict = None) -> None:
 
     # Load command line overrides and environment variables
     set_cmd_opts(args)
+    set_host()
     check_environment()
     logger.info("Loaded command line overrides and environment variables.")
 
