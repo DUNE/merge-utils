@@ -408,7 +408,7 @@ class MergeSet:
             if err == MergeFileError.INCONSISTENT:
                 logger.log(lvl, '\n  '.join(inconsistencies))
                 continue
-            err_dids = [file.did for file in self._files if file.errors.first() == err]
+            err_dids = [file.did for file in self._files if file.errors.first == err]
             io_utils.log_list(ERROR_MESSAGES[err.name.lower()], err_dids, lvl)
         # Quit if needed
         if abort:
