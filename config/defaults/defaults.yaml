@@ -35,16 +35,19 @@ output:
 
 validation:
     batch_size: 100   # Number of files to query metacat about at once
+    concurrency: 10   # Number of threads to use for checking replicas
     fast_fail: True   # Stop processing files as soon as one batch fails validation
     check_fids: True  # Make sure parent FIDs exist in MetaCat (DIDs are always checked)
-    error_handling:   # How to handle files with errors
-        duplicate:    <opt(quit,skip,gap)> # Duplicated files
-        missing:      <opt(quit,skip,gap)> # Files without metadata
-        undeclared:   <opt(quit,skip,gap)> # Files without a MetaCat record
-        retired:      <opt(quit,skip,gap)> # Retired files
-        invalid:      <opt(quit,skip,gap)> # Metadata failed validation
-        unreachable:  <opt(quit,skip,gap)> # Files without reachable replicas
-        inconsistent: <opt(quit,skip,gap)> # Metadata inconsistent with other files
+    handling:         # How to handle files with errors
+        default:      <opt(quit,skip,gap)>         # Default handling mode
+        duplicate:    <opt(default,quit,skip,gap)> # Duplicated files
+        no_metadata:  <opt(default,quit,skip,gap)> # Files without metadata
+        undeclared:   <opt(default,quit,skip,gap)> # Files without a MetaCat record
+        retired:      <opt(default,quit,skip,gap)> # Retired files
+        invalid:      <opt(default,quit,skip,gap)> # Metadata failed validation
+        no_replicas:  <opt(default,quit,skip,gap)> # Files without any replicas
+        unreachable:  <opt(default,quit,skip,gap)> # Replicas exist but exceed max distance
+        inconsistent: <opt(default,quit,skip,gap)> # Metadata inconsistent with other files
     checksums:
       - "adler32"     # Adler32 should be the default checksum
 
@@ -57,26 +60,23 @@ sites:
         "US_FNAL-FermiGrid": -5.0         # Increase priority
         "CERN": 0.0
     rse_distances:                        # Distances offsets for specific RSEs
-        default: 0.0                      # No extra distance by default
+        disk: 0.0                         # Disk RSEs are preferred
+        tape: 100.0                       # Tape RSEs are penalized
         "DUNE_US_FNAL_DISK_STAGE": -5.0   # Increase priority 
-    tape_distances:                       # Extra distance penalty to account for staging
-        default:        100.0             # Default distance for all RSEs
-        "FNAL_DCACHE":  10.0
+    dcache:                               # DCache RSEs have a staging penalty for nearline files
+        "FNAL_DCACHE":
+            url: "root://fndcadoor.fnal.gov:1094/pnfs/fnal.gov/usr/dune/tape_backed/dunepro"
+            staging: 10.0
+    
 
 local:
-    host: "FNAL"
-    site: "US_FNAL-FermiGrid"
+    site: <str>
+    hosts:
+        "*.fnal.gov": "US_FNAL-FermiGrid"
     xrootd:
-        "FNAL":
-            "/pnfs/dune/persistent/staging":
-                url: "root://fndcadoor.fnal.gov:1094/pnfs/fnal.gov/usr/dune/persistent/staging"
-                rse: "DUNE_US_FNAL_DISK_STAGE"
-            "/pnfs/dune/tape_backed/dunepro":
-                url: "root://fndcadoor.fnal.gov:1094/pnfs/fnal.gov/usr/dune/tape_backed/dunepro"
-                rse: "FNAL_DCACHE"
-            "/pnfs": 
-                url: "root://fndca1.fnal.gov:1094/pnfs/fnal.gov/usr"
-                rse: "FNAL_DCACHE"
+        "US_FNAL-FermiGrid":
+            "root://fndcadoor.fnal.gov:1094/pnfs/fnal.gov/usr/": "/pnfs/"
+            "root://fndca1.fnal.gov:1094/pnfs/fnal.gov/usr/": "/pnfs/"
 
 grouping:
     mode: <opt(size, count)>
@@ -154,6 +154,8 @@ schema:     # Used to check validity of user config files
     key_defs:
         output.tmp_dir: <path>
         output.local.out_dir: <path>
+        local.hosts: <map>
+        local.xrootd: <map(map)>
         method.defaults: <list(merging_method)>
         sites.site_distances: <map(float)>
         sites.site_distances[default]: <float>
