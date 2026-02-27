@@ -30,30 +30,6 @@ def src_dir() -> str:
     """Get the source directory of the package"""
     return os.path.join(pkg_dir(), 'src', 'merge_utils')
 
-def get_inputs(filelists: list[str] = None) -> list[str]:
-    """
-    Get a list of inputs from the the file lists and standard input
-
-    :param filelists: full paths to files containing lists of entries
-    :return: combined list of entries
-    """
-    inputs = []
-
-    if filelists is None:
-        filelists = []
-    for filelist in filelists:
-        with open(filelist, encoding="utf-8") as f:
-            entries = f.readlines()
-        log_nonzero("Found {n} input{s} in file %s" % filelist, len(entries))
-        inputs.extend([x.strip() for x in entries])
-
-    if not sys.stdin.isatty():
-        entries = sys.stdin.readlines()
-        log_nonzero("Found {n} input{s} from standard input", len(entries))
-        inputs.extend([x.strip() for x in entries])
-
-    return inputs
-
 def expand_path(path: str, base_dir: str = None) -> str:
     """
     Expand environment variables and user home in a path.
@@ -138,6 +114,24 @@ def find_runner(name: str) -> str:
     """
     return find_file(name, [os.path.join(pkg_dir(), "src", "runners")])
 
+def read_json(path: str) -> dict:
+    """
+    Read a JSON file and return its contents as a dictionary
+
+    :param path: Path to the JSON file
+    :return: Dictionary containing the JSON data
+    """
+    if not os.path.isfile(path):
+        logger.error("JSON file does not exist: %s", path)
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            cfg = json.load(f)
+    except json.JSONDecodeError:
+        logger.error("Failed to parse JSON file: %s", path)
+        return None
+    return cfg
+
 def read_config_file(name: str = None) -> dict:
     """
     Read a configuration file in JSON, TOML, or YAML format
@@ -153,8 +147,7 @@ def read_config_file(name: str = None) -> dict:
 
     suffix = pathlib.Path(path).suffix
     if suffix in [".json"]:
-        with open(path, encoding="utf-8") as f:
-            cfg = json.load(f)
+        cfg = read_json(path)
     elif suffix in [".toml"]:
         with open(path, mode="rb") as f:
             cfg = tomllib.load(f)

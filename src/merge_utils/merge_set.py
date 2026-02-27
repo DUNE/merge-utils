@@ -68,9 +68,7 @@ class MergeFile:
         """Initialize the MergeFile with a metadata dictionary"""
         # Set name and check for errors
         self._did = f"{data['namespace']}:{data['name']}"
-        self.errors = MergeFileError(0)
-        for err in data.get('errors', []):
-            self.errors |= MergeFileError[err.upper()]
+        self.errors = data.get('errors', MergeFileError(0))
         if self.errors:
             return
         # Set FIDs and check for undeclared files

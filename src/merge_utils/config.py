@@ -839,6 +839,10 @@ class ConfigDict(ConfigKey):
     def _json(self):
         return {key: val._json() for key, val in self._value.items()} # pylint: disable=protected-access
 
+    def items(self):
+        """Get the items in the config dict"""
+        return self._value.items()
+
     def __getitem__(self, key):
         return self._value[key]
 
@@ -1068,6 +1072,17 @@ def check_environment() -> None:
             logger.info("Using environment variable %s=%s", var, val)
             cfg_dict.method.environment.vars[var] = val
 
+def set_error_handling() -> None:
+    """
+    Apply default error handling settings to any errors set to 'default' in the configuration.
+    """
+    default = cfg_dict.validation.handling.default
+    for err, handling in cfg_dict.validation.handling.items():
+        if err == 'default':
+            continue
+        if handling == 'default':
+            cfg_dict.validation.handling[err] = default
+
 def custom_serializer(obj):
     """
     Custom JSON serializer for ConfigKey objects.
@@ -1112,32 +1127,6 @@ def override(name: str, option: ConfigKey, value: str = None) -> str:
         return None
     return str(option)
 
-def set_output_mode(args: dict) -> None:
-    """
-    Override output mode based on command-line arguments.
-
-    :param args: Dictionary of command-line arguments.
-    :return: None
-    """
-    mode = None
-    if args.merge:
-        mode = 'merge'
-        if args.validate:
-            logger.error("Conflicting option --validate overridden by --merge")
-        if args.list:
-            logger.error("Conflicting option --list overridden by --merge")
-    elif args.list:
-        mode = f'list_{args.list}'
-        if args.validate:
-            logger.error("Conflicting option --validate overridden by --list")
-    elif args.validate:
-        mode = 'validate'
-    mode = override("output mode", cfg_dict.output.mode, mode)
-
-    local = override("local", cfg_dict.output.local, args.local)
-    if local and mode in ['validate', 'list_dids']:
-        logger.warning("Option --local has no effect in mode %s", mode)
-
 def set_cmd_opts(args: dict) -> None:
     """
     Override configuration settings with command-line arguments.
@@ -1148,7 +1137,10 @@ def set_cmd_opts(args: dict) -> None:
     # Override configuration with command line arguments
     # I/O modes
     override("input mode", cfg_dict.input.mode, args.input_mode)
-    set_output_mode(args)
+    out_mode = override("output mode", cfg_dict.output.mode, args.output_mode)
+    local = override("local", cfg_dict.output.local, args.local)
+    if local and out_mode in ['validate', 'dids']:
+        logger.warning("Option --local has no effect in output mode '%s'", out_mode)
 
     # Job settings
     override("tag", cfg_dict.input.tag, args.tag)
@@ -1207,6 +1199,7 @@ def load(args: dict = None) -> None:
     # Load command line overrides and environment variables
     set_cmd_opts(args)
     set_host()
+    set_error_handling()
     check_environment()
     logger.info("Loaded command line overrides and environment variables.")
 
@@ -1234,4 +1227,7 @@ def resume(job_dir: str, args: dict) -> None:
     logger.info("Loaded old configuration file.")
 
     # Override output mode
-    set_output_mode(args)
+    out_mode = override("output mode", cfg_dict.output.mode, args.output_mode)
+    local = override("local", cfg_dict.output.local, args.local)
+    if local and out_mode in ['validate', 'dids']:
+        logger.warning("Option --local has no effect in output mode '%s'", out_mode)

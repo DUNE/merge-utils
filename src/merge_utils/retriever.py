@@ -3,17 +3,16 @@
 import logging
 import os
 import sys
-import math
 import json
 import asyncio
 from abc import ABC, abstractmethod
 import collections
 from dataclasses import dataclass
 
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator
 
 from merge_utils import config, io_utils
-from merge_utils.merge_set import MergeSet, MergeChunk
+from merge_utils.merge_set import MergeSet, MergeFileError
 from merge_utils.metacat_utils import MetaCatWrapper
 
 logger = logging.getLogger(__name__)
@@ -102,7 +101,7 @@ class MetaRetriever(ABC):
         logger.debug("Checking MetaCat to verify file records")
         indices = {}
         for idx, file in enumerate(files):
-            if file.get('missing', False) or file.get('duplicate', False):
+            if file.get('errors'):
                 continue
             if file.get('fid') and not config.validation.check_fids:
                 continue
@@ -114,7 +113,7 @@ class MetaRetriever(ABC):
             files[idx].update(file)
         if indices:
             for idx in indices.values():
-                files[idx]['missing'] = True
+                files[idx]['errors'] = MergeFileError.NO_METADATA
             io_utils.log_list("MetaCat missing {n} file record{s}:", indices, logging.ERROR)
             io_utils.log_print("Did you mean to enable the grandparents option?", logging.ERROR)
 
@@ -152,11 +151,11 @@ class MetaRetriever(ABC):
                     did = f"{parent['namespace']}:{parent['name']}"
                     fid = dids.get(did, None)
                     if not fid:
-                        file['missing'] = True
+                        file['errors'] = MergeFileError.UNDECLARED
                         missing.add(f"did: {did}")
                         continue
                 elif check_fids and fid not in fids:
-                    file['missing'] = True
+                    file['errors'] = MergeFileError.UNDECLARED
                     missing.add(f"fid: {fid}")
                     continue
                 parents[idx] = {'fid': fid}
@@ -178,7 +177,6 @@ class MetaRetriever(ABC):
             limit = step
             if config.input.limit:
                 limit = min(limit, config.input.limit + skip0 - skip)
-            print(limit)
             # Get previous batch to process, if we have a request in flight
             batch = await task if task is not None else None
             task = None
@@ -234,6 +232,12 @@ class QueryRetriever(MetaRetriever):
         :param query: MQL query to find files
         """
         super().__init__()
+        if 'skip' in query or 'limit' in query:
+            logger.warning("Consider using command line options for 'skip' and 'limit'!")
+        elif query.endswith(' ordered'):
+            logger.info("Merge-Utils will append the 'ordered' keyword to queries automatically.")
+        else:
+            query += ' ordered'
         self.query = query
 
     async def get_metadata(self, batch: InputBatch, limit: int) -> list:
@@ -334,9 +338,9 @@ class DidRetriever(MetaRetriever):
             placeholder = {'namespace': namespace, 'name': name}
             if skip+idx in self.dupes:
                 logger.debug("Skipping duplicate DID: %s", did)
-                placeholder['duplicate'] = True
+                placeholder['errors'] = MergeFileError.DUPLICATE
             else:
-                placeholder['missing'] = True
+                placeholder['errors'] = MergeFileError.NO_METADATA
                 query.append({'did': did})
                 indices[did] = idx
             files.append(placeholder)
@@ -349,6 +353,57 @@ class DidRetriever(MetaRetriever):
         # Add returned files to output list in correct order
         for file in res:
             files[indices[f"{file['namespace']}:{file['name']}"]] = file
+        return files
+
+class LocalMetaRetriever(MetaRetriever):
+    """MetaRetriever for local files"""
+    name = "local_meta"
+
+    def __init__(self, paths: list):
+        """
+        Initialize the LocalMetaRetriever with a list of json files.
+
+        :param paths: list of metadata file paths
+        """
+        super().__init__()
+        self.paths = paths
+
+    async def get_metadata(self, batch: InputBatch, limit: int) -> list:
+        """
+        Asynchronously retrieve metadata for a specific batch of files.
+
+        :param batch: InputBatch object containing skip index and list of file names
+        :param limit: maximum number of files to retrieve
+        :return: list of file metadata dictionaries
+        """
+        files = []
+        skip = batch.skip
+        end = min(skip + limit, len(self.paths))
+        namespace = str(config.input.namespace)
+        missing = {}
+        for path in self.paths[skip:end]:
+            name = os.path.basename(path).rsplit('.', 1)[0]
+            metadata = io_utils.read_json(path)
+            # If file is missing or unreadable, create a placeholder
+            if not metadata:
+                metadata = {
+                    'namespace': namespace,
+                    'name': name,
+                    'errors': MergeFileError.NO_METADATA
+                }
+                missing[name] = len(files)
+            files.append(metadata)
+        # Make sure files exist in MetaCat, if needed for parent listing
+        if not config.output.grandparents:
+            await self.check_existence(files)
+        # If we were missing any local files, try to find them in MetaCat
+        if missing:
+            io_utils.log_list("Checking MetaCat for {n} missing metadata file{s}:",
+                              missing, logging.INFO)
+            res = await self.client.files([{'did': f"{namespace}:{name}"} for name in missing],
+                                          metadata = True, provenance = config.output.grandparents)
+            for file in res:
+                files[missing[file['name']]] = file
         return files
 
 class PathFinder(MetaRetriever):
@@ -420,3 +475,65 @@ class PathFinder(MetaRetriever):
             batch = new_batch
         # Yield empty batch to signal completion
         yield InputBatch()
+
+def get() -> MetaRetriever:
+    """
+    Create and return a metadata retriever based on input mode:
+    files: LocalMetaRetriever if any metadata files were provided, otherwise DidRetriever
+    dids: DidRetriever
+    query: QueryRetriever
+    dataset: QueryRetriever with query for files in the specified dataset
+    
+    :return: MetaRetriever object for retrieving file metadata
+    """
+    # Determine input mode and retrieve metadata
+    inputs = config.input.inputs
+    if config.input.mode == 'files':
+        # We need to sort the input files into data and metadata files
+        # Start by getting the set of all metadata file names (without the .json suffix)
+        seen = set(os.path.basename(f)[:-5] for f in inputs if os.path.splitext(f)[1] == '.json')
+        # Then go through the input list in order
+        json_files = []
+        for path in inputs:
+            # If we have a JSON file, just add it to the list and continue
+            if os.path.splitext(path)[1] == '.json':
+                json_files.append(path)
+                continue
+            # Skip data files if we already have a metadata file with that name
+            name = os.path.basename(path)
+            if name in seen:
+                continue
+            seen.add(name)
+            # Otherwise, try to find a matching metadata file in the same directory
+            meta_path = path + '.json'
+            if os.path.isfile(meta_path):
+                json_files.append(meta_path)
+                continue
+            # Or in the provided search directories
+            for search_dir in config.input.search_dirs:
+                meta_path = os.path.join(search_dir, name + '.json')
+                if os.path.isfile(meta_path):
+                    json_files.append(meta_path)
+                    break
+        # If we found any metadata files, return a LocalMetaRetriever
+        if len(json_files) > 0:
+            return LocalMetaRetriever(paths=json_files)
+        # Otherwise, return a DidRetriever based on the input file names
+        ns = config.input.namespace
+        return DidRetriever(dids=[f"{ns}:{os.path.basename(f)}" for f in inputs])
+    if config.input.mode == 'dids':
+        return DidRetriever(dids=inputs)
+    if config.input.mode == 'query':
+        if len(inputs) != 1:
+            logger.critical("Multiple query inputs detected, did you forget to quote the query?")
+            sys.exit(1)
+        query = str(inputs[0])
+        return QueryRetriever(query=query)
+    if config.input.mode == 'dataset':
+        if len(inputs) != 1:
+            logger.critical("Dataset input mode currently only supports a single dataset name.")
+            sys.exit(1)
+        query = f"files from {inputs[0]} where dune.output_status=confirmed"
+        return QueryRetriever(query=query)
+    logger.critical("Unknown input mode: %s", config.input.mode)
+    sys.exit(1)

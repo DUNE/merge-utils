@@ -10,10 +10,12 @@ import subprocess
 import collections
 import math
 from abc import ABC, abstractmethod
+from typing import AsyncGenerator
 
-from merge_utils import io_utils, config
-from merge_utils.retriever import PathFinder
-from merge_utils.merge_set import MergeChunk
+from merge_utils import io_utils, config, justin_utils
+from merge_utils.merge_set import MergeFileError, MergeSet, MergeFile, MergeChunk
+from merge_utils.retriever import InputBatch
+from merge_utils.replicas import Replica, PathFinder, GenericRSE, RucioRSE
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,120 @@ class JobScheduler(ABC):
         """
         self.source = source
         self.dir = os.path.join(str(config.job.dir), 'merge')
+        self.distances = {} # Cache of RSE-site distances
         self.jobs = []
+
+    @property
+    def files(self) -> MergeSet:
+        """Return the set of files from the source"""
+        return self.source.meta.files
+
+    async def connect(self) -> None:
+        """Connect to the file source"""
+        # connect to source
+        await self.source.connect()
+
+    async def replica_distances(self, replica: Replica) -> dict:
+        """
+        Get the distances from a replica to potential merging sites.
+
+        :param replica: Replica object to get distances for
+        :return: Dictionary mapping site names to distances
+        """
+        rse = replica.rse.name
+        distances = self.distances.setdefault(rse, {})
+        if not distances:
+            distances[None] = float('inf')
+        return distances
+
+    def file_distances(self, file: MergeFile) -> dict:
+        """
+        Get the distances from a file to potential merging sites, based on its replicas.
+
+        :param file: MergeFile object to get distances for
+        :return: Dictionary mapping site names to distances
+        """
+        site_dists = {}
+        for replica in file.replicas:
+            if not replica.status.good:
+                continue
+            rse_dists = self.distances[replica.rse.name]
+            for site, dist in rse_dists.items():
+                site_dists[site] = min(site_dists.get(site, float('inf')), dist + replica.distance)
+        if not site_dists:
+            raise RuntimeError(f"File {file.did} has no available replicas")
+        return site_dists
+
+    def chunk_distances(self, chunk: MergeChunk) -> dict:
+        """
+        Get the distances from a chunk to potential merging sites, based on the file distances.
+        If any file is unreachable from a site, the chunk is also unreachable from that site.
+
+        :param chunk: MergeChunk object to get distances for
+        :return: Dictionary mapping site names to distances
+        """
+        site_dists = self.file_distances(chunk.files[0])
+        for file in chunk.files[1:]:
+            file_dists = self.file_distances(file)
+            for site, dist in file_dists.items():
+                if site in site_dists:
+                    site_dists[site] += dist
+                else:
+                    site_dists[site] = float('inf')
+            for site in site_dists:
+                if site not in file_dists:
+                    site_dists[site] = float('inf')
+        return site_dists
+
+    async def input_batches(self) -> AsyncGenerator[InputBatch, None]:
+        """
+        Asynchronously check RSE-site distances for batches of input files
+
+        :return: InputBatch object containing skip index and list of MergeFile objects
+        """
+        async for batch in self.source.input_batches():
+            unreachable = []
+            for file in batch:
+                if file.errors:
+                    continue
+                # Get minimum distance from the file replicas to any merging site
+                min_dist = float('inf')
+                for replica in file.replicas:
+                    if not replica.status.good:
+                        continue
+                    dist = replica.distance + min(await self.replica_distances(replica).values())
+                    min_dist = min(min_dist, dist)
+                # File is unreachable no RSE-site distance was below threshold
+                if min_dist > config.sites.max_distance:
+                    logger.warning("File %s has no replicas within max distance", file.did)
+                    unreachable.append(file.did)
+            # Set unreachable flag for bad files
+            self.files.set_error(unreachable, 'UNREACHABLE')
+            # Output batch with reachable files
+            good_files = [f for f in batch if not f.errors]
+            yield InputBatch(skip=batch.skip, files=good_files)
+
+    def assign_site(self, chunk: MergeChunk, site: str = None) -> None:
+        """
+        Assign a merging site for a chunk of files, and select the best replica for each file
+
+        :param chunk: MergeChunk object to assign a site for
+        :param site: Site assignment
+        """
+        chunk.site = site   # Local jobs should not have a site assigned
+        for file in chunk.files:
+            best_replica = None
+            min_dist = float('inf')
+            for replica in file.replicas:
+                if not replica.status.good:
+                    continue
+                dist = replica.distance + self.distances[replica.rse.name].get(site, float('inf'))
+                if dist < min_dist:
+                    min_dist = dist
+                    best_replica = replica
+            if best_replica is None:
+                raise RuntimeError(f"File {file.did} has no good replicas for site {site}")
+            file.replicas = [best_replica]
 
     def split_files(self, files: list) -> list[list]:
         """
@@ -46,16 +161,13 @@ class JobScheduler(ABC):
         target_size = len(files) / n_chunks
         return [files[int(i*target_size):int((i+1)*target_size)] for i in range(n_chunks)]
 
+    @abstractmethod
     def schedule(self, chunk: MergeChunk) -> None:
         """
         Schedule a chunk for merging, subdividing and assigning to sites as necessary.
         
         :param chunk: MergeChunk object to schedule
         """
-        # By default, just split into subchunks if too many files, without site assignment
-        if len(chunk.files) > config.grouping.chunk_max:
-            for subchunk in self.split_files(chunk.files):
-                chunk.make_child(subchunk)
 
     def write_specs(self, chunk) -> None:
         """
@@ -147,14 +259,54 @@ class JobScheduler(ABC):
 class LocalScheduler(JobScheduler):
     """Job scheduler for local merge jobs"""
 
+    def __init__(self, source):
+        super().__init__(source)
+        self.justin = False
+
+    async def connect(self) -> None:
+        """Connect to the file source"""
+        # Connect to source
+        await self.source.connect()
+        # If we have a local site name, try to get distances from JustIN
+        if config.local.site:
+            justin_dists = await justin_utils.get_site_rse_distances()
+            if justin_dists:
+                self.justin = True
+            for rse, dists in justin_dists.items():
+                dist = dists.get(config.local.site, float('inf'))
+                if dist < float('inf'):
+                    self.distances[rse] = {None: dist}
+
+    async def replica_distances(self, replica: Replica) -> dict:
+        """
+        Get the distances from a replica to potential merging sites.
+
+        :param replica: Replica object to get distances for
+        :return: Dictionary mapping site names to distances
+        """
+        rse = replica.rse.name
+        distances = self.distances.setdefault(rse, {})
+        if not distances:
+            if self.justin:
+                distances[None] = float('inf')
+            elif isinstance(replica.rse, RucioRSE):
+                distances[None] = replica.rse.ping()
+            else:
+                distances[None] = 0
+        return distances
+
     def schedule(self, chunk: MergeChunk) -> None:
         """
         Schedule a chunk for merging, clearing any site assignment and subdividing as necessary.
         
         :param chunk: MergeChunk object to schedule
         """
-        chunk.site = None   # Local jobs should not have a site assigned
-        super().schedule(chunk)
+        # Just set site to None for local jobs
+        self.assign_site(chunk, site=None)
+        # Split into subchunks if there are too many files
+        if len(chunk.files) > config.grouping.chunk_max:
+            for subchunk in self.split_files(chunk.files):
+                chunk.make_child(subchunk)
 
     def write_script(self) -> list:
         """
@@ -209,39 +361,43 @@ class JustinScheduler(JobScheduler):
         super().__init__(source)
         self.cvmfs_dir = None
 
+    async def connect(self) -> None:
+        """Connect to the file source"""
+        # Connect to source
+        await self.source.connect()
+        # Get site-rse distances from JustIN
+        self.distances = await justin_utils.get_site_rse_distances()
+        if not self.distances:
+            logger.critical("Cannot run batch jobs without JustIN connection!")
+            sys.exit(1)
+
     def schedule(self, chunk: MergeChunk) -> None:
         """
         Schedule a chunk for merging, subdividing and assigning to sites as necessary.
         
         :param chunk: MergeChunk object to schedule
         """
-        # Group files by the best merging site
+        # Try to do merge as one chunk if possible
+        if len(chunk.files) < config.grouping.chunk_max:
+            site, dist = sorted(self.chunk_distances(chunk).items(), key=lambda x: x[1])[0]
+            if dist < float('inf'):
+                self.assign_site(chunk, site=site)
+                return
+        # Oherwise, group files by the best merging site
         best_sites = collections.defaultdict(list)
         for file in chunk.files:
-            best_site = sorted(file.paths.items(), key=lambda p: p[1][1])[0][0]
+            dists = self.file_distances(file)
+            best_site = sorted(dists.items(), key=lambda p: p[1])[0][0]
             best_sites[best_site].append(file)
         best_sites = sorted(best_sites.items(), key=lambda x: len(x[1]), reverse=True)
-        # Try to do merge as one chunk if possible
-        chunk_max = config.grouping.chunk_max
-        if len(chunk.files) < chunk_max:
-            # If all files have the same best site, assign the chunk to that site
-            if len(best_sites) == 1:
-                chunk.site = best_sites[0][0]
-                return
-            # Otherwise, see if we can find a site with access to all files
-            site_dists = {site: dist for site, (_, dist) in chunk.files[0].paths.items()}
-            for file in chunk.files[1:]:
-                for site in site_dists:
-                    if site_dists[site] == float('inf'):
-                        continue
-                    if site not in file.paths:
-                        site_dists[site] = float('inf')
-                    else:
-                        site_dists[site] += file.paths[site][1]
-            best_site, dist = sorted(site_dists.items(), key=lambda x: x[1])[0]
-            if dist < float('inf'):
-                chunk.site = best_site
-                return
+        # If all files are at the same site, just assign the chunk there and split if needed
+        if len(best_sites) == 1:
+            self.assign_site(chunk, site=best_sites[0][0])
+            # Split into subchunks if there are too many files
+            if len(chunk.files) > config.grouping.chunk_max:
+                for subchunk in self.split_files(chunk.files):
+                    chunk.make_child(subchunk)
+            return
         # Try to remove sites with small groups of files
         for idx in range(len(best_sites)-1, 0, -1):
             files = best_sites[idx][1]
@@ -251,13 +407,14 @@ class JustinScheduler(JobScheduler):
             new_sites = [-1] * len(files)
             new_dists = [float('inf')] * len(files)
             for f_idx, file in enumerate(files):
+                dists = self.file_distances(file)
                 for new_idx, (new_site, new_files) in enumerate(best_sites):
                     if new_idx == idx or len(new_files) == 0:
                         continue
-                    dist = file.paths[new_site][1] if new_site in file.paths else float('inf')
+                    dist = dists.get(new_site, float('inf'))
                     if dist < new_dists[f_idx]:
                         new_sites[f_idx] = new_idx
-                        new_dists[f_idx] = file.paths[new_site][1]
+                        new_dists[f_idx] = dist
             # If every file has a valid new site, move them there and clear the small group
             if all(new_idx >= 0 for new_idx in new_sites):
                 for f_idx, file in enumerate(files):
@@ -267,12 +424,9 @@ class JustinScheduler(JobScheduler):
         for site, site_files in best_sites:
             for subchunk in self.split_files(site_files):
                 child = chunk.make_child(subchunk)
-                child.site = site
-        # If all files have the same best site use that, otherwise use default 
-        if len(best_sites) == 1:
-            chunk.site = best_sites[0][0]
-        else:
-            chunk.site = config.sites.default
+                self.assign_site(child, site=site)
+        # Use default site for parent chunk
+        chunk.site = config.sites.default
 
     def upload_cfg(self) -> None:
         """
