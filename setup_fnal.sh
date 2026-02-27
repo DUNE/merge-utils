@@ -13,11 +13,12 @@ release=`lsb_release -i | cut -f 2`
 if [[ "$release" == "AlmaLinux" ]]; then
     echo "Doing setup for Alma Linux"
 
-    source /cvmfs/larsoft.opensciencegrid.org/spack-packages/setup-env.sh
-    spack load root@6.28.06
-    spack load r-m-dd-config experiment=dune
-    spack load justin
-    htgettoken -a htvaultprod.fnal.gov -i dune
+    source /cvmfs/dune.opensciencegrid.org/spack/setup-env.sh
+    spack env activate dune-prototype
+    #spack load root@6.28.06
+    #spack load r-m-dd-config experiment=dune
+    #spack load justin
+    #htgettoken -a htvaultprod.fnal.gov -i dune
 
     spack load hdf5
     spack load py-h5py
