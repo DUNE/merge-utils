@@ -85,7 +85,7 @@ class MergeFile:
             self.errors |= MergeFileError.RETIRED
             return
         # Set other metadata and validate
-        self.paths = data.get('paths', {})
+        self.replicas = []
         self.size = data.get('size', None)
         self.checksums = data['checksums']
         self.metadata = data['metadata']
@@ -632,14 +632,9 @@ class MergeChunk:
             inputs = []
             for file in self.files:
                 # Get the path for this site
-                path, _ = file.paths.get(self.site, (None, None))
-                # Local merge with rucio input needs to check paths for local site from config
-                if path is None and self.site is None:
-                    path, _ = file.paths.get(config.local.site, (None, None))
-                if path is None:
-                    logger.critical("No path from %s to file %s", self.site or "local site", file)
-                    sys.exit(1)
-                inputs.append(path)
+                if len(file.replicas) != 0:
+                    raise RuntimeError("Getting MergeChunk inputs before selecting replicas?")
+                inputs.append(file.replicas[0].path)
             return inputs
         # Otherwise, the inputs are the outputs from the previous pass
         base_name = str(config.method.outputs[output_id].name)

@@ -237,6 +237,7 @@ class BaseRSE(ABC):
         :param cksums: dict of {algorithm: expected_checksum} pairs to check against
         :return: True if any matching checksums are found, False otherwise
         """
+        logger.debug("RSE %s Checking xrootd checksums for file %s", self.name, replica.path)
         xrdfs_cksums = await self.xrdfs(replica, 'query checksum')
         if xrdfs_cksums is None:
             logger.warning("Failed to get checksums for file %s", replica.path)
@@ -267,6 +268,7 @@ class BaseRSE(ABC):
         :param cksums: dict of {algorithm: expected_checksum} pairs to check against
         :return: True if any matching checksums are found, False otherwise
         """
+        logger.debug("RSE %s Checking local checksums for file %s", self.name, path)
         algorithms = [
             ('adler32', 'xrdadler32'),
             ('md5', 'md5sum'),
@@ -303,6 +305,7 @@ class BaseRSE(ABC):
 
         :param replica: Replica object to check
         """
+        logger.debug("RSE %s Checking xrootd cache status for file %s", self.name, replica.path)
         # Skip cache check if the distance is already too high
         if replica.distance > config.sites.max_distance:
             replica.status = Status.UNREACHABLE
@@ -333,6 +336,7 @@ class BaseRSE(ABC):
 
         :param replica: Replica object to check
         """
+        logger.debug("RSE %s Checking local cache status for file %s", self.name, replica.path)
         directory, filename = os.path.split(replica.path)
         stat_file=f"{directory}/.(get)({filename})(locality)"
         if not os.path.exists(stat_file):
@@ -349,6 +353,7 @@ class BaseRSE(ABC):
 
         :param replica: Replica object to check
         """
+        logger.debug("RSE %s Checking cache status for file %s", self.name, replica.path)
         # For non-dcache RSEs, set status to ONLINE or NEARLINE depending on tape vs disk type
         if self.staging is None:
             replica.status = Status.ONLINE if self.disk else Status.NEARLINE
@@ -359,8 +364,10 @@ class BaseRSE(ABC):
             return
         # Check the cache status of the file
         if replica.protocol == 'file':
+            logger.debug("RSE %s checking local cache for file %s", self.name, replica.path)
             await asyncio.to_thread(self.cache_local, replica)
         else:
+            logger.debug("RSE %s checking xrootd cache for file %s", self.name, replica.path)
             await self.cache_xrootd(replica)
         # If the file is not online, add the staging penalty to the distance
         if replica.status != Status.ONLINE:
@@ -428,19 +435,24 @@ class BaseRSE(ABC):
         :param size: optionally check the file size against an expected value
         :param cksums: optionally check the file checksums against a dict of {algorithm: checksum}
         """
+        logger.debug("RSE %s checking replica %s", self.name, replica.path)
         replica.distance = self.distance
         # Don't bother checking bad RSEs
         if self.distance > config.sites.max_distance:
+            logger.debug("RSE %s is too far away (d = %d)", self.name, self.distance)
             replica.status = Status.UNREACHABLE
             return
         if self.read is False:
+            logger.debug("RSE %s is not readable", self.name)
             replica.status = Status.OFFLINE
             return
         # Check replica using the appropriate method based on the protocol
         protocol = replica.protocol
         # For local files, check directly but try to convert to xrootd URL if possible
         if protocol == 'file':
+            logger.debug("RSE %s checking local replica %s", self.name, replica.path)
             await self.check_local(replica, size=size, cksums=cksums)
+            print("finished local check")
             if 'xrootd' in self.urls:
                 replica.path = replica.path.replace(self.urls['file'], self.urls['xrootd'], 1)
             return
@@ -448,11 +460,13 @@ class BaseRSE(ABC):
         if 'file' in self.urls:
             url = replica.path
             replica.path = url.replace(self.urls[protocol], self.urls['file'], 1)
+            logger.debug("RSE %s converting to local path %s", self.name, replica.path)
             await self.check_local(replica, size=size, cksums=cksums)
             replica.path = url
             return
         # For xrootd files, check using xrdfs and gfal-xattr
         if protocol == 'root':
+            logger.debug("RSE %s checking xrootd replica %s", self.name, replica.path)
             await self.check_xrootd(replica, size=size, cksums=cksums)
             return
         # If we get here, we don't know how to check this replica
@@ -470,7 +484,7 @@ class GenericRSE(BaseRSE):
         if name:
             if name in config.sites.dcache:
                 url = config.sites.dcache[name]['url']
-                self.staging = config.sites.dcache[name]['staging']
+                self.staging = float(config.sites.dcache[name]['staging'])
             if not url:
                 raise ValueError(f"No URL found for RSE {name} in config")
         elif url is None:
@@ -522,8 +536,9 @@ class RucioRSE(BaseRSE):
     def __init__(self, info: dict):
         super().__init__()
         self.name = info['rse']
-        self.read = info['availability_read'] and not info['deleted']
-        self.write = info['availability_write'] and not info['deleted']
+        logger.debug("Initializing Rucio RSE %s", self.name)
+        self.read = info['availability_read'] and not info.get('deleted', False)
+        self.write = info['availability_write'] and not info.get('deleted', False)
         if info['rse_type'] == 'DISK':
             self.disk = True
         elif info['rse_type'] == 'TAPE':
@@ -532,7 +547,7 @@ class RucioRSE(BaseRSE):
             logger.error("RSE %s has unknown type %s", self.name, info['rse_type'])
             self.disk = None
         if self.name in config.sites.dcache:
-            self.staging = config.sites.dcache[self.name]['staging']
+            self.staging = float(config.sites.dcache[self.name]['staging'])
         self.set_distance()
         self.set_urls(info['protocols'])
 
@@ -593,7 +608,7 @@ class PathFinder(MetaRetriever):
                 self.replica_queue.task_done()
                 break
             # Check the replica and mark the job as done
-            await job[0].rse.check_replica(job[0], size=job[1], cksums=job[2])
+            await job[0].rse.check(job[0], size=job[1], cksums=job[2])
             self.replica_queue.task_done()
 
     async def check_replica(self, replica: Replica, size: int = None, cksums: dict = None) -> None:
@@ -604,6 +619,7 @@ class PathFinder(MetaRetriever):
         :param size: optionally check the file size against an expected value
         :param cksums: optionally check the file checksums against a dict of {algorithm: checksum}
         """
+        logger.debug("Queueing replica %s on RSE %s for checking", replica.path, replica.rse.name)
         await self.replica_queue.put((replica, size, cksums))
 
     async def connect(self) -> None:
@@ -675,17 +691,15 @@ class PathFinder(MetaRetriever):
                 logger.debug("Processing new %s input batch %d", self.name, batch.skip)
                 await self.set_paths(batch, paths)
                 # Wait for any pending path checks to finish before yielding the batch
-                for rse in self.rses.values():
-                    if rse.queue:
-                        await rse.queue.join()
+                await self.replica_queue.join()
                 # Check for replica errors
                 good_files = []
                 no_replicas = []
                 unreachable = []
                 for file in batch:
-                    if not file.paths:
+                    if not file.replicas:
                         no_replicas.append(file.did)
-                    elif all(r.status.bad for r in file.paths):
+                    elif all(r.status.bad for r in file.replicas):
                         unreachable.append(file.did)
                     elif not file.errors:
                         good_files.append(file)
@@ -729,7 +743,7 @@ class RucioFinder (PathFinder):
             rse = RucioRSE(rse_info)
             self.rses[rse_name] = rse
         replica = Replica(path=path, rse=rse)
-        file.paths.append(replica)
+        file.replicas.append(replica)
         # Assume Rucio has already validated replica size and checksums
         #await self.check_replica(replica, size=file.size, cksums=file.checksums)
         await self.check_replica(replica)
@@ -803,7 +817,7 @@ class RucioFinder (PathFinder):
                 continue
             for pfn, info in pfns.items():
                 rse = info['rse']
-                self.add_replica(file, pfn, rse_name=rse)
+                await self.add_replica(file, pfn, rse_name=rse)
 
 
 class PathListFinder(PathFinder):
@@ -870,7 +884,7 @@ class PathListFinder(PathFinder):
             self.add_rse(rse)
         # Add the replica to the file
         replica = Replica(path=path, rse=rse)
-        file.paths.append(replica)
+        file.replicas.append(replica)
         await self.check_replica(replica, size=file.size, cksums=file.checksums)
 
     async def get_paths(self, batch: InputBatch) -> list:
@@ -916,7 +930,7 @@ class PathListFinder(PathFinder):
             if count == 0:
                 continue
             for path in replicas:
-                self.add_replica(file, path)
+                await self.add_replica(file, path)
 
 
 def get(metadata: MetaRetriever) -> PathFinder:

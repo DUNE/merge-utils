@@ -225,15 +225,11 @@ def main():
     if config.output.mode in ['replicas', 'pfns']:
         paths.run()
         if config.output.mode == 'replicas':
-            if config.input.mode in ['files']:
-                print("Local file paths:")
-                for file in paths.files:
-                    print(f"  {file.path}")
-            else:
-                for name, rse in paths.rses.items():
-                    print(f"RSE {name}:")
-                    for pfn in rse.pfns.values():
-                        print(f"  {pfn}")
+            print("File replicas:")
+            for file in paths.files.good_files:
+                print(f"  {file.did}:")
+                for replica in file.replicas:
+                    print(f"  {replica.path} ({replica.rse.name}, {replica.status.name})")
         elif config.output.mode == 'pfns':
             for file in paths.files:
                 best_pfn = sorted(file.paths.values(), key=lambda p: p[1])[0]

@@ -253,10 +253,20 @@ class ConfigNum(ConfigValue):
             return self._value > other._value
         return self._value > other
 
+    def __ge__(self, other):
+        if isinstance(other, ConfigNum):
+            return self._value >= other._value
+        return self._value >= other
+
     def __lt__(self, other):
         if isinstance(other, ConfigNum):
             return self._value < other._value
         return self._value < other
+
+    def __le__(self, other):
+        if isinstance(other, ConfigNum):
+            return self._value <= other._value
+        return self._value <= other
 
     def __add__(self, other):
         if isinstance(other, ConfigNum):
