@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 try:
     from rucio.client import Client #type: ignore pylint: disable=import-error
-    from rucio.client.replicaclient import ReplicaClient #type: ignore pylint: disable=import-error
-    from rucio.client.rseclient import RSEClient #type: ignore pylint: disable=import-error
+    #from rucio.client.replicaclient import ReplicaClient #type: ignore pylint: disable=import-error
+    #from rucio.client.rseclient import RSEClient #type: ignore pylint: disable=import-error
     HAS_RUCIO = True
 except ImportError:
     logger.warning("Failed to import Rucio client, Rucio functionality will be unavailable!")
@@ -24,8 +24,6 @@ class RucioWrapper:
     def __init__(self):
         """Initialize the RucioWrapper."""
         self.client = None
-        self.rep_client = None
-        self.rse_client = None
         self.rses = {}
 
     def __bool__(self) -> bool:
@@ -40,8 +38,6 @@ class RucioWrapper:
             logger.debug("Connecting to Rucio")
             try:
                 self.client = await asyncio.to_thread(Client)
-                self.rep_client = ReplicaClient(self.client)
-                self.rse_client = RSEClient(self.client)
             except Exception as e:
                 logger.warning("Failed to connect to Rucio: %s", e)
                 self.client = None
@@ -58,8 +54,8 @@ class RucioWrapper:
         # Check if we already have information about this RSE cached
         if name in self.rses:
             return self.rses[name]
-        rse = await asyncio.to_thread(self.rse_client.get_rse, name)
-        rse['attrs'] = await asyncio.to_thread(self.rse_client.list_rse_attributes, name)
+        rse = await asyncio.to_thread(self.client.get_rse, name)
+        rse['attrs'] = await asyncio.to_thread(self.client.list_rse_attributes, name)
         self.rses[name] = rse
         return rse
 
@@ -70,18 +66,18 @@ class RucioWrapper:
         :param detailed: whether to include detailed RSE information
         :return: dictionary of RSE attributes for each RSE
         """
-        for rse in await asyncio.to_thread(self.rse_client.list_rses):
+        for rse in await asyncio.to_thread(self.client.list_rses):
             name = rse['rse']
             if rse['deleted']:
                 continue
             if detailed:
-                details = await asyncio.to_thread(self.rse_client.get_rse, name)
+                details = await asyncio.to_thread(self.client.get_rse, name)
                 for key, value in details.items():
                     if key in rse and rse[key] != value:
                         logger.warning("RSE %s has conflicting values for %s: %s != %s",
                                     name, key, rse[key], value)
                     rse[key] = value
-            rse['attrs'] = await asyncio.to_thread(self.rse_client.list_rse_attributes, name)
+            rse['attrs'] = await asyncio.to_thread(self.client.list_rse_attributes, name)
             self.rses[name] = rse
             yield rse
 
@@ -93,7 +89,7 @@ class RucioWrapper:
         :return: list of file path dictionaries
         """
         query = [{'scope':f.namespace, 'name':f.name} for f in files]
-        res = await asyncio.to_thread(self.rep_client.list_replicas, query,
+        res = await asyncio.to_thread(self.client.list_replicas, query,
                                       ignore_availability=False)
         return list(res)
 
