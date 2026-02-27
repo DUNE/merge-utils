@@ -25,6 +25,9 @@ class MetaCatWrapper:
         else:
             logger.debug("Already connected to MetaCat")
 
+    async def disconnect(self) -> None:
+        """No need to explicitly disconnect from MetaCat?"""
+
     async def query(self, query: str, metadata: bool = True, provenance: bool = True) -> list:
         """
         Asynchronously query MetaCat.

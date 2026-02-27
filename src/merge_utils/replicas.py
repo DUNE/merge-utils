@@ -575,7 +575,7 @@ class PathFinder(MetaRetriever):
         self.meta = meta
         self.client = RucioWrapper()
         self.rses = {}
-        self.replica_queue = asyncio.Queue()
+        self.replica_queue = None
         self.workers = []
 
     @property
@@ -609,9 +609,18 @@ class PathFinder(MetaRetriever):
     async def connect(self) -> None:
         """Connect to the file source and rucio"""
         await asyncio.gather(self.meta.connect(), self.client.connect())
+        self.replica_queue = asyncio.Queue()
         for _ in range(int(config.validation.concurrency)):
             worker = asyncio.create_task(self.replica_checker())
             self.workers.append(worker)
+
+    async def disconnect(self) -> None:
+        """Disconnect from the file source and rucio, and stop the replica checkers"""
+        await asyncio.gather(self.meta.disconnect(), self.client.disconnect())
+        # Stop the replica checkers
+        for _ in self.workers:
+            await self.replica_queue.put(None)
+        await asyncio.gather(*self.workers)
 
     async def get_metadata(self, batch: InputBatch, limit: int) -> list:
         raise NotImplementedError("PathFinder does not implement get_metadata")
@@ -674,9 +683,9 @@ class PathFinder(MetaRetriever):
                 no_replicas = []
                 unreachable = []
                 for file in batch:
-                    if not file.replicas:
+                    if not file.paths:
                         no_replicas.append(file.did)
-                    elif all(r.status.bad for r in file.replicas):
+                    elif all(r.status.bad for r in file.paths):
                         unreachable.append(file.did)
                     elif not file.errors:
                         good_files.append(file)
@@ -720,7 +729,7 @@ class RucioFinder (PathFinder):
             rse = RucioRSE(rse_info)
             self.rses[rse_name] = rse
         replica = Replica(path=path, rse=rse)
-        file.replicas.append(replica)
+        file.paths.append(replica)
         # Assume Rucio has already validated replica size and checksums
         #await self.check_replica(replica, size=file.size, cksums=file.checksums)
         await self.check_replica(replica)
@@ -744,6 +753,7 @@ class RucioFinder (PathFinder):
             return True
         # Check the checksums
         for algo in config.validation.checksums:
+            algo = str(algo)
             if algo in file.checksums and algo in rucio:
                 csum1 = file.checksums[algo]
                 csum2 = rucio[algo]
@@ -860,7 +870,7 @@ class PathListFinder(PathFinder):
             self.add_rse(rse)
         # Add the replica to the file
         replica = Replica(path=path, rse=rse)
-        file.replicas.append(replica)
+        file.paths.append(replica)
         await self.check_replica(replica, size=file.size, cksums=file.checksums)
 
     async def get_paths(self, batch: InputBatch) -> list:

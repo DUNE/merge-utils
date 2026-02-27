@@ -60,6 +60,10 @@ class MetaRetriever(ABC):
         """Connect to the MetaCat web API"""
         await self.client.connect()
 
+    async def disconnect(self) -> None:
+        """Disconnect from the MetaCat web API"""
+        await self.client.disconnect()
+
     @abstractmethod
     async def get_metadata(self, batch: InputBatch, limit: int) -> list:
         """
@@ -205,11 +209,13 @@ class MetaRetriever(ABC):
 
     async def _loop(self) -> None:
         """Repeatedly get input_batches until all files are retrieved."""
-        # connect to source
+        # Connect to source
         await self.connect()
-        # loop over batches
+        # Loop over batches
         async for _ in self.input_batches():
             self.files.check_errors()
+        # Close connections
+        await self.disconnect()
 
     def run(self) -> None:
         """Retrieve metadata for all files."""

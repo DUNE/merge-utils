@@ -44,6 +44,9 @@ class RucioWrapper:
         else:
             logger.debug("Already connected to Rucio")
 
+    async def disconnect(self) -> None:
+        """No need to explicitly disconnect from Rucio?"""
+
     async def get_rse(self, name: str) -> dict:
         """
         Asynchronously retrieve information for a specific RSEfrom Rucio.
