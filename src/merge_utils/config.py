@@ -1072,21 +1072,35 @@ def check_environment() -> None:
 
     :return: None
     """
-    if cfg_dict.method.environment.dunesw_version is None:
+    # Get DUNE SW version
+    if cfg_dict.method.environment.dunesw_version:
+        logger.info("Using DUNE SW version: %s (from cfg)",
+                    cfg_dict.method.environment.dunesw_version)
+    else:
         ver = os.getenv('DUNESW_VERSION')
         if ver is None:
             ver = os.getenv('DUNE_VERSION')
         cfg_dict.method.environment.dunesw_version = ver
-    if cfg_dict.method.environment.dunesw_qualifier is None:
-        cfg_dict.method.environment.dunesw_qualifier = os.getenv('DUNE_QUALIFIER')
+        logger.info("Using DUNE SW version: %s (from env)", ver)
+    # Get DUNE SW qualifier
+    if cfg_dict.method.environment.dunesw_qualifier:
+        logger.info("Using DUNE qualifier: %s (from cfg)",
+                    cfg_dict.method.environment.dunesw_qualifier)
+    else:
+        qual = os.getenv('DUNE_QUALIFIER')
+        cfg_dict.method.environment.dunesw_qualifier = qual
+        logger.info("Using DUNE qualifier: %s (from env)", qual)
+    # Get any additional environment variables specified in the config
     for var, val in cfg_dict.method.environment.vars.items():
-        if val is None:
+        if val:
+            logger.info("Using env var %s=%s (from cfg)", var, val)
+        else:
             val = os.getenv(var)
             if val is None:
                 logger.critical("Missing required environment variable: %s", var)
                 sys.exit(1)
-            logger.info("Using environment variable %s=%s", var, val)
             cfg_dict.method.environment.vars[var] = val
+            logger.info("Using env var %s=%s (from env)", var, val)
 
 def set_error_handling() -> None:
     """

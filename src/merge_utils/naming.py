@@ -12,8 +12,8 @@ CONFIG_KEYS = {
     "CFG": "",
     "TIMESTAMP": "job.timestamp",
     "NAME": "output.name",
-    "DUNESW_VERSION": "merging.environment.dunesw_version",
-    "DUNESW_QUALIFIER": "merging.environment.dunesw_qualifier",
+    "DUNESW_VERSION": "method.environment.dunesw_version",
+    "DUNESW_QUALIFIER": "method.environment.dunesw_qualifier",
 }
 
 FUNC_KEYS = {
@@ -228,6 +228,8 @@ class Formatter:
             val = self._val
             if val is not None:
                 val = val._value # pylint: disable=protected-access
+                if val is None:
+                    self._head.errors.append(f"Config key '{self._key}' not set")
             return self._head.format_key(self._key, val, spec)
 
     class ValFormatter:

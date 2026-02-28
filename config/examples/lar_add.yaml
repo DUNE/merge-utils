@@ -4,9 +4,9 @@ input:
     streaming: True
 
 output:
-    name: "{dune_mc.gen_fcl_filename}__{dune.campaign}__{dune.config_file}__{core.application.name}__{core.application.version}__{merge.cfg}__{$DUNESW_VERSION}"
+    name: "{dune_mc.gen_fcl_filename}__{dune.campaign}__{dune.config_file}__{core.application.name}__{core.application.version}__{merge.cfg}__{DUNESW_VERSION}"
     namespace: "usertests"
-    out_dir: "/pnfs/dune/scratch/users/${USER}/merge_test/triggerAna"
+    out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test/triggerAna"
 
 validation:
     handling:
@@ -23,5 +23,5 @@ method:
     cmd: "lar -c {cfg} -n -1 {inputs} -T {output}"
     cfg: "triggersim_triggerana_dune10kt_1x2x2.fcl"
     outputs:
-      - name: "{name}__{cfg}__{UUID}__tuple.root"
+      - name: "{NAME}__{merge.cfg}__{UUID}__tuple.root"
         metadata: {"core.file_format": "root"}

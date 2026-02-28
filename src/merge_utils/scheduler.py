@@ -509,8 +509,8 @@ class JustinScheduler(JobScheduler):
             products = ':'.join([str(p) for p in config.method.environment.products])
             cmd += ['--env', f'EXTRA_PRODUCTS="{products}"']
         for output in config.method.outputs:
-            name, ext = os.path.splitext(output['name'])
-            cmd += ['--output-pattern', f"{name}*{ext}"]
+            name = str(output['name'])
+            cmd += ['--output-pattern', name.format(UUID='*')]
         return f"{' '.join(cmd)}\n"
 
     def write_script(self) -> list:
@@ -523,7 +523,8 @@ class JustinScheduler(JobScheduler):
 
         # Pass 1 submission script
         script_name = "submit.sh" if len(self.jobs) == 1 else "submit_pass1.sh"
-        with open(os.path.join(str(config.job.dir), script_name), 'w', encoding="utf-8") as f:
+        script_name = os.path.join(str(config.job.dir), script_name)
+        with open(script_name, 'w', encoding="utf-8") as f:
             f.write("#!/bin/bash\n")
             pass_msg = " for pass 1" if len(self.jobs) > 1 else ""
             f.write(f"# This script will submit the JustIN jobs{pass_msg}\n")

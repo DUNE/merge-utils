@@ -653,6 +653,7 @@ def make_names(files: list):
         sys.exit(1)
     formatter.format(config.output.name)
     for idx, output in enumerate(config.method.outputs):
+        logger.debug("Formatting output %d name: %s", idx, output.name)
         missing_field = False
         for field in ['{NAME}', '{UUID}']:
             if field not in output.name:
