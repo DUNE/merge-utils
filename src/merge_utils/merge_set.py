@@ -645,7 +645,7 @@ class MergeChunk:
         cid = self.chunk_id
         inputs = [self.make_name(base_name, cid + [c]) for c in range(len(self.children))]
         # For batch jobs, just list the DIDs and we'll get the paths later
-        if config.output.mode != 'local':
+        if not config.output.local:
             namespace = str(config.output.scratch.namespace)
             return [f"{namespace}:{name}" for name in inputs]
         # For local jobs, return the full paths to the output files
