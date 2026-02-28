@@ -9,6 +9,7 @@ import tarfile
 import subprocess
 import collections
 import math
+import asyncio
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator
 
@@ -40,8 +41,11 @@ class JobScheduler(ABC):
 
     async def connect(self) -> None:
         """Connect to the file source"""
-        # connect to source
         await self.source.connect()
+
+    async def disconnect(self) -> None:
+        """Disconnect from the file source"""
+        await self.source.disconnect()
 
     async def replica_distances(self, replica: Replica) -> dict:
         """
@@ -111,7 +115,8 @@ class JobScheduler(ABC):
                 for replica in file.replicas:
                     if not replica.status.good:
                         continue
-                    dist = replica.distance + min(await self.replica_distances(replica).values())
+                    replica_dists = await self.replica_distances(replica)
+                    dist = replica.distance + min(replica_dists.values())
                     min_dist = min(min_dist, dist)
                 # File is unreachable no RSE-site distance was below threshold
                 if min_dist > config.sites.max_distance:
@@ -122,6 +127,26 @@ class JobScheduler(ABC):
             # Output batch with reachable files
             good_files = [f for f in batch if not f.errors]
             yield InputBatch(skip=batch.skip, files=good_files)
+
+    async def _loop(self) -> None:
+        """Repeatedly get input_batches until all files are retrieved."""
+        # Connect to source
+        await self.connect()
+        # Loop over batches
+        async for _ in self.input_batches():
+            self.files.check_errors()
+        # Close connections
+        await self.disconnect()
+
+    def run_loop(self) -> None:
+        """Retrieve metadata for all files."""
+        try:
+            asyncio.run(self._loop())
+        except ValueError as err:
+            logger.critical("%s", err)
+            sys.exit(1)
+
+        self.files.check_errors(final = True)
 
     def assign_site(self, chunk: MergeChunk, site: str = None) -> None:
         """
@@ -207,10 +232,10 @@ class JobScheduler(ABC):
         
         :return: None
         """
-        self.source.run()
+        self.run_loop()
         os.makedirs(self.dir, exist_ok=True)
 
-        for chunk in self.source.files.groups():
+        for chunk in self.files.groups():
             self.schedule(chunk)
             self.write_specs(chunk)
         if not self.jobs:
@@ -218,39 +243,20 @@ class JobScheduler(ABC):
             return
         io_utils.log_print(f"Writing job config files to {self.dir}")
 
-        n_inputs = 0
-        n_stage1 = 0
-        n_stage2 = 0
-        n_outputs = 0
-        msg = [""]
+        msg = ["Merge jobs:"] if len(self.jobs) == 1 else ["Pass 1 merge jobs:"]
         for site, site_jobs in self.jobs[0].items():
-            site_inputs = sum(len(job[1]) for job in site_jobs)
-            site_stage1 = len(site_jobs)
-            site_outputs = sum(1 for job in site_jobs if job[1].chunk_id < 0)
-            n_inputs += site_inputs
-            n_stage1 += site_stage1
-            n_outputs += site_outputs
             if site is None:
                 site = "local"
-            msg.append(f"{site}: \t{site_inputs} -> {site_stage1}")
-        for site, site_jobs in self.jobs[1].items():
-            n_stage2 += sum(1 for job in site_jobs if job[1].output_id == 0)
-        n_outputs += n_stage2
+            msg.append(f"{site}: {len(site_jobs)} merges")
+        for tier, tier_jobs in enumerate(self.jobs[1:], start=2):
+            msg.append(f"Pass {tier} merge jobs:")
+            for site, site_jobs in tier_jobs.items():
+                if site is None:
+                    site = "local"
+                msg.append(f"{site}: {len(site_jobs)} merges")
+        io_utils.log_print("\n  ".join(msg))
 
         script = self.write_script()
-
-        msg[0] = f"Merging {n_inputs} input files into {n_outputs} groups"
-        io_utils.log_print("\n  ".join(msg))
-        if len(script) > 1:
-            if len(self.jobs[0]) > 1:
-                msg = ["A second merging pass is required due to distributed inputs:"]
-            else:
-                msg = ["A second merging pass is required due to high multiplicity:"]
-            for site, site_jobs in self.jobs[1].items():
-                site_inputs = sum(len(job[1].inputs) for job in site_jobs)
-                site_stage2 = len(site_jobs)
-                msg.append(f"{site}: \t{site_inputs} -> {site_stage2}")
-            io_utils.log_print("\n  ".join(msg))
 
         io_utils.log_print(f"Files will be merged using {config.method.method_name}")
         msg = ["Execute the merge by running:"] + script
@@ -269,11 +275,12 @@ class LocalScheduler(JobScheduler):
         await self.source.connect()
         # If we have a local site name, try to get distances from JustIN
         if config.local.site:
+            local_site = str(config.local.site)
             justin_dists = await justin_utils.get_site_rse_distances()
             if justin_dists:
                 self.justin = True
             for rse, dists in justin_dists.items():
-                dist = dists.get(config.local.site, float('inf'))
+                dist = dists.get(local_site, float('inf'))
                 if dist < float('inf'):
                     self.distances[rse] = {None: dist}
 

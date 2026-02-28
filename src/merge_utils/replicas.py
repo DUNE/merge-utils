@@ -513,20 +513,20 @@ class GenericRSE(BaseRSE):
             logger.debug("Creating RSE %s with unknown protocol %s", self.name, protocol)
         # Check for distance based on RSE name, full URL, then host name
         if name and name in config.sites.rse_distances:
-            self.distance = config.sites.rse_distances[name]
+            self.distance = float(config.sites.rse_distances[name])
             logger.debug("Found distance for RSE %s based on name: %s", self.name, self.distance)
         elif url in config.sites.rse_distances:
-            self.distance = config.sites.rse_distances[url]
+            self.distance = float(config.sites.rse_distances[url])
             logger.debug("Found distance for RSE %s based on URL: %s", self.name, self.distance)
         elif host in config.sites.rse_distances:
-            self.distance = config.sites.rse_distances[host]
+            self.distance = float(config.sites.rse_distances[host])
             logger.debug("Found distance for RSE %s based on host: %s", self.name, self.distance)
         # If we don't have a distance, using staging penalty to represent tape vs disk
         else:
             logger.debug("Using default distances for RSE %s", self.name)
-            self.distance = config.sites.rse_distances['disk']
+            self.distance = float(config.sites.rse_distances['disk'])
             if self.staging is None:
-                self.staging = config.sites.rse_distances['tape'] - self.distance
+                self.staging = float(config.sites.rse_distances['tape']) - self.distance
         # Add ping time to the distance
         self.distance += self.ping()
 
@@ -539,28 +539,31 @@ class RucioRSE(BaseRSE):
         logger.debug("Initializing Rucio RSE %s", self.name)
         self.read = info['availability_read'] and not info.get('deleted', False)
         self.write = info['availability_write'] and not info.get('deleted', False)
-        if info['rse_type'] == 'DISK':
+        if self.name in config.sites.dcache:
+            self.staging = float(config.sites.dcache[self.name]['staging'])
+            logger.debug("RSE %s is dcache with staging penalty %.0f", self.name, self.staging)
+            self.disk = True
+        elif info['rse_type'] == 'DISK':
             self.disk = True
         elif info['rse_type'] == 'TAPE':
             self.disk = False
         else:
             logger.error("RSE %s has unknown type %s", self.name, info['rse_type'])
             self.disk = None
-        if self.name in config.sites.dcache:
-            self.staging = float(config.sites.dcache[self.name]['staging'])
         self.set_distance()
         self.set_urls(info['protocols'])
 
     def set_distance(self) -> None:
         """Get the distance offset for this RSE from the config"""
         if self.name in config.sites.rse_distances:
-            self.distance = config.sites.rse_distances[self.name]
+            self.distance = float(config.sites.rse_distances[self.name])
         elif self.disk is True:
-            self.distance = config.sites.rse_distances['disk']
+            self.distance = float(config.sites.rse_distances['disk'])
         elif self.disk is False:
-            self.distance = config.sites.rse_distances['tape']
+            self.distance = float(config.sites.rse_distances['tape'])
         else:
             self.distance = float('inf')
+        logger.debug("Set distance for RSE %s to %.0f", self.name, self.distance)
 
     def set_urls(self, protocols: list) -> None:
         """

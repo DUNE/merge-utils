@@ -20,10 +20,9 @@ async def get_site_rse_distances() -> dict:
     :return: dictionary of {rse: {site: distance}} for all reachable site-RSE pairs
     """
     # Query JustIN for site-RSE distances
+    full_url = str(config.sites.justin_url) + SITE_STORAGE_URL
     try:
-        res = await asyncio.to_thread(
-            requests.get, config.sites.justin_url+SITE_STORAGE_URL, verify=False, timeout=10
-        )
+        res = await asyncio.to_thread(requests.get, full_url, verify=False, timeout=60)
         connected = res.ok
     except requests.ConnectionError as err:
         logger.error("JustIN connection error: %s", err)

@@ -187,6 +187,12 @@ class ConfigString(ConfigValue):
     def __contains__(self, item):
         return item in self._value
 
+    def format(self, *args, **kwargs):
+        """Format the string value with the given arguments"""
+        if self._value is None:
+            return None
+        return self._value.format(*args, **kwargs)
+
 class ConfigPath(ConfigString):
     """Class to manage a configuration file path"""
     _type: str = 'path'

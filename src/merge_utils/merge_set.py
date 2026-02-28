@@ -484,7 +484,7 @@ class MergeSet:
                 group_sizes.append(estimate)
                 estimate = fixed
             estimate += delta
-        group_sizes.append()
+        group_sizes.append(estimate)
         # If we're not equalizing the groups then we're done
         if not config.grouping.equalize:
             return divs
@@ -599,8 +599,8 @@ class MergeChunk:
     def namespace(self) -> str:
         """Get the namespace for the chunk"""
         if self.parent is None:
-            return config.output.namespace
-        return config.output.scratch.namespace
+            return str(config.output.namespace)
+        return str(config.output.scratch.namespace)
 
     @property
     def tier(self) -> int:
@@ -615,6 +615,10 @@ class MergeChunk:
         if self.parent is None:
             return []
         return self.parent.chunk_id + [self.parent.children.index(self)]
+
+    def __len__(self) -> int:
+        """Get the number of files in the chunk"""
+        return len(self.files)
 
     def make_name(self, name: str, chunk: list[int]) -> str:
         """Get the name for a chunk output"""
@@ -632,8 +636,8 @@ class MergeChunk:
             inputs = []
             for file in self.files:
                 # Get the path for this site
-                if len(file.replicas) != 0:
-                    raise RuntimeError("Getting MergeChunk inputs before selecting replicas?")
+                if len(file.replicas) != 1:
+                    raise RuntimeError(f"MergeChunk input file has {len(file.replicas)} replicas?")
                 inputs.append(file.replicas[0].path)
             return inputs
         # Otherwise, the inputs are the outputs from the previous pass
@@ -642,10 +646,10 @@ class MergeChunk:
         inputs = [self.make_name(base_name, cid + [c]) for c in range(len(self.children))]
         # For batch jobs, just list the DIDs and we'll get the paths later
         if config.output.mode != 'local':
-            namespace = config.output.scratch.namespace
+            namespace = str(config.output.scratch.namespace)
             return [f"{namespace}:{name}" for name in inputs]
         # For local jobs, return the full paths to the output files
-        output_dir = config.output.out_dir
+        output_dir = str(config.output.out_dir)
         return [os.path.join(output_dir, name) for name in inputs]
 
     def outputs(self, output_id = None) -> list[dict]:
@@ -664,15 +668,19 @@ class MergeChunk:
         chunk = self.chunk_id
         for spec in specs:
             output = {'name': self.make_name(spec.name, chunk)}
-            md = copy.deepcopy(spec.metadata) if spec.metadata else {}
+            md = {}
+            if spec.metadata:
+                md.update({k: v.value for k, v in spec.metadata.items()})
             if output_id is not None and spec.pass2:
                 pass2 = meta.match_method(name=spec.pass2)
-                md.update(pass2.metadata or {})
-                md.update(pass2.outputs[0].metadata or {})
+                if pass2.metadata:
+                    md.update({k: v.value for k, v in pass2.metadata.items()})
+                if pass2.outputs[0].metadata:
+                    md.update({k: v.value for k, v in pass2.outputs[0].metadata.items()})
                 if pass2.outputs[0].rename:
-                    output['rename'] = pass2.outputs[0].rename
+                    output['rename'] = str(pass2.outputs[0].rename)
             elif spec.rename:
-                output['rename'] = spec.rename
+                output['rename'] = str(spec.rename)
             if md:
                 output['metadata'] = md
             outputs.append(output)
@@ -713,12 +721,12 @@ class MergeChunk:
                 sys.exit(1)
         # Build the settings dictionary from the spec
         settings = {
-            'streaming': config.input.streaming,
-            'method': spec.name
+            'streaming': config.input.streaming.value,
+            'method': spec.method_name.value
         }
         for key in ['cfg', 'script', 'cmd']:
             if spec[key]:
-                settings[key] = spec[key]
+                settings[key] = spec[key].value
         return settings
 
     def spec(self, output_id = None) -> dict:

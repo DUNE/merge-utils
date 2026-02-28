@@ -35,7 +35,7 @@ output:
 
 validation:
     batch_size: 100   # Number of files to query metacat about at once
-    concurrency: 10   # Number of threads to use for checking replicas
+    concurrency: 1   # Number of threads to use for checking replicas
     fast_fail: True   # Stop processing files as soon as one batch fails validation
     check_fids: True  # Make sure parent FIDs exist in MetaCat (DIDs are always checked)
     handling:         # How to handle files with errors
@@ -151,6 +151,9 @@ schema:     # Used to check validity of user config files
             dependencies: <set>     # Optionally specify additional files required for merging
             metadata: <map>         # Per-method metadata overrides
             outputs: <list(output_file)>
+        dcache_site:
+            url: <str>              # Base URL for accessing files on this DCache site
+            staging: <float>        # Distance penalty for staging files from this site
     key_defs:
         output.tmp_dir: <path>
         output.local.out_dir: <path>
@@ -160,6 +163,6 @@ schema:     # Used to check validity of user config files
         sites.site_distances: <map(float)>
         sites.site_distances[default]: <float>
         sites.rse_distances: <map(float)>
-        sites.rse_distances[default]: <float>
-        sites.disk_distances: <map(float)>
-        sites.disk_distances[default]: <float>
+        sites.rse_distances[disk]: <float>
+        sites.rse_distances[tape]: <float>
+        sites.dcache: <map(dcache_site)>
