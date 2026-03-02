@@ -4,6 +4,7 @@ import os
 import sys
 import logging
 import collections
+import copy
 
 from merge_utils import config, io_utils, naming
 
@@ -607,6 +608,10 @@ def check_method(files: list) -> None:
             sys.exit(1)
 
     # Check for issues with the merging outputs, and add any additional dependencies
+    if len(config.method.outputs) == 1 and config.method.outputs[0].metadata:
+        logger.info("Single output with metadata, adding to general metadata overrides")
+        config.metadata.overrides.update(config.method.outputs[0].metadata)
+        config.method.outputs[0].metadata = None
     for idx, output in enumerate(config.method.outputs):
         if output.checklist:
             deps.add(io_utils.find_file(output.checklist, ["config", "src"], recursive=True))
@@ -681,3 +686,15 @@ def make_names(files: list):
         if not key:
             continue
         formatter.format(key)
+    # Check output file metadata for validity
+    for idx, output in enumerate(config.method.outputs):
+        if not output.metadata:
+            logger.debug("Skipping output %d metadata validation (no metadata)", idx)
+            continue
+        logger.debug("Validating output %d metadata (%s)", idx, output.metadata)
+        out_meta = copy.deepcopy(metadata)
+        for key, value in output.metadata.items():
+            out_meta[key] = value.value
+        if not validate(f"output {idx}", out_meta, requirements=False):
+            logger.critical("Output %d metadata is invalid, cannot continue!", idx)
+            raise ValueError(f"Output {idx} metadata is invalid")

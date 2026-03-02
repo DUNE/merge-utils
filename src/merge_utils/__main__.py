@@ -44,8 +44,8 @@ def get_parser() -> argparse.ArgumentParser:
     out_mode.add_argument('--validate', dest='output_mode', action='store_const', const='validate',
                           help='only validate metadata instead of merging')
     out_mode.add_argument('--list', dest='output_mode', metavar='OPT',
-                          choices=['dids', 'replicas', 'pfns'],
-                          help='list (dids, replicas, pfns) instead of merging')
+                          choices=['metadata', 'dids', 'replicas', 'pfns'],
+                          help='list (metadata, dids, replicas, pfns) instead of merging')
     out_group.add_argument('-l', '--local', action='store_true',
                            help='run merge locally instead of submitting to JustIN')
     out_group.add_argument('-n', '--name', type=str, help='override the base name for output files')
@@ -174,6 +174,39 @@ def resume_job(args):
     ]
     io_utils.log_print("\n  ".join(msg))
 
+def print_metadata(metadata, mode):
+    """Print info about the metadata for a list of files."""
+    metadata.run()
+    good_files = metadata.files.good_files
+    ngood = len(good_files)
+    nerrs = len(metadata.files) - ngood
+    # In DID mode, list all valid DIDs and exit
+    if mode == 'dids':
+        io_utils.log_print(f"Found {ngood} valid input files:")
+        for file in good_files:
+            print(f"  {file.did}")
+        if nerrs:
+            logger.error("An additional %d files failed validation!", nerrs)
+        return
+    # Otherwise, print summary of validation results
+    if nerrs:
+        logger.error("%d input files passed validation, but %d files failed!", ngood, nerrs)
+        return
+    io_utils.log_print(f"All {ngood} input files passed validation!", logging.INFO)
+    # Check the metadata for the output files
+    meta.make_names(good_files)
+    if mode == 'validate':
+        io_utils.log_print("All input and output metadata passed validation!")
+        return
+    # In metadata mode, also print the combined output metadata
+    merged_metadata = meta.merged_keys(good_files, True)
+    io_utils.log_print(f"Combined metadata:\n{json.dumps(merged_metadata, indent=2)}")
+    for idx, output in enumerate(config.method.outputs):
+        if not output.metadata:
+            continue
+        overrides = json.dumps({k: v.value for k, v in output.metadata.items()}, indent=2)
+        io_utils.log_print(f"Additional metadata overrides for output {idx}:\n{overrides}")
+
 def main():
     """Run a merge job"""
     parser = get_parser()
@@ -192,30 +225,8 @@ def main():
     metadata = retriever.get()
 
     # If we're only validating or listing DIDs, we can skip the rest of the setup
-    if config.output.mode == 'validate':
-        metadata.run()
-        good_files = metadata.files.good_files
-        ngood = len(good_files)
-        nerrs = len(metadata.files) - ngood
-        io_utils.log_print(f"{ngood} inputs passed validation")
-        if nerrs:
-            io_utils.log_print(f"{nerrs} inputs failed validation")
-        else:
-            meta.make_names(good_files)
-            merged_metadata = meta.merged_keys(good_files, True)
-            io_utils.log_print(f"Combined metadata:\n{json.dumps(merged_metadata, indent=2)}")
-        return
-
-    if config.output.mode == 'dids':
-        metadata.run()
-        good_files = metadata.files.good_files
-        ngood = len(good_files)
-        io_utils.log_print(f"Found {ngood} valid files:")
-        for file in good_files:
-            print(f"  {file.did}")
-        nerrs = len(metadata.files) - ngood
-        if nerrs:
-            io_utils.log_print(f"An additional {nerrs} files failed validation!")
+    if config.output.mode in ['validate', 'metadata', 'dids']:
+        print_metadata(metadata, config.output.mode)
         return
 
     # Set up physical path finder
