@@ -8,9 +8,9 @@ import subprocess
 import shutil
 import socket
 from datetime import datetime, timezone
-import ROOT
-import h5py
 import tarfile
+import h5py
+import ROOT
 
 def checksums(filename: str) -> dict:
     """Calculate the checksum of a file"""
@@ -23,7 +23,7 @@ def checksums(filename: str) -> dict:
     results = {'adler32':checksum}
     return results
 
-def list_root(dir, base="") -> list:
+def list_root(folder, base="") -> list:
     """
     List all contents of a ROOT file recursively.
 
@@ -32,12 +32,13 @@ def list_root(dir, base="") -> list:
     :return: list of object paths
     """
     contents = []
-    for key in dir.GetListOfKeys():
+    for key in folder.GetListOfKeys():
         obj_name = key.GetName()
         full_path = os.path.join(base, obj_name)
         contents.append(full_path)
-        if key.IsFolder():
-            subdir = dir.Get(obj_name)
+        #if key.IsFolder():
+        if key.GetClassName() in ['TDirectoryFile', 'TDirectory']:
+            subdir = folder.Get(obj_name)
             contents.extend(list_root(subdir, full_path))
     return contents
 
@@ -74,7 +75,7 @@ def check_file(path: str, rename: str = None, checklist: list = None) -> bool:
     elif not os.path.exists(path):
         print(f"ERROR: Output file {os.path.basename(path)} not found!")
         return False
-    
+
     # Read file contents
     ext = os.path.splitext(path)[1].lower()
     try:
@@ -97,7 +98,7 @@ def check_file(path: str, rename: str = None, checklist: list = None) -> bool:
     except Exception as e:
         print(f"ERROR: Failed to read file {os.path.basename(path)}: {e}")
         return False
-    
+
     # Check for expected contents
     if checklist is None:
         if len(contents) > 0:
