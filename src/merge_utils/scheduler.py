@@ -247,14 +247,14 @@ class JobScheduler(ABC):
         for site, site_jobs in self.jobs[0].items():
             if site is None:
                 site = "local"
-            msg.append(f"{site}: {len(site_jobs)} merges")
+            msg.append(f"  {site}: {len(site_jobs)} merges")
         for tier, tier_jobs in enumerate(self.jobs[1:], start=2):
             msg.append(f"Pass {tier} merge jobs:")
             for site, site_jobs in tier_jobs.items():
                 if site is None:
                     site = "local"
-                msg.append(f"{site}: {len(site_jobs)} merges")
-        io_utils.log_print("\n  ".join(msg))
+                msg.append(f"  {site}: {len(site_jobs)} merges")
+        io_utils.log_print("\n".join(msg))
 
         script = self.write_script()
 
