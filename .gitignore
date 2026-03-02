@@ -171,6 +171,12 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# Mac OS stuff
+.DS_Store
+
 # Temporary submit files
 tmp/
+
+# Backup and experimental files
 backup/
+experiments/
