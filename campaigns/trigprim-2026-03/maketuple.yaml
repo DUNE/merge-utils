@@ -1,7 +1,7 @@
 version: "0.8.1"
 
 input:
-    streaming: False
+    streaming: True 
 
 output:
     mode: merge
@@ -25,7 +25,7 @@ method:
     cfg: "triggersim_triggerana_dune10kt_1x2x2.fcl"
     outputs:
       - name: "{NAME}__{merge.cfg}__{UUID}__tuple.root"
-        metadata: {"core.file_format": "root", "code.data_tier":"root-tuple"}
+        metadata: {"core.file_format": "root", "core.data_tier":"root-tuple"}
 sites:
     site_distances:                       # Distance offsets for merging sites
         default: .inf                     # Do not allow merging except at specified sites
