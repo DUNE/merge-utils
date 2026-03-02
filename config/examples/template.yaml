@@ -51,8 +51,7 @@ validation:
 sites:
     default: "US_FNAL-FermiGrid"          # Default site (eg for stage 2 jobs)
     max_distance: 1000.0                  # Distances range from 0 to 101
-    site_distances:                       # Distance offsets for merging sites
-        default: .inf                     # Do not allow merging except at specified sites
+    site_distances:                       # Distance offsets for allowed merging sites
         "US_FNAL-FermiGrid": -5.0         # Increase priority
         "CERN": 0.0
     rse_distances:                        # Distances offsets for specific RSEs

@@ -1,0 +1,94 @@
+{
+  "version": "0.8.1",
+  "input": {
+    "mode": "<opt(dids, files, dataset, query)>",
+    "inputs": [],
+    "search_dirs": "<set>",
+    "namespace": "usertests",
+    "skip": "<int>",
+    "limit": "<int>",
+    "tag": "<str>",
+    "comment": "<str>",
+    "streaming": true
+  },
+  "output": {
+    "mode": "<opt(merge, validate, metadata, dids, replicas, pfns)>",
+    "local": false,
+    "name": "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}",
+    "namespace": "<str>",
+    "grandparents": false,
+    "tmp_dir": "{PKG}/tmp",
+    "out_dir": "/pnfs/dune/scratch/users/{$USER}/merge_test",
+    "batch": {
+      "lifetime": 30,
+      "rse": "<str>"
+    },
+    "scratch": {
+      "namespace": "<str>",
+      "lifetime": 7
+    }
+  },
+  "metadata": {
+    "optional": "<set>",
+    "consistent": "<set>"
+  },
+  "validation": {
+    "batch_size": "<int>",
+    "concurrency": "<int>",
+    "fast_fail": true,
+    "check_fids": true,
+    "handling": {
+      "default": "<opt(quit,skip,gap)>",
+      "duplicate": "<opt(default,quit,skip,gap)>",
+      "no_metadata": "<opt(default,quit,skip,gap)>",
+      "undeclared": "<opt(default,quit,skip,gap)>",
+      "retired": "<opt(default,quit,skip,gap)>",
+      "invalid": "<opt(default,quit,skip,gap)>",
+      "no_replicas": "<opt(default,quit,skip,gap)>",
+      "unreachable": "<opt(default,quit,skip,gap)>",
+      "inconsistent": "<opt(default,quit,skip,gap)>"
+    }
+  },
+  "sites": {
+    "default": "US_FNAL-FermiGrid",
+    "max_distance": 1000,
+    "site_distances": {
+      "US_FNAL-FermiGrid": -5,
+      "CERN": 0
+    },
+    "rse_distances": {
+      "disk": 0,
+      "tape": 100,
+      "DUNE_US_FNAL_DISK_STAGE": -5
+    },
+    "dcache": {
+      "FNAL_DCACHE": {
+        "url": "root://fndcadoor.fnal.gov:1094/pnfs/fnal.gov/usr/dune/tape_backed/dunepro",
+        "staging": 10
+      }
+    }
+  },
+  "grouping": {
+    "mode": "<opt(size, count)>",
+    "target": 10,
+    "equalize": true,
+    "chunk_min": 2,
+    "chunk_max": 100
+  },
+  "method": {
+    "method_name": "auto",
+    "cmd": "<str>",
+    "cfg": "<str>",
+    "script": "<str>",
+    "transform": "<str>",
+    "outputs": "<list(output_file)>",
+    "dependencies": "<set>",
+    "environment": {
+      "dunesw_version": "<str>",
+      "dunesw_qualifier": "<str>",
+      "vars": "<map>",
+      "image": "<str>",
+      "products": "<set>"
+    }
+  }
+}
