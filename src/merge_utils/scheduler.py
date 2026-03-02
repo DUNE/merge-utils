@@ -20,6 +20,14 @@ from merge_utils.replicas import Replica, PathFinder, GenericRSE, RucioRSE
 
 logger = logging.getLogger(__name__)
 
+STD_ENV_VARS = set([
+    'MERGE_CONFIG',
+    'CONFIG_DIR',
+    'DUNE_VERSION',
+    'DUNE_QUALIFIER',
+    'EXTRA_PRODUCTS'
+])
+
 class JobScheduler(ABC):
     """Base class for scheduling a merge job"""
 
@@ -501,7 +509,7 @@ class JustinScheduler(JobScheduler):
         if config.method.environment.dunesw_qualifier:
             cmd += ['--env', f'DUNE_QUALIFIER="{config.method.environment.dunesw_qualifier}"']
         for var, val in config.method.environment.vars.items():
-            if var in ['MERGE_CONFIG', 'CONFIG_DIR', 'DUNE_VERSION', 'DUNE_QUALIFIER', 'EXTRA_PRODUCTS']:
+            if var in STD_ENV_VARS:
                 logger.error("Cannot override reserved environment variable: %s", var)
                 continue
             cmd += ['--env', f'{var}="{val}"']
@@ -511,6 +519,8 @@ class JustinScheduler(JobScheduler):
         for output in config.method.outputs:
             name = str(output['name'])
             cmd += ['--output-pattern', name.format(UUID='*')]
+        if config.output.batch.rse:
+            cmd += ['--output-rse', str(config.output.batch.rse)]
         return f"{' '.join(cmd)}\n"
 
     def write_script(self) -> list:

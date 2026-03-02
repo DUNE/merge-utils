@@ -15,7 +15,7 @@ input:
     streaming: True         # Stream files from remote sites instead of making a local copy
 
 output:
-    mode: <opt(merge, validate, dids, replicas, pfns)>
+    mode: <opt(merge, validate, metadata, dids, replicas, pfns)>
     local: False          # Run merging locally instead of submitting to JustIN
     name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
     namespace: <str>      # Optionally specify a namespace different from the parents
@@ -24,6 +24,7 @@ output:
     out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test" # Local output directory
     batch:                # Settings for batch merging
         lifetime: 30      # Lifetime of output files (in days)
+        rse: <str>        # Save merged files to a specific RSE
     scratch:              # Settings for temporary files from 2-stage merging
         namespace: <str>  # Optionally specify a different namespace for temporary files
         lifetime: 7       # Lifetime of temporary files (in days)
@@ -67,7 +68,6 @@ sites:
         "FNAL_DCACHE":
             url: "root://fndcadoor.fnal.gov:1094/pnfs/fnal.gov/usr/dune/tape_backed/dunepro"
             staging: 10.0
-    
 
 local:
     site: <str>
