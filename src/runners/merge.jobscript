@@ -41,6 +41,8 @@ fi
 DUNE_VERSION=${DUNE_VERSION:-v10_12_01d00}
 DUNE_QUALIFIER=${DUNE_QUALIFIER:-e26:prof}
 setup dunesw "$DUNE_VERSION" -q "$DUNE_QUALIFIER"
+# Setup other software
+pip install h5py
 
 # Get job configuration
 while [ ! -d $CONFIG_DIR ]; do
