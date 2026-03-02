@@ -31,6 +31,7 @@ if [ -n "$EXTRA_PRODUCTS" ]; then
       echo "Failed to stat extra product $prod. Aborting."
       exit 1
     fi
+  done
   export PRODUCTS=$EXTRA_PRODUCTS:$PRODUCTS 
 fi
 
@@ -53,8 +54,7 @@ cat $CONFIG_DIR/$config
 python3 $CONFIG_DIR/do_merge.py $CONFIG_DIR/$config $OUT_DIR
 
 exitcode=$?
-if [ $exitcode -ne 0 ];
-then
+if [ $exitcode -ne 0 ]; then
   echo "failed to merge $config $exitcode"
   exit $exitcode
 fi
