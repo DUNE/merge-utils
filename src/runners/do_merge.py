@@ -87,9 +87,10 @@ def check_contents(path: str, checklist: str = None) -> bool:
     :param checklist: Expected contents checklist, or 'skip' or 'auto' for special behavior
     :return: True if the file is valid, False otherwise
     """
-    if checklist == 'skip':
-        return True
     name = os.path.basename(path)
+    if checklist == 'skip':
+        print(f"WARNING: Skipping content check for {name}")
+        return True
     # Read file contents
     ext = os.path.splitext(path)[1].lower()
     try:
@@ -131,7 +132,7 @@ def check_contents(path: str, checklist: str = None) -> bool:
             if item and item not in contents:
                 missing.append(item)
     if len(missing) > 0:
-        print(f"ERROR: File {os.path.basename(path)} is missing expected contents:")
+        print(f"ERROR: File {name} is missing expected contents:")
         for item in missing:
             print(f"  {item}")
         return False
