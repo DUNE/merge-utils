@@ -82,7 +82,7 @@ method:
     #   metadata: <map>                   # Per-file metadata overrides
     #   pass2: hadd                       # Alternate merge method for output files
     #   size: sum                         # Size estimate for output file
-    #   size_min: 0.0                     # Minimum size for output file, for error checking
+    #   size_min: 0                       # Minimum size for output file (for error checking)
     #   checklist: <path>                 # Checklist file to verify the output file contents
     dependencies: <set>           # Optionally specify additional files required for merging
     environment:

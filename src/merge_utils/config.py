@@ -515,6 +515,18 @@ class ConfigSizeSpec(ConfigValue):
         """Constant term in bytes"""
         return self._value[3] if self._value else None
 
+    def __bool__(self):
+        return bool(self._value and any(coeff != 0 for coeff in self._value))
+
+    def __call__(self, sizes: list) -> float:
+        """Evaluate the size spec for a given list of input sizes"""
+        if not self._value:
+            return 0
+        n = len(sizes)
+        s = sum(sizes)
+        a = s/n if n > 0 else 0
+        return self._value[0]*s + self._value[1]*n + self._value[2]*a + self._value[3]
+
     def __str__(self):
         out = []
         for coeff, param in zip(self._value, [opts[1] for opts in self.PARAMS[:-1]]):

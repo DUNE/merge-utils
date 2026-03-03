@@ -139,7 +139,7 @@ schema:     # Used to check validity of user config files
             rename: <str>           # File name produced by merging method, if different from spec
             pass2: <str>            # Basic merging method for pass 2+ of a transform job
             size: <size_spec> sum   # Size estimate for output file
-            size_min: <float> 0     # Minimum size for output file, for error checking
+            size_min: <size_spec> 0 # Minimum size for output file (for error checking)
             checklist: <path>       # Optional checklist file to verify the output file contents
         merging_method:
             method_name: <str>      # Name of method, used for selection and in output metadata

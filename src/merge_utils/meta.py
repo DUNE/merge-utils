@@ -613,7 +613,7 @@ def check_method(files: list) -> None:
         config.metadata.overrides.update(config.method.outputs[0].metadata)
         config.method.outputs[0].metadata = None
     for idx, output in enumerate(config.method.outputs):
-        if output.checklist:
+        if output.checklist and output.checklist not in ['skip', 'auto']:
             deps.add(io_utils.find_file(output.checklist, ["config", "src"], recursive=True))
         if output.pass2:
             method2 = match_method(name=output.pass2)
