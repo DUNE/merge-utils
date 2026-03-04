@@ -38,7 +38,7 @@ class MergeFileError(enum.Flag):
         return config.validation.handling[self.first.name.lower()]
 
     @property
-    def group(self) -> str:
+    def group(self) -> bool:
         """Check if the file should count towards grouping"""
         return self.handling in ['good', 'gap']
 
@@ -225,14 +225,14 @@ class MergeSet:
             raise KeyError(f"Unknown file DID: {did}")
         return self._files[idx - self.start_idx]
 
-    def get_slice(self, start: int = None, end: int = None, step: int = None) -> list[MergeFile]:
+    def get_slice(self, start: int = 0, end: int = 0, step: int = 1) -> list[MergeFile]:
         """
         Get a slice of files by their indices.
 
         :param start: starting index of the slice
         :param end: ending index of the slice (exclusive)
         :param step: step size for the slice
-        :return: list of MergeFile objects or None for missing indices
+        :return: list of MergeFile objects
         """
         start = start or self.start_idx
         end = end or self.end_idx
@@ -246,7 +246,7 @@ class MergeSet:
                 files.append(file)
         return files
 
-    def insert(self, idx: int, file: MergeFile = None) -> None:
+    def insert(self, idx: int, file: MergeFile) -> None:
         """
         Insert a file at the specified index.
 
@@ -514,7 +514,7 @@ class MergeSet:
             group_sizes[max_idx+1] -= max_delta
         return divs
 
-    def groups(self) -> Generator[dict, None, None]:
+    def groups(self) -> Generator[MergeChunk, None, None]:
         """Split the files into groups for merging"""
         # Finish expanding all names before making groups
         meta.make_names(self.good_files)

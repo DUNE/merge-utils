@@ -12,7 +12,7 @@ from typing import AsyncGenerator
 from abc import ABC, abstractmethod
 
 from merge_utils import io_utils, config
-from merge_utils.merge_set import MergeSet, MergeFile
+from merge_utils.merge_set import MergeSet, MergeFile, MergeFileError
 from merge_utils.retriever import MetaRetriever, InputBatch
 from merge_utils.rucio_utils import RucioWrapper
 
@@ -714,7 +714,7 @@ class PathFinder(MetaRetriever):
             # Process previous batch while we wait, if we have one
             if batch:
                 logger.info("Processing new %s input batch %d", self.name, batch.skip)
-                await self.set_paths(batch, paths)
+                await self.set_paths(batch, paths.files)
                 # Wait for any pending path checks to finish before yielding the batch
                 await self.replica_queue.join()
                 # Check for replica errors
@@ -728,8 +728,8 @@ class PathFinder(MetaRetriever):
                         unreachable.append(file.did)
                     elif not file.errors:
                         good_files.append(file)
-                self.files.set_error(no_replicas, 'NO_REPLICAS')
-                self.files.set_error(unreachable, 'UNREACHABLE')
+                self.files.set_error(no_replicas, MergeFileError.NO_REPLICAS)
+                self.files.set_error(unreachable, MergeFileError.UNREACHABLE)
                 if good_files:
                     yield InputBatch(skip=batch.skip, files=good_files)
             # Save new batch for processing in the next iteration

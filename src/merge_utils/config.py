@@ -8,6 +8,7 @@ import socket
 import fnmatch
 from datetime import datetime, timezone
 from abc import ABC, abstractmethod
+from typing import Any
 
 from merge_utils import io_utils, __version__
 
@@ -79,7 +80,7 @@ class ConfigKey(ABC):
         self._value = None
 
     @property
-    def _subtype(self) -> str:
+    def _subtype(self) -> str | None:
         """Return the subtype of the config key, if any"""
         return None
 
@@ -161,7 +162,7 @@ class ConfigValue(ConfigKey):
         self._value = self._default
 
     @property
-    def value(self) -> any:
+    def value(self):
         """Get the raw value of the key"""
         return self._value
 
@@ -365,12 +366,12 @@ class ConfigOption(ConfigKey):
 
     def __init__(self, name: str, options: str):
         super().__init__(name)
-        options = [opt.strip() for opt in options.split(',')]
-        self._value = options[0]
-        uique_opts = set(options)
+        opts = [opt.strip() for opt in options.split(',')]
+        self._value = opts[0]
+        uique_opts = set(opts)
         self._options = []
         dupes = set()
-        for opt in options:
+        for opt in opts:
             if opt in uique_opts:
                 self._options.append(opt)
                 uique_opts.remove(opt)
@@ -445,18 +446,18 @@ class ConfigSizeSpec(ConfigKey):
             raise ValueError(self._err(f"failed to parse parameter of term '{term}'"))
         return coeff, param.lower()
 
-    def parse_spec(self, spec: str) -> list:
+    def parse_spec(self, spec_str: str) -> list:
         """
         Parse size specification consisting of a sum of terms of the form
         'number * param' or 'number param',
         where param is one of PARAMS, or '' for bytes. For example: '2*s + 0.5*n + 10mb'
 
-        :param spec: specification string
+        :param spec_str: specification string
         :return: tuple of coefficents for (s,n,a,b)
         """
         errors = []
-        coeffs = [None]*len(self.PARAMS)
-        spec = spec.replace(' ', '').split('+')
+        coeffs: list[float | None] = [None]*len(self.PARAMS)
+        spec = spec_str.replace(' ', '').split('+')
         for term in spec:
             try:
                 coeff, param = self.parse_term(term)
@@ -498,22 +499,22 @@ class ConfigSizeSpec(ConfigKey):
     @property
     def s(self) -> float:
         """Coefficient for sum of input sizes term"""
-        return self._value[0] if self._value else None
+        return self._value[0] if self._value else 0
 
     @property
     def n(self) -> float:
         """Coefficient for number of inputs term"""
-        return self._value[1] if self._value else None
+        return self._value[1] if self._value else 0
 
     @property
     def a(self) -> float:
         """Coefficient for average input size term"""
-        return self._value[2] if self._value else None
+        return self._value[2] if self._value else 0
 
     @property
     def b(self) -> float:
         """Constant term in bytes"""
-        return self._value[3] if self._value else None
+        return self._value[3] if self._value else 0
 
     def __bool__(self):
         return bool(self._value and any(coeff != 0 for coeff in self._value))
@@ -593,22 +594,32 @@ class ConfigCollection(ConfigKey):
     def _lock(self) -> None:
         pass
 
-    def _json(self):
+    def _json(self) -> Any:
+        if not self._value:
+            return []
         return [val._json() for val in self._value] # pylint: disable=protected-access
 
     def __contains__(self, item):
         return item in self._value
 
     def __getitem__(self, key):
+        if not self._value or key not in self._value:
+            raise KeyError(self._err(f"key '{key}' not found"))
         return self._value[key]
 
     def __setitem__(self, key, value):
+        if not self._value or key not in self._value:
+            raise KeyError(self._err(f"key '{key}' not found"))
         self._value[key]._set(value) # pylint: disable=protected-access
 
     def __iter__(self):
+        if not self._value:
+            return iter([])
         return iter(self._value)
 
     def __len__(self):
+        if not self._value:
+            return 0
         return len(self._value)
 
 class ConfigSet(ConfigCollection):
@@ -616,7 +627,7 @@ class ConfigSet(ConfigCollection):
     _type: str = 'set'
     _conversions: set = {'list'}
 
-    def __init__(self, name: str, val_type: str = None):
+    def __init__(self, name: str, val_type = None):
         super().__init__(name, val_type)
         self._value = set()
         if self._val_type not in BASIC_CLASSES:
@@ -656,7 +667,7 @@ class ConfigMap(ConfigCollection):
     _type: str = 'map'
     _conversions: set = {'dict'}
 
-    def __init__(self, name: str, val_type: str = None):
+    def __init__(self, name: str, val_type = None):
         self._key_type = 'str'
         if val_type is not None:
             sub_type = ''
@@ -761,7 +772,7 @@ class ConfigList(ConfigCollection):
     """Class to manage a configuration list"""
     _type: str = 'list'
 
-    def __init__(self, name: str, val_type: str = None):
+    def __init__(self, name: str, val_type = None):
         super().__init__(name, val_type)
         self._value = []
 
@@ -811,7 +822,7 @@ class ConfigDict(ConfigKey):
     _type: str = 'dict'
     _conversions: set = {'dict'}
 
-    def __init__(self, name: str = None, type_name: str = None):
+    def __init__(self, name = None, type_name = None):
         if name is None:
             name = ""
         super().__init__(name)
@@ -929,7 +940,7 @@ def get_key(name: str) -> ConfigKey:
                 raise KeyError(f"Config key '{obj_name}' is not a collection and cannot be indexed")
     return obj
 
-def __getattr__(name: str) -> any:
+def __getattr__(name: str) -> Any:
     return get_key(name)
 
 BASIC_CLASSES = {
@@ -955,7 +966,7 @@ CONFIG_CLASSES = {
     'dict': ConfigDict
 }
 
-def make_cfg_key(name: str, value: any = None) -> tuple:
+def make_cfg_key(name: str, value = None) -> tuple:
     """Factory function to create appropriate ConfigKey subclass based on type name."""
     type_name, sub_type, value = parse_type(value)
     # Check for key definition overrides
