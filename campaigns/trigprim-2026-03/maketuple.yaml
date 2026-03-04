@@ -8,6 +8,8 @@ output:
     name: "{dune_mc.gen_fcl_filename}__{dune.campaign}__{dune.config_file}__{core.application.name}__{core.application.version}__{DUNESW_VERSION}__{merge.cfg}"
     namespace: "usertests"
     out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test/triggerAna"
+    batch:                # Settings for batch merging
+        lifetime: 300 
 
 validation:
     handling:
@@ -17,7 +19,7 @@ grouping:
     mode: count
     target: 100
     equalize: False
-    chunk_max: 10
+    chunk_max: 100
 
 method:
     method_name: "lar"
@@ -26,6 +28,7 @@ method:
     outputs:
       - name: "{NAME}__{UUID}__tuple.root"
         metadata: {"core.file_format": "root", "core.data_tier":"root-tuple"}
+    
 sites:
     site_distances:                       # Distance offsets for merging sites
         default: .inf                     # Do not allow merging except at specified sites
