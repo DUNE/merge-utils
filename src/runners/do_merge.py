@@ -9,8 +9,8 @@ import shutil
 import socket
 from datetime import datetime, timezone
 import tarfile
-import h5py
-import ROOT
+import h5py #type: ignore pylint: disable=import-error
+import ROOT #type: ignore pylint: disable=import-error
 
 def checksums(filename: str) -> dict:
     """Calculate the checksum of a file"""
