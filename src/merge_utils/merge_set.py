@@ -519,8 +519,8 @@ class MergeSet:
         # Finish expanding all names before making groups
         meta.make_names(self.good_files)
         # Get indices of files that should count towards grouping
-        start = config.input.skip or self.start_idx
-        end = start + config.input.limit if config.input.limit else self.end_idx
+        start = int(config.input.skip or self.start_idx)
+        end = int(start + config.input.limit if config.input.limit else self.end_idx)
         indices = []
         for i in range(start, end):
             file = self.get_by_idx(i)
