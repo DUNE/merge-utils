@@ -1,6 +1,7 @@
 """Command line interface for merge_utils."""
 
 import argparse
+import collections
 import logging
 import os
 import sys
@@ -44,8 +45,8 @@ def get_parser() -> argparse.ArgumentParser:
     out_mode.add_argument('--validate', dest='output_mode', action='store_const', const='validate',
                           help='only validate metadata instead of merging')
     out_mode.add_argument('--list', dest='output_mode', metavar='OPT',
-                          choices=['metadata', 'dids', 'replicas', 'pfns'],
-                          help='list (metadata, dids, replicas, pfns) instead of merging')
+                          choices=['metadata', 'dids', 'replicas', 'pfns', 'rses'],
+                          help='list (metadata, dids, replicas, pfns, rses) instead of merging')
     out_group.add_argument('-l', '--local', action='store_true',
                            help='run merge locally instead of submitting to JustIN')
     out_group.add_argument('-n', '--name', type=str, help='override the base name for output files')
@@ -141,7 +142,6 @@ def start_job(args):
         io_utils.log_nonzero("Found {n} search location{s} from command line", len(args.dir))
         dirs.extend(args.dir)
     io_utils.log_list("Found {n} total search location{s}:", dirs, logging.INFO)
-    config.input.search_dirs = dirs
 
     # Dump final configuration
     config.dump()
@@ -207,6 +207,37 @@ def print_metadata(metadata, mode):
         overrides = json.dumps({k: v.value for k, v in output.metadata.items()}, indent=2)
         io_utils.log_print(f"Additional metadata overrides for output {idx}:\n{overrides}")
 
+def print_replicas(paths, mode):
+    """Print info about the replicas for a list of files."""
+    paths.run()
+    if mode == 'replicas':
+        print("File replicas:")
+        for file in paths.files.good_files:
+            print(f"{file.did}:")
+            for replica in sorted(file.replicas):
+                print(f"  {replica}")
+    elif mode == 'pfns':
+        print("File PFNs:")
+        for file in paths.files.good_files:
+            print(f"{file.did}:")
+            for replica in sorted(file.replicas):
+                if replica.status.good:
+                    print(f"  {replica.path}")
+    elif mode == 'rses':
+        rses = {}
+        good_files = paths.files.good_files
+        for file in good_files:
+            for replica in file.replicas:
+                rse_name = replica.rse.name
+                if rse_name not in rses:
+                    rses[rse_name] = collections.defaultdict(int)
+                rses[rse_name][replica.status] += 1
+        print(f"Found {len(good_files)} valid input files with replicas at {len(rses)} RSEs:")
+        for rse_name, statuses in rses.items():
+            print(f"{rse_name}:")
+            for status, count in sorted(statuses.items(), key=lambda x: x[1]):
+                print(f"  {status.name} replicas: {count}")
+
 def main():
     """Run a merge job"""
     parser = get_parser()
@@ -233,18 +264,8 @@ def main():
     paths = replicas.get(metadata)
 
     # Process the other list options
-    if config.output.mode in ['replicas', 'pfns']:
-        paths.run()
-        if config.output.mode == 'replicas':
-            print("File replicas:")
-            for file in paths.files.good_files:
-                print(f"{file.did}:")
-                for replica in file.replicas:
-                    print(f"  {replica.rse.name}: {replica.status.name} (d = {replica.distance})")
-        elif config.output.mode == 'pfns':
-            for file in paths.files:
-                best_pfn = sorted(file.paths.values(), key=lambda p: p[1])[0]
-                print(f"  {best_pfn[0]}")
+    if config.output.mode in ['replicas', 'pfns', 'rses']:
+        print_replicas(paths, config.output.mode)
         return
 
     # Process merging

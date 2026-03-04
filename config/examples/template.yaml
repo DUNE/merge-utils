@@ -14,7 +14,7 @@ input:
     streaming: True         # Stream files from remote sites instead of making a local copy
 
 output:
-    mode: <opt(merge, validate, metadata, dids, replicas, pfns)>
+    mode: <opt(merge, validate, metadata, dids, replicas, pfns, rses)>
     local: False          # Run merging locally instead of submitting to JustIN
     name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
     namespace: <str>      # Optionally specify a namespace different from the parents
