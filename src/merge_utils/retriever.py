@@ -193,16 +193,18 @@ class MetaRetriever(ABC):
             # Process previous batch while we wait, if we have one
             if batch is None:
                 continue
-            logger.debug("Processing new %s input batch %d", self.name, batch.skip)
+            logger.info("Processing new %s input batch %d", self.name, batch.skip)
             # Add file to merge set, and yield if we added any
             added = await asyncio.to_thread(self.files.add, batch.skip, batch.files)
             if added:
                 yield InputBatch(skip=batch.skip, files=added)
+            # If there is no next task, we're done
+            if task is None:
+                break
             # If the last batch was a partial batch, we're done
             if len(batch) < step:
-                # If we started a request for the next batch, wait for it to finish
-                if task is not None:
-                    await task
+                # Need to wait for the the last task to finish
+                await task
                 break
         # Yield empty batch to signal completion
         yield InputBatch()

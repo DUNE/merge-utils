@@ -713,7 +713,7 @@ class PathFinder(MetaRetriever):
                 task = asyncio.create_task(self.get_batch(self.get_paths, new_batch))
             # Process previous batch while we wait, if we have one
             if batch:
-                logger.debug("Processing new %s input batch %d", self.name, batch.skip)
+                logger.info("Processing new %s input batch %d", self.name, batch.skip)
                 await self.set_paths(batch, paths)
                 # Wait for any pending path checks to finish before yielding the batch
                 await self.replica_queue.join()
