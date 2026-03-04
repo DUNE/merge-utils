@@ -429,7 +429,7 @@ class MergeSet:
         :return: List of group divisions
         """
         # If there are fewer files than the target, just make one group
-        target = config.grouping.target
+        target = int(config.grouping.target.value)
         if count < target:
             io_utils.log_print(f"Merging {count} inputs into 1 group")
             return []
@@ -439,7 +439,7 @@ class MergeSet:
             target = count / n_groups
             divs = [round(i*target) for i in range(1, n_groups)]
         else:
-            divs = list(range(int(target), count, int(target)))
+            divs = list(range(target, count, target))
         io_utils.log_print(
             f"Merging {count} inputs into {len(divs)+1} groups of {round(target)} files")
         # Warn about small groups
