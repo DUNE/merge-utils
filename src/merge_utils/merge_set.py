@@ -519,8 +519,8 @@ class MergeSet:
         # Finish expanding all names before making groups
         meta.make_names(self.good_files)
         # Get indices of files that should count towards grouping
-        start = config.input.skip or self.start_idx
-        end = start + config.input.limit if config.input.limit else self.end_idx
+        start = int(config.input.skip or self.start_idx)
+        end = int(start + config.input.limit if config.input.limit else self.end_idx)
         indices = []
         for i in range(start, end):
             file = self.get_by_idx(i)
@@ -668,6 +668,10 @@ class MergeChunk:
         chunk = self.chunk_id
         for spec in specs:
             output = {'name': self.make_name(spec.name, chunk)}
+            if spec.size_min:
+                output['size'] = spec.size_min([f.size for f in self.files])
+            if spec.checklist:
+                output['checklist'] = spec.checklist.value
             md = {}
             if spec.metadata:
                 md.update({k: v.value for k, v in spec.metadata.items()})
