@@ -80,7 +80,7 @@ class ConfigKey(ABC):
         self._value = None
 
     @property
-    def _subtype(self) -> str | None:
+    def _subtype(self) -> str:
         """Return the subtype of the config key, if any"""
         return None
 
@@ -456,7 +456,7 @@ class ConfigSizeSpec(ConfigKey):
         :return: tuple of coefficents for (s,n,a,b)
         """
         errors = []
-        coeffs: list[float | None] = [None]*len(self.PARAMS)
+        coeffs: list[float] = [None]*len(self.PARAMS)
         spec = spec_str.replace(' ', '').split('+')
         for term in spec:
             try:
@@ -603,13 +603,9 @@ class ConfigCollection(ConfigKey):
         return item in self._value
 
     def __getitem__(self, key):
-        if not self._value or key not in self._value:
-            raise KeyError(self._err(f"key '{key}' not found"))
         return self._value[key]
 
     def __setitem__(self, key, value):
-        if not self._value or key not in self._value:
-            raise KeyError(self._err(f"key '{key}' not found"))
         self._value[key]._set(value) # pylint: disable=protected-access
 
     def __iter__(self):
