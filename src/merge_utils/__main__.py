@@ -224,15 +224,19 @@ def print_replicas(paths, mode):
                 if replica.status.good:
                     print(f"  {replica.path}")
     elif mode == 'rses':
-        rses = collections.defaultdict(collections.defaultdict(int))
-        for file in paths.files.good_files:
+        rses = {}
+        good_files = paths.files.good_files
+        for file in good_files:
             for replica in file.replicas:
-                rses[replica.rse.name][replica.status] += 1
-        print("RSEs:")
+                rse_name = replica.rse.name
+                if rse_name not in rses:
+                    rses[rse_name] = collections.defaultdict(int)
+                rses[rse_name][replica.status] += 1
+        print(f"Found {len(good_files)} valid input files with replicas at {len(rses)} RSEs:")
         for rse_name, statuses in rses.items():
             print(f"{rse_name}:")
             for status, count in sorted(statuses.items(), key=lambda x: x[1]):
-                print(f"  {status}: {count}")
+                print(f"  {status.name} replicas: {count}")
 
 def main():
     """Run a merge job"""
