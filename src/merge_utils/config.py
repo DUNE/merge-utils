@@ -406,7 +406,7 @@ class ConfigOption(ConfigKey):
             return False
         raise ValueError(self._err(f"must be one of ({', '.join(self._options)})"))
 
-class ConfigSizeSpec(ConfigValue):
+class ConfigSizeSpec(ConfigKey):
     """Class to manage a configuration size prediction specification"""
     _type: str = 'size'
     _conversions: set = {'str', 'int'}

@@ -12,7 +12,7 @@
     "streaming": true
   },
   "output": {
-    "mode": "<opt(merge, validate, metadata, dids, replicas, pfns)>",
+    "mode": "<opt(merge, validate, metadata, dids, replicas, pfns, rses)>",
     "local": false,
     "name": "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}",
     "namespace": "<str>",

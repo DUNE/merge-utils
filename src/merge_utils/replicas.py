@@ -120,11 +120,11 @@ class Status(enum.Enum, metaclass=StatusMeta):
     NEARLINE        = enum.auto()
     OFFLINE         = enum.auto()
     UNKNOWN         = enum.auto()
+    UNREACHABLE     = enum.auto()
     MISSING         = enum.auto()
     BAD_SIZE        = enum.auto()
     BAD_CHECKSUM    = enum.auto()
     BAD_PROTOCOL    = enum.auto()
-    UNREACHABLE     = enum.auto()
 
     @property
     def good(self) -> bool:
@@ -148,6 +148,28 @@ class Replica:
     def protocol(self) -> str:
         """Get the protocol of the replica's path"""
         return get_protocol(self.path)
+
+    def __lt__(self, other: 'Replica') -> bool:
+        """Sort replicas based on their status and distance"""
+        # First sort by good vs bad status
+        self_good = self.status.good
+        other_good = other.status.good
+        if self_good and not other_good:
+            return True
+        if other_good and not self_good:
+            return False
+        # Bad statuses are roughly ordered by severity
+        if not self_good and not other_good and self.status != other.status:
+            return self.status.value < other.status.value
+        # If both replicas have the same status, sort by distance
+        if self.distance != other.distance:
+            return self.distance < other.distance
+        return self.path < other.path
+
+    def __str__(self) -> str:
+        if self.distance == float('inf'):
+            return f"{self.rse.name}: {self.status.name}"
+        return f"{self.rse.name}: {self.status.name} (d = {self.distance})"
 
 # Classes for representing RSEs and checking the status of replicas on those RSEs
 
