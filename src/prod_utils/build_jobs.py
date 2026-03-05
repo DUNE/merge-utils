@@ -28,7 +28,7 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
     newrows = []
     for row in reader:
         basedataset = row['DATASET']
-        if DEBUG: print(row["TAG"], row['FCL'], row['DATASET'])
+        if DEBUG: print(row["TAG"],  row['DATASET'])
         newrow = row.copy()
         query = "files from " + basedataset + " where dune.output_status=confirmed"
         if DEBUG: print(query)
@@ -46,7 +46,7 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
         print(newrow)
     
 with open(newlist,'w') as csvfile:
-    fieldnames = ['TAG', 'FCL','NFILES','SIZE_GB','BATCH','CONFIG', 'CAMPAIGN','NAMESPACE', 'DATASET' ] 
+    fieldnames = ['TAG','NFILES','SIZE_GB','BATCH','CONFIG', 'CAMPAIGN','NAMESPACE', 'DATASET' ] 
     #fieldnames = reader.fieldnames + ['NFILES','SIZE_GB','NAMESPACE','CONFIG']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
