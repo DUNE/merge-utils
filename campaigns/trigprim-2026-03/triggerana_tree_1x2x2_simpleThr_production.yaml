@@ -23,7 +23,7 @@ grouping:
 
 method:
     method_name: "lar"
-    cmd: "lar -c {cfg} -n -1 {inputs} -T {output}"
+    cmd: "lar -c {cfg} -n -1 {inputs} -T {output} -o /dev/null"
     cfg: "triggerana_tree_1x2x2_simpleThr_production.fcl"
     outputs:
       - name: "{NAME}__{UUID}__tuple.root"
