@@ -485,12 +485,14 @@ class JustinScheduler(JobScheduler):
         if site is None:
             logger.critical("No site for pass %d job!", tier+1)
             sys.exit(1)
-        if tier == 0:
-            cvmfs_dir = self.cvmfs_dir
+        cvmfs_dir = "$cvmfs_dir" if tier > 0 else self.cvmfs_dir
+        #TODO: Make sure this works if different outputs need different numbers of passes
+        if tier == len(self.jobs)-1:
+            logger.debug("Using output namespace and lifetime for pass %d jobs", tier+1)
             namespace = config.output.namespace
             lifetime = config.output.batch.lifetime
         else:
-            cvmfs_dir = "$cvmfs_dir"
+            logger.debug("Using scratch namespace and lifetime for pass %d jobs", tier+1)
             namespace = config.output.scratch.namespace
             lifetime = config.output.scratch.lifetime
         cmd = [
