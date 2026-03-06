@@ -573,7 +573,7 @@ class JustinScheduler(JobScheduler):
                 f.write("#!/bin/bash\n")
                 f.write(f"# This script will update the cfg files for pass {tier+1}\n")
                 pass2_fix = os.path.join(io_utils.src_dir(), 'pass2_fix.py')
-                f.write(f"python3 {pass2_fix} {str(config.job.dir)} {' '.join(pass_cfgs)}\n")
+                f.write(f"python3 {pass2_fix} {self.dir} {' '.join(pass_cfgs)}\n")
             subprocess.run(['chmod', '+x', script_name], check=False)
             scripts.append(script_name)
 

@@ -59,6 +59,7 @@ def main():
     """Main function for command line execution"""
     cfg_dir = sys.argv[1]
     cfgs = get_cfgs(cfg_dir, sys.argv[2:])
+    job_dir = os.path.dirname(cfg_dir)
 
     inputs = set()
     for cfg in cfgs.values():
@@ -68,8 +69,8 @@ def main():
     print("Retrieving physical file paths from Rucio")
     pfns = get_pfns(inputs)
 
-    tar_path_old = os.path.join(cfg_dir, "config.tar")
-    tar_path = os.path.join(cfg_dir, "config_fixed.tar")
+    tar_path_old = os.path.join(job_dir, "config.tar")
+    tar_path = os.path.join(job_dir, "config_fixed.tar")
     if os.path.exists(tar_path):
         os.remove(tar_path)
     if os.path.exists(tar_path_old):
@@ -94,7 +95,7 @@ def main():
     print(f"Uploaded configuration files to {cvmfs_dir}")
 
     print("Submitting pass 2 jobs to JustIN")
-    subprocess.run([os.path.join(cfg_dir, "pass2_justin.sh"), cvmfs_dir], check=False)
+    subprocess.run([os.path.join(job_dir, "pass2_justin.sh"), cvmfs_dir], check=False)
 
 if __name__ == '__main__':
     main()
