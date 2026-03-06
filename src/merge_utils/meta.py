@@ -434,13 +434,13 @@ def parents(files: list) -> list:
             fids.update(file.parents)
     return [{"fid": fid} for fid in fids]
 
-def match_method(name: str = None, metadata: dict = None) -> dict:
+def match_method(name: str = None, metadata: dict = None) -> config.ConfigDict:
     """
     Find a built-in merging method by name or metadata conditions.
 
     :param name: name of the merging method
     :param metadata: metadata dictionary
-    :return: merging method dictionary
+    :return: merging method ConfigDict
     """
     # Match by name
     if name:
@@ -461,11 +461,12 @@ def match_method(name: str = None, metadata: dict = None) -> dict:
     # No match found
     return None
 
-def set_method(method: dict, warn: bool = False) -> None:
+def set_method(method: config.ConfigDict, warn: bool = False) -> None:
     """
     Set merging method parameters.
 
-    :param method: merging method dictionary
+    :param method: merging method ConfigDict
+    :param warn: whether to warn about overriding existing method parameters
     """
     lvl = logging.WARNING if warn else logging.INFO
     explicit = False

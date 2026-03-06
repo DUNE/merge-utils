@@ -28,14 +28,17 @@ class MergeFileError(enum.Flag):
     @property
     def first(self) -> MergeFileError:
         """Get the first error in the enumeration"""
-        return MergeFileError(self.value & -self.value)
+        err = MergeFileError(self.value & -self.value)
+        return err
 
     @property
     def handling(self) -> str:
         """Get the error handling method from the configuration"""
         if self == MergeFileError(0):
             return 'good'
-        return config.validation.handling[self.first.name.lower()]
+        err_name = self.first.name
+        assert err_name is not None
+        return config.validation.handling[err_name.lower()]
 
     @property
     def group(self) -> bool:
@@ -45,20 +48,22 @@ class MergeFileError(enum.Flag):
     @classmethod
     def critical(cls) -> MergeFileError:
         """Get the set of errors that are considered critical"""
-        critical = cls(0)
+        crit = cls(0)
         for err in cls:
-            if config.validation.handling[err.name.lower()] == 'quit':
-                critical |= err
-        return critical
+            err_name = err.name
+            assert err_name is not None
+            if config.validation.handling[err_name.lower()] == 'quit':
+                crit |= err
+        return crit
 
 ERROR_MESSAGES = {
-    'duplicate':    "Found {n} duplicated file{s}:",
-    'no_metadata':  "Found {n} file{s} with missing metadata:",
-    'undeclared':   "Found {n} file{s} with undeclared metadata:",
-    'retired':      "Found {n} retired file{s}:",
-    'invalid':      "Found {n} file{s} with invalid metadata:",
-    'no_replicas':  "Found {n} file{s} without replicas:",
-    'unreachable':  "Found {n} file{s} without reachable replicas:"
+    MergeFileError.DUPLICATE:   "Found {n} duplicated file{s}:",
+    MergeFileError.NO_METADATA: "Found {n} file{s} with missing metadata:",
+    MergeFileError.UNDECLARED:  "Found {n} file{s} with undeclared metadata:",
+    MergeFileError.RETIRED:     "Found {n} retired file{s}:",
+    MergeFileError.INVALID:     "Found {n} file{s} with invalid metadata:",
+    MergeFileError.NO_REPLICAS: "Found {n} file{s} without replicas:",
+    MergeFileError.UNREACHABLE: "Found {n} file{s} without reachable replicas:"
 }
 
 class MergeFile:
@@ -186,7 +191,6 @@ class MergeSet:
         self._files = []
         self.start_idx = config.input.skip or 0
         self.dids = {}
-        self.good = {}
         self.errors = MergeFileError(0)
         self.consistent_fields = None
 
@@ -213,7 +217,19 @@ class MergeSet:
             return None
         return self._files[idx]
 
-    def get_by_did(self, did: str) -> MergeFile | None:
+    def at(self, idx: int) -> MergeFile:
+        """
+        Get a file by its index in the set, raising an error if not found.
+
+        :param idx: index of the file
+        :return: MergeFile object
+        """
+        file = self.get_by_idx(idx)
+        if file is None:
+            raise KeyError(f"File at index {idx} is None")
+        return file
+
+    def get_by_did(self, did: str) -> MergeFile:
         """
         Get a file by its DID.
 
@@ -223,7 +239,10 @@ class MergeSet:
         idx = self.dids.get(did, None)
         if idx is None:
             raise KeyError(f"Unknown file DID: {did}")
-        return self._files[idx - self.start_idx]
+        out = self._files[idx - self.start_idx]
+        if out is None:
+            raise KeyError(f"File DID {did} at index {idx} is None")
+        return out
 
     def get_slice(self, start: int = 0, end: int = 0, step: int = 1) -> list[MergeFile]:
         """
@@ -286,7 +305,6 @@ class MergeSet:
         if file.errors:
             self.errors |= file.errors
             return
-        self.good[did] = idx
         # Check for consistency
         if self.consistent_fields is None:
             self.consistent_fields = file.get_fields(config.metadata.consistent)
@@ -322,17 +340,17 @@ class MergeSet:
         :param dids: list of file DIDs to mark
         :param error: MergeFileError to set
         """
-        if not isinstance(error, MergeFileError):
-            error = MergeFileError[error.upper()]
+        if error == MergeFileError(0):
+            raise ValueError("Cannot set empty error on files")
         err_count = 0
         for did in dids:
             file = self.get_by_did(did)
             file.errors |= error
-            self.good.pop(did, None)
             err_count += 1
         if err_count > 0:
+            err_name = str(error).rsplit('.', 1)[-1]
             logger.debug("Flagged %d file%s as %s",
-                         err_count, "s" if err_count != 1 else "", error.name.lower())
+                         err_count, "s" if err_count != 1 else "", err_name)
             self.errors |= error
 
     def check_consistency(self) -> list[str]:
@@ -344,13 +362,14 @@ class MergeSet:
         # Group good files by their checked field values
         checked_fields = config.metadata.consistent
         groups = collections.defaultdict(list)
-        for did, idx in self.good.items():
-            file = self.get_by_idx(idx)
-            groups[file.get_fields(checked_fields)].append((did, idx))
+        for idx, file in enumerate(self._files, start=self.start_idx):
+            if not file or file.errors:
+                continue
+            groups[file.get_fields(checked_fields)].append((file.did, idx))
         # Find the largest consistent group
         groups = sorted(groups.items(), key=lambda k: len(k[1]), reverse=True)
         self.consistent_fields = groups[0][0]
-        self.good = dict(groups.pop(0)[1])
+        good = dict(groups.pop(0)[1])
         # Mark other files as inconsistent and log errors
         if len(groups) == 0:
             logger.info("All good files have consistent metadata, clearing inconsistency flag")
@@ -358,7 +377,7 @@ class MergeSet:
             return []
         msg = [
             f"Found {len(groups)+1} file groups with inconsistent metadata:",
-            f"Group 1 ({len(self.good)} file{'s' if len(self.good) != 1 else ''}) metadata:"
+            f"Group 1 ({len(good)} file{'s' if len(good) != 1 else ''}) metadata:"
         ]
         field_names = ['namespace'] + config.metadata.consistent
         for field, value in zip(field_names, self.consistent_fields):
@@ -367,7 +386,7 @@ class MergeSet:
             msg.append(f"Group {gid} ({len(group)} file{'s' if len(group) > 1 else ''}):")
             for did, idx in group:
                 msg.append(f"  {did}")
-                self.get_by_idx(idx).errors |= MergeFileError.INCONSISTENT
+                self.at(idx).errors |= MergeFileError.INCONSISTENT
             msg.append(f"Group {gid} metadata inconsistencies:")
             for field, good_val, bad_val in zip(field_names, self.consistent_fields, fields):
                 if good_val == bad_val:
@@ -406,18 +425,18 @@ class MergeSet:
             if err == MergeFileError.INCONSISTENT:
                 logger.log(lvl, '\n  '.join(inconsistencies))
                 continue
-            err_dids = [file.did for file in self._files if file.errors.first == err]
-            io_utils.log_list(ERROR_MESSAGES[err.name.lower()], err_dids, lvl)
+            err_dids = [file.did for file in self._files if file and file.errors.first == err]
+            io_utils.log_list(ERROR_MESSAGES[err], err_dids, lvl)
         # Quit if needed
         if abort:
             io_utils.log_nonzero(
                 "Found {n} total file{s} with critical errors!",
-                sum(1 for file in self._files if file.errors.first in critical_errors),
+                sum(1 for file in self._files if file and file.errors.first in critical_errors),
                 logging.CRITICAL
             )
             sys.exit(1)
         # Check for empty set after errors
-        if final and len(self.good) == 0:
+        if final and len(self.good_files) == 0:
             logger.critical("No valid files remain after error checking!")
             sys.exit(1)
 
@@ -457,7 +476,7 @@ class MergeSet:
         :return: List of group divisions
         """
         # Get sizes of input files
-        sizes = [self.get_by_idx(i).size for i in indices]
+        sizes = [self.at(i).size for i in indices]
         count = sum(1 for size in sizes if size)
         total = sum(size for size in sizes if size)
         avg = total / count
