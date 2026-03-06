@@ -10,6 +10,8 @@ output:
     out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test/triggerAna"
     batch:                # Settings for batch merging
         lifetime: 300 
+    scratch:                # Settings for scratch merging
+        lifetime: 30
 
 validation:
     handling:
@@ -17,7 +19,7 @@ validation:
 
 grouping:
     mode: count
-    target: 500
+    target: 1000
     equalize: False
     chunk_max: 50
 
