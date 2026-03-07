@@ -69,14 +69,16 @@ def main():
     print("Retrieving physical file paths from Rucio")
     pfns = get_pfns(inputs)
 
-    tar_path_old = os.path.join(job_dir, "config.tar")
-    tar_path = os.path.join(job_dir, "config_fixed.tar")
-    if os.path.exists(tar_path):
-        os.remove(tar_path)
-    if os.path.exists(tar_path_old):
-        shutil.copyfile(tar_path_old, tar_path)
+    cfg_pass2 = os.path.join(job_dir, "config_pass2.tar")
+    if os.path.exists(cfg_pass2):
+        os.remove(cfg_pass2)
+    cfg_base = os.path.join(job_dir, "config.tar")
+    if not os.path.isfile(cfg_base):
+        print(f"ERROR: Base configuration file {cfg_base} does not exist!")
+        sys.exit(1)
+    shutil.copyfile(cfg_base, cfg_pass2)
 
-    with tarfile.open(tar_path, "a") as tar:
+    with tarfile.open(cfg_pass2, "a") as tar:
         for name, cfg in cfgs.items():
             cfg['inputs'] = [pfns[did] for did in cfg['inputs']]
             fix_name = os.path.join(cfg_dir, name.replace('.json', '_fixed.json'))
@@ -87,7 +89,7 @@ def main():
             tar.add(fix_name, name)
 
     print("Uploading corrected configuration files to cvmfs")
-    proc = subprocess.run(['justin-cvmfs-upload', tar_path], capture_output=True, check=False)
+    proc = subprocess.run(['justin-cvmfs-upload', cfg_pass2], capture_output=True, check=False)
     if proc.returncode != 0:
         print(f"Failed to upload configuration files: {proc.stderr.decode('utf-8')}")
         sys.exit(1)

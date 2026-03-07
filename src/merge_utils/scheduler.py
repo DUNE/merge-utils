@@ -457,16 +457,20 @@ class JustinScheduler(JobScheduler):
             tar.add(file_path, file_name)
 
         io_utils.log_print("Uploading configuration files to cvmfs...")
-        cfg = os.path.join(str(config.job.dir), "pass1.tar")
-        with tarfile.open(cfg,"w") as tar:
-            for site_jobs in self.jobs[0].values():
-                for job in site_jobs:
-                    add_file(tar, job[0])
+        cfg_base = os.path.join(str(config.job.dir), "config.tar")
+        with tarfile.open(cfg_base,"w") as tar:
             add_file(tar, io_utils.find_runner("do_merge.py"))
             for dep in config.method.dependencies:
                 add_file(tar, dep)
 
-        proc = subprocess.run(['justin-cvmfs-upload', cfg], capture_output=True, check=False)
+        cfg_pass1 = os.path.join(str(config.job.dir), "config_pass1.tar")
+        shutil.copyfile(cfg_base, cfg_pass1)
+        with tarfile.open(cfg_pass1, "a") as tar:
+            for site_jobs in self.jobs[0].values():
+                for job in site_jobs:
+                    add_file(tar, job[0])
+
+        proc = subprocess.run(['justin-cvmfs-upload', cfg_pass1], capture_output=True, check=False)
         if proc.returncode != 0:
             logger.error("Failed to upload configuration files: %s", proc.stderr.decode('utf-8'))
             raise RuntimeError("Failed to upload configuration files")
