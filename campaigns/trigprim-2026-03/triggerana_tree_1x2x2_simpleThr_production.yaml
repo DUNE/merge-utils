@@ -9,7 +9,7 @@ output:
     namespace: "usertests"
     out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test/triggerAna"
     batch:                # Settings for batch merging
-        lifetime: 300 
+        lifetime: 1000 
     scratch:                # Settings for scratch merging
         lifetime: 30
 
