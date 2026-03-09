@@ -1,5 +1,5 @@
 {
-  "version": "0.8.1",
+  "version": "0.8.2",
   "input": {
     "mode": "<opt(dids, files, dataset, query)>",
     "inputs": [],
@@ -20,12 +20,12 @@
     "tmp_dir": "{PKG}/tmp",
     "out_dir": "/pnfs/dune/scratch/users/{$USER}/merge_test",
     "batch": {
-      "lifetime": 30,
+      "lifetime": "<int>",
       "rse": "<str>"
     },
     "scratch": {
       "namespace": "<str>",
-      "lifetime": 7
+      "lifetime": "<int>"
     }
   },
   "metadata": {
@@ -46,7 +46,8 @@
       "invalid": "<opt(default,quit,skip,gap)>",
       "no_replicas": "<opt(default,quit,skip,gap)>",
       "unreachable": "<opt(default,quit,skip,gap)>",
-      "inconsistent": "<opt(default,quit,skip,gap)>"
+      "inconsistent": "<opt(default,quit,skip,gap)>",
+      "already_done": "<opt(include,quit,skip,gap)>"
     }
   },
   "sites": {

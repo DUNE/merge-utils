@@ -49,6 +49,7 @@ validation:
         no_replicas:  <opt(default,quit,skip,gap)> # Files without any replicas
         unreachable:  <opt(default,quit,skip,gap)> # Replicas exist but exceed max distance
         inconsistent: <opt(default,quit,skip,gap)> # Metadata inconsistent with other files
+        already_done: <opt(include,quit,skip,gap)> # Files that have been merged in a previous job
     checksums:
       - "adler32"     # Adler32 should be the default checksum
 
@@ -136,6 +137,7 @@ schema:     # Used to check validity of user config files
         output_file:
             name: <str>             # Output file name, shoud contain '{NAME}' and '{UUID}'
             metadata: <map>         # Per-file metadata overrides
+            tmp_metadata: <map>     # metadata for temporary files in multi-stage merges
             rename: <str>           # File name produced by merging method, if different from spec
             pass2: <str>            # Basic merging method for pass 2+ of a transform job
             size: <size_spec> sum   # Size estimate for output file

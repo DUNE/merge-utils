@@ -1,6 +1,6 @@
 # Merge-Utils configuration template with most standard options
 
-version: "0.8.1" # Specify the merge-utils package version
+version: "0.8.2" # Specify the merge-utils package version
 
 input:
     mode: <opt(dids, files, dataset, query)>
@@ -22,11 +22,11 @@ output:
     tmp_dir: "{PKG}/tmp"  # Directory for generated job scripts
     out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test" # Local output directory
     batch:                # Settings for batch merging
-        lifetime: 30      # Lifetime of output files (in days)
+        lifetime: <int>   # Lifetime of output files (in days)
         rse: <str>        # Save merged files to a specific RSE
     scratch:              # Settings for temporary files from 2-stage merging
         namespace: <str>  # Optionally specify a different namespace for temporary files
-        lifetime: 7       # Lifetime of temporary files (in days)
+        lifetime: <int>   # Lifetime of temporary files (in days)
 
 metadata:
     optional: <set>       # These metadata keys are optional (overrides required and conditional keys)
@@ -47,6 +47,7 @@ validation:
         no_replicas:  <opt(default,quit,skip,gap)> # Files without any replicas
         unreachable:  <opt(default,quit,skip,gap)> # Replicas exist but exceed max distance
         inconsistent: <opt(default,quit,skip,gap)> # Metadata inconsistent with other files
+        already_done: <opt(include,quit,skip,gap)> # Files that have been merged in a previous job
 
 sites:
     default: "US_FNAL-FermiGrid"          # Default site (eg for stage 2 jobs)
@@ -80,6 +81,7 @@ method:
     # - name: "{NAME}_merged_{UUID}.root" # Output file name template
     #   rename: "default_name.root"       # Output name as produced by the runner script
     #   metadata: <map>                   # Per-file metadata overrides
+    #   tmp_metadata: <map>               # metadata for temporary files in multi-stage merges
     #   pass2: hadd                       # Alternate merge method for output files
     #   size: sum                         # Size estimate for output file
     #   size_min: 0                       # Minimum size for output file (for error checking)
