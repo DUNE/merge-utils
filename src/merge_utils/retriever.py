@@ -103,68 +103,130 @@ class MetaRetriever(ABC):
         :param files: list of file metadata dictionaries to check
         """
         logger.debug("Checking MetaCat to verify file records")
+        skip_fids = not config.validation.check_fids
+        provenance = False
+        # To check for already merged files, we need the children of all input files
+        if config.validation.handling.already_done != 'include':
+            skip_fids = False
+            provenance = True
+        # Build list of DIDs to check, skipping files with FIDs if we can
         indices = {}
         for idx, file in enumerate(files):
             if file.get('errors'):
                 continue
-            if file.get('fid') and not config.validation.check_fids:
+            if skip_fids and 'fid' in file:
                 continue
             indices[f"{file['namespace']}:{file['name']}"] = idx
-        res = await self.client.files([{'did': did} for did in indices], False, False)
+        # Request file info from MetaCat, with provenance if necessary
+        dids = [{'did': did} for did in indices]
+        res = await self.client.files(dids, metadata=False, provenance=provenance)
+        # Update file list with the returned records
         for file in res:
             did = f"{file['namespace']}:{file['name']}"
             idx = indices.pop(did)
             files[idx].update(file)
+        # Mark any files that were missing from MetaCat with an error
         if indices:
             for idx in indices.values():
                 files[idx]['errors'] = MergeFileError.NO_METADATA
             io_utils.log_list("MetaCat missing {n} file record{s}:", indices, logging.ERROR)
             io_utils.log_print("Did you mean to enable the grandparents option?", logging.ERROR)
 
+    async def get_siblings(self, files: list) -> None:
+        """
+        We check for already merged files by looking at the children of the input files.
+        But in grandparents mode, we actually want the children of the input file parents instead.
+        We don't need the original children in that case, so just replace them with the siblings.
+
+        :param files: list of file metadata dictionaries to check
+        """
+        # Collect list of all parent FIDs to check
+        parent_fids = set()
+        for file in files:
+            for parent in file['parents']:
+                parent_fids.add(parent['fid'])
+        fid_list = [{'fid': fid} for fid in parent_fids]
+        # Retrieve children of parents from MetaCat
+        parents = await self.client.files(fid_list, metadata = False, provenance = True)
+        children = collections.defaultdict(set)
+        for parent in parents:
+            child_dids = [f"{c['namespace']}:{c['name']}" for c in parent.get('children', [])]
+            children[parent['fid']].update(child_dids)
+        # Override the children of the input files
+        for file in files:
+            siblings = set()
+            for parent in file['parents']:
+                siblings.update(children[parent['fid']])
+            file['children'] = list(siblings - {f"{file['namespace']}:{file['name']}"})
+
     async def check_parents(self, files: list) -> None:
         """
         Check that MetaCat records exist for the parents of a batch of input files.
+        Also get the siblings if we need them for the already merged check.
 
         :param files: list of file metadata dictionaries to check
         """
         logger.debug("Checking MetaCat to verify parent records")
-        check_fids = config.validation.check_fids
-        # Collect list of parents to check
-        parents = []
-        for file in files:
-            for parent in file['parents']:
-                if 'fid' in parent:
-                    if check_fids:
-                        parents.append({'fid': parent['fid']})
-                else:
-                    parents.append({"did": f"{parent['namespace']}:{parent['name']}"})
-        # Retrieve parent info from MetaCat
-        res = []
-        step = config.validation.batch_size
-        for i in range(0, len(parents), step):
-            res.extend(await self.client.files(parents[i:i+step], False, False))
-        fids = {file['fid'] for file in res}
-        dids = {f"{file['namespace']}:{file['name']}":file['fid'] for file in res}
-        # Mark files with missing parents
-        missing = set()
-        for file in files:
-            parents = file['parents']
-            for idx, parent in enumerate(parents):
-                fid = parent.get('fid', None)
-                if not fid:
-                    did = f"{parent['namespace']}:{parent['name']}"
-                    fid = dids.get(did, None)
-                    if not fid:
-                        file['errors'] = MergeFileError.UNDECLARED
-                        missing.add(f"did: {did}")
-                        continue
-                elif check_fids and fid not in fids:
-                    file['errors'] = MergeFileError.UNDECLARED
-                    missing.add(f"fid: {fid}")
+        skip_fids = not config.validation.check_fids
+        provenance = False
+        # To check for already merged files, we need the children of all input files
+        if config.validation.handling.already_done != 'include':
+            skip_fids = False
+            provenance = True
+        # Collect list of all parent DIDs to check
+        parent_dids = set()
+        for file in [f for f in files if not f.get('errors')]:
+            for parent in file.get('parents', []):
+                if skip_fids and 'fid' in parent:
                     continue
-                parents[idx] = {'fid': fid}
+                parent_dids.add(f"{parent['namespace']}:{parent['name']}")
+        # Request parent info from MetaCat, with provenance if necessary
+        dids = [{'did': did} for did in parent_dids]
+        res = await self.client.files(dids, metadata=False, provenance=provenance)
+        parents = {f"{file['namespace']}:{file['name']}": file for file in res}
+        # Check for missing parents, and build child list if needed for already merged check
+        missing = set()
+        for file in [f for f in files if not f.get('errors')]:
+            children = set()
+            for parent in file.get('parents', []):
+                if skip_fids and 'fid' in parent:
+                    continue
+                did = f"{parent['namespace']}:{parent['name']}"
+                parent_info = parents.get(did)
+                if not parent_info:
+                    file['errors'] = MergeFileError.UNDECLARED
+                    missing.add(f"did: {did}")
+                    continue
+                parent['fid'] = parent_info.get('fid')
+                if not provenance:
+                    continue
+                child_dids = [f"{c['namespace']}:{c['name']}" for c in parent.get('children', [])]
+                children.update(child_dids)
+            if provenance:
+                file['children'] = list(children - {f"{file['namespace']}:{file['name']}"})
+        # Log any missing parents
         if missing:
             io_utils.log_list("MetaCat missing {n} grandparent record{s}:", missing, logging.ERROR)
+
+    async def get_files(self, query: list) -> list:
+        """
+        Asynchronously retrieve file metadata for a specific list of DIDs.
+        Also gets the siblings if we need them for the already merged check.
+
+        :param query: list of dictionaries with 'did' keys to retrieve
+        :return: list of file metadata dictionaries
+        """
+        # In grandparents mode, we need the parents of the input files
+        parents = bool(config.output.grandparents)
+        # To check for already merged files, we need the children of the input files
+        children = (config.validation.handling.already_done != 'include')
+        # Request files from MetaCat, with provenance if necessary
+        provenance = parents or children
+        files = await self.client.files(query, metadata = True, provenance = provenance)
+        # In grandparents mode, we actually need the children of the parents
+        if parents and children:
+            await self.get_siblings(files)
+        return files
 
     async def input_batches(self) -> AsyncGenerator[InputBatch, None]:
         """
@@ -257,8 +319,17 @@ class QueryRetriever(MetaRetriever):
         :return: list of file metadata dictionaries
         """
         query_batch = self.query + f" skip {batch.skip} limit {limit}"
-        return await self.client.query(query_batch, metadata = True,
-                                       provenance = config.output.grandparents)
+        # In grandparents mode, we need the parents of the input files
+        parents = bool(config.output.grandparents)
+        # To check for already merged files, we need the children of the input files
+        children = (config.validation.handling.already_done != 'include')
+        # Query MetaCat, with provenance if necessary
+        provenance = parents or children
+        files = await self.client.query(query_batch, metadata = True, provenance = provenance)
+        # In grandparents mode, we actually need the children of the parents
+        if parents and children:
+            await self.get_siblings(files)
+        return files
 
 class DidRetriever(MetaRetriever):
     """Class for retrieving metadata from MetaCat using a list of DIDs."""
@@ -343,12 +414,15 @@ class DidRetriever(MetaRetriever):
         indices = {}
         for idx, did in enumerate(dids):
             namespace, name = did.split(':')
-            placeholder = {'namespace': namespace, 'name': name}
+            placeholder = {
+                'namespace': namespace,
+                'name': name,
+                'errors': MergeFileError.NO_METADATA
+            }
             if skip+idx in self.dupes:
                 logger.debug("Skipping duplicate DID: %s", did)
                 placeholder['errors'] = MergeFileError.DUPLICATE
             else:
-                placeholder['errors'] = MergeFileError.NO_METADATA
                 query.append({'did': did})
                 indices[did] = idx
             files.append(placeholder)
@@ -356,8 +430,7 @@ class DidRetriever(MetaRetriever):
             logger.debug("All DIDs in batch are duplicates, skipping MetaCat request")
             return files
         # Request files from MetaCat
-        res = await self.client.files(query, metadata = True,
-                                      provenance = config.output.grandparents)
+        res = await self.get_files(query)
         # Add returned files to output list in correct order
         for file in res:
             files[indices[f"{file['namespace']}:{file['name']}"]] = file
@@ -388,6 +461,7 @@ class LocalMetaRetriever(MetaRetriever):
         skip = batch.skip
         end = min(skip + limit, len(self.paths))
         namespace = str(config.input.namespace)
+        # Read metadata from local files if possible
         missing = {}
         for path in self.paths[skip:end]:
             name = os.path.basename(path).rsplit('.', 1)[0]
@@ -401,15 +475,16 @@ class LocalMetaRetriever(MetaRetriever):
                 }
                 missing[name] = len(files)
             files.append(metadata)
-        # Make sure files exist in MetaCat, if needed for parent listing
-        if not config.output.grandparents:
+        # Make sure files exist in MetaCat, for parent listing
+        if config.output.grandparents:
+            await self.check_parents(files)
+        else:
             await self.check_existence(files)
         # If we were missing any local files, try to find them in MetaCat
         if missing:
             io_utils.log_list("Checking MetaCat for {n} missing metadata file{s}:",
                               missing, logging.INFO)
-            res = await self.client.files([{'did': f"{namespace}:{name}"} for name in missing],
-                                          metadata = True, provenance = config.output.grandparents)
+            res = await self.get_files([{'did': f"{namespace}:{name}"} for name in missing])
             for file in res:
                 files[missing[file['name']]] = file
         return files
