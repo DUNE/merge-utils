@@ -275,11 +275,11 @@ class MetaRetriever(ABC):
         """Repeatedly get input_batches until all files are retrieved."""
         # Connect to source
         await self.connect()
-        # Loop over batches
+        # Loop over batches, checking for errors as we go
         async for _ in self.input_batches():
-            self.files.check_errors()
-        # Close connections
-        await self.disconnect()
+            await self.files.check_errors()
+        # Close connections and do final error checking
+        await asyncio.gather(self.client.disconnect(), self.files.check_errors(final = True))
 
     def run(self) -> None:
         """Retrieve metadata for all files."""
@@ -288,8 +288,6 @@ class MetaRetriever(ABC):
         except ValueError as err:
             logger.critical("%s", err)
             sys.exit(1)
-
-        self.files.check_errors(final = True)
 
 class QueryRetriever(MetaRetriever):
     """Class for retrieving metadata from MetaCat using an MQL query."""

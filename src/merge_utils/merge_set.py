@@ -354,9 +354,28 @@ class MergeSet:
         return new_files
 
     @property
-    def good_files(self) -> list:
+    def all_files(self) -> list[MergeFile]:
+        """List of all MergeFile objects in the set, including bad files"""
+        return [f for f in self._files if f]
+
+    @property
+    def good_files(self) -> list[MergeFile]:
         """List of good MergeFile objects in the set"""
         return [f for f in self._files if f and f.good]
+
+    @property
+    def enum(self) -> Generator[tuple[int, MergeFile], None, None]:
+        """Generator of (index, MergeFile) for all files in the set"""
+        for idx, file in enumerate(self._files, start=self.start_idx):
+            if file:
+                yield idx, file
+
+    @property
+    def enum_good(self) -> Generator[tuple[int, MergeFile], None, None]:
+        """Generator of (index, MergeFile) for good files in the set"""
+        for idx, file in self.enum:
+            if file.good:
+                yield idx, file
 
     def set_error(self, dids: Iterable[str], error: MergeFileError) -> None:
         """
@@ -385,12 +404,12 @@ class MergeSet:
         :return: list of log messages about inconsistent files
         """
         # Group good files by their checked field values
-        checked_fields = config.metadata.consistent
         groups = collections.defaultdict(list)
-        for idx, file in enumerate(self._files, start=self.start_idx):
-            if not file or not file.good:
-                continue
-            groups[file.get_fields(checked_fields)].append((file.did, idx))
+        for idx, file in self.enum_good:
+            groups[file.get_fields(config.metadata.consistent)].append((file.did, idx))
+        if not groups:
+            logger.warning("No good files to check for consistency!")
+            return []
         # Find the largest consistent group
         groups = sorted(groups.items(), key=lambda k: len(k[1]), reverse=True)
         self.consistent_fields = groups[0][0]
@@ -459,11 +478,12 @@ class MergeSet:
         for file in self.good_files:
             for child in file.children:
                 if child in self.children:
+                    file.children = set(child)
                     file.errors |= MergeFileError.ALREADY_DONE
                     self.errors |= MergeFileError.ALREADY_DONE
                     break
 
-    def check_errors(self, final: bool = False) -> None:
+    async def check_errors(self, final: bool = False) -> None:
         """
         Check and log errors in the set.
         
@@ -486,6 +506,9 @@ class MergeSet:
             if not final and not abort:
                 logger.debug("No critical errors after consistency check, continuing")
                 return
+        # Check for already done files if this is the final check
+        if final and self.children and len(self.good_files) > 0:
+            await self.check_done()
         # Log errors
         for err in MergeFileError:
             if err not in self.errors:
@@ -784,6 +807,7 @@ class MergeChunk:
     def metadata(self) -> dict:
         """Get the metadata for the chunk"""
         md = meta.merged_keys(self.files)
+        md['merge.pass'] = self.tier + 1
         if self.skip is not None:
             md['merge.skip'] = self.skip
         if self.limit is not None:
