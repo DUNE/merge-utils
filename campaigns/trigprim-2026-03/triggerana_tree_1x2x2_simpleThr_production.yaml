@@ -5,7 +5,7 @@ input:
 
 output:
     mode: merge
-    name: "{dune_mc.gen_fcl_filename}__{dune.campaign}__{dune.config_file}__{core.application.name}__{core.application.version}__{DUNESW_VERSION}__{merge.cfg}"
+    name: "{dune_mc.gen_fcl_filename}__{dune.config_file}__{core.application.version}__{DUNESW_VERSION}__{merge.cfg}"
     namespace: "usertests"
     out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test/triggerAna"
     batch:                # Settings for batch merging
