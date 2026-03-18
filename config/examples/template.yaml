@@ -1,12 +1,12 @@
 # Merge-Utils configuration template with most standard options
 
-version: "0.8.2" # Specify the merge-utils package version
+version: "0.8.3" # Specify the merge-utils package version
 
 input:
     mode: <opt(dids, files, dataset, query)>
     inputs: []              # List of inputs
     search_dirs: <set>      # List of directories to search for metadata files
-    namespace: "usertests"  # Default namespace for local input files without metadata
+    namespace: <str>        # Default namespace for local input files without metadata
     skip: <int>             # Skip a number of input files, overridden by '--skip #'
     limit: <int>            # Limit the number of input files, overridden by '--limit #'
     tag: <str>              # Specify a tag to identify outputs, overridden by '--tag TAG'
@@ -27,6 +27,10 @@ output:
     scratch:              # Settings for temporary files from 2-stage merging
         namespace: <str>  # Optionally specify a different namespace for temporary files
         lifetime: <int>   # Lifetime of temporary files (in days)
+    grouping:             # Settings for how input files are grouped into the final merged files
+        mode: <opt(size, count)>
+        target: <float>   # Target size (in GB) or number of files"
+        equalize: <bool>  # Try to equalize the size of the merged files
 
 metadata:
     optional: <set>       # These metadata keys are optional (overrides required and conditional keys)
@@ -64,13 +68,6 @@ sites:
             url: "root://fndcadoor.fnal.gov:1094/pnfs/fnal.gov/usr/dune/tape_backed/dunepro"
             staging: 10.0
 
-grouping:
-    mode: <opt(size, count)>
-    target: 10.0                  # Target size (in GB) or number of files"
-    equalize: True                # Try to equalize the size of the merged files
-    chunk_min: 2                  # Minimum number of files to merge at once
-    chunk_max: 100                # Maximum number of files to merge at once
-
 method:
     method_name: auto             # Can be auto, a specific default method, or the path to a custom script
     cmd: <str>                    # Optionally specify merging command, eg. '{script} {cfg} {output} {inputs}'
@@ -93,3 +90,7 @@ method:
         vars: <map>               # Additional environment variables to set
         image: <str>              # Apptainer image to use for batch jobs
         products: <set>           # Extra products to load in the environment
+    chunks:                       # Limits on merging individual chunks
+        max_count: <int>          # Maximum number of files to merge at once
+        min_count: <int>          # Minimum number of files to merge at once
+        max_size: <float>         # Maximum space available for merging (in GB)

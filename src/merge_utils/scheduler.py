@@ -187,7 +187,7 @@ class JobScheduler(ABC):
         """
         if not files:
             return []
-        chunk_max = config.grouping.chunk_max
+        chunk_max = config.method.chunks.max_count
         if len(files) <= chunk_max:
             return [files]
         n_chunks = math.ceil(len(files) / chunk_max)
@@ -319,7 +319,7 @@ class LocalScheduler(JobScheduler):
         # Just set site to None for local jobs
         self.assign_site(chunk, site=None)
         # Split into subchunks if there are too many files
-        if len(chunk.files) > config.grouping.chunk_max:
+        if len(chunk.files) > config.method.chunks.max_count:
             for subchunk in self.split_files(chunk.files):
                 chunk.make_child(subchunk)
 
@@ -393,7 +393,7 @@ class JustinScheduler(JobScheduler):
         :param chunk: MergeChunk object to schedule
         """
         # Try to do merge as one chunk if possible
-        if len(chunk.files) < config.grouping.chunk_max:
+        if len(chunk.files) < config.method.chunks.max_count:
             site, dist = sorted(self.chunk_distances(chunk).items(), key=lambda x: x[1])[0]
             if dist < float('inf'):
                 self.assign_site(chunk, site=site)
@@ -409,14 +409,14 @@ class JustinScheduler(JobScheduler):
         if len(best_sites) == 1:
             self.assign_site(chunk, site=best_sites[0][0])
             # Split into subchunks if there are too many files
-            if len(chunk.files) > config.grouping.chunk_max:
+            if len(chunk.files) > config.method.chunks.max_count:
                 for subchunk in self.split_files(chunk.files):
                     chunk.make_child(subchunk)
             return
         # Try to remove sites with small groups of files
         for idx in range(len(best_sites)-1, 0, -1):
             files = best_sites[idx][1]
-            if len(files) >= config.grouping.chunk_min:
+            if len(files) >= config.method.chunks.min_count:
                 break
             # Find the next best site for each file in the small group
             new_sites = [-1] * len(files)

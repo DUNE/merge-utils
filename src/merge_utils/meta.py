@@ -444,14 +444,14 @@ def match_method(name: str = None, metadata: dict = None) -> config.ConfigDict:
     """
     # Match by name
     if name:
-        methods = [m for m in config.method.defaults if m.method_name == name]
+        methods = [m for m in config.standard_methods if m.method_name == name]
         if not methods:
             return None
         return methods[-1]
     # Match by conditions
     if metadata:
         name_dict = naming.Formatter(metadata)
-        for method in reversed(config.method.defaults):
+        for method in reversed(config.standard_methods):
             condition = method.cond
             if name_dict.eval(condition):
                 if condition == 'True':
@@ -677,7 +677,7 @@ def make_names(files: list):
     while config_keys.string_keys:
         key_name = config_keys.string_keys.pop()
         skip = False
-        for prefix in ['method.cmd', 'method.defaults', 'naming', 'metadata']:
+        for prefix in ['method.cmd', 'standard_methods', 'naming', 'metadata']:
             if key_name.startswith(prefix):
                 skip = True
                 break

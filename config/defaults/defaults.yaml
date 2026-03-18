@@ -7,7 +7,7 @@ input:
     mode: <opt(dids, files, dataset, query)>
     inputs: []              # List of inputs
     search_dirs: <set>      # List of directories to search for metadata files
-    namespace: "usertests"  # Default namespace for local input files without metadata
+    namespace: <str>        # Namespace override for local input files without metadata
     skip: <int>             # Skip a number of input files, overridden by '--skip #'
     limit: <int>            # Limit the number of input files, overridden by '--limit #'
     tag: <str>              # Specify a tag to identify outputs, overridden by '--tag TAG'
@@ -28,6 +28,10 @@ output:
     scratch:              # Settings for temporary files from 2-stage merging
         namespace: <str>  # Optionally specify a different namespace for temporary files
         lifetime: 30      # Lifetime of temporary files (in days)
+    grouping:             # Settings for how input files are grouped into the final merged files
+        mode: <opt(size, count)>
+        target: 10.0      # Target size (in GB) or number of files"
+        equalize: True    # Try to equalize the size of the merged files
 
 #metadata:
 #    optional:         # These metadata keys are optional (overrides required and conditional keys)
@@ -79,13 +83,6 @@ local:
             "root://fndcadoor.fnal.gov:1094/pnfs/fnal.gov/usr/": "/pnfs/"
             "root://fndca1.fnal.gov:1094/pnfs/fnal.gov/usr/": "/pnfs/"
 
-grouping:
-    mode: <opt(size, count)>
-    target: 10.0                  # Target size (in GB) or number of files"
-    equalize: True                # Try to equalize the size of the merged files
-    chunk_min: 2                  # Minimum number of files to merge at once
-    chunk_max: 100                # Maximum number of files to merge at once
-
 method:
     method_name: auto             # Can be auto, a specific default method, or the path to a custom script
     cmd: <str>                    # Optionally specify merging command, eg. '{script} {cfg} {output} {inputs}'
@@ -100,32 +97,36 @@ method:
         vars: <map>               # Additional environment variables to set
         image: <str>              # Apptainer image to use for batch jobs
         products: <set>           # Extra products to load in the environment
-    # Default settings for built-in merging methods, matched using 'cond' in reverse order
-    defaults:
-      - method_name: "tar"
-        cond: "True"  # Always matches if no other method matches first
-        script: "merge_tar.py"
-        outputs:
-          - name: "{NAME}_merged_{UUID}.tar"
-            metadata:
-                core.file_format: "tar"
-      - method_name: "hadd"
-        cond: "'{core.file_format}' in ['root', 'rootntuple', 'tfile']"
-        cmd: "hadd -f {output} {inputs}"
-        outputs:
-          - name: "{NAME}_merged_{UUID}.root"
-      - method_name: "lar"
-        cond: "'{core.file_format}' in ['artroot']"
-        cmd: "lar -c {cfg} -n -1 -o {output} {inputs}"
-        cfg: "artcat.fcl"
-        outputs:
-          - name: "{NAME}_merged_{UUID}.root"
-      - method_name: "hdf5"
-        cond: "'{core.file_format}' in ['hdf5']"
-        script: "merge_hdf5.py"
-        cfg: "hdf5.yaml"
-        outputs:
-          - name: "{NAME}_merged_{UUID}.hdf5"
+    chunks:                       # Limits on merging individual chunks
+        max_count: 100            # Maximum number of files to merge at once
+        min_count: 2              # Minimum number of files to merge at once
+        max_size: 20.0            # Maximum space available for merging (in GB)
+
+standard_methods: # Built-in merging methods, matched using 'cond' in reverse order
+  - method_name: "tar"
+    cond: "True"  # Always matches if no other method matches first
+    script: "merge_tar.py"
+    outputs:
+      - name: "{NAME}_merged_{UUID}.tar"
+        metadata:
+            core.file_format: "tar"
+  - method_name: "hadd"
+    cond: "'{core.file_format}' in ['root', 'rootntuple', 'tfile']"
+    cmd: "hadd -f {output} {inputs}"
+    outputs:
+      - name: "{NAME}_merged_{UUID}.root"
+  - method_name: "lar"
+    cond: "'{core.file_format}' in ['artroot']"
+    cmd: "lar -c {cfg} -n -1 -o {output} {inputs}"
+    cfg: "artcat.fcl"
+    outputs:
+      - name: "{NAME}_merged_{UUID}.root"
+  - method_name: "hdf5"
+    cond: "'{core.file_format}' in ['hdf5']"
+    script: "merge_hdf5.py"
+    cfg: "hdf5.yaml"
+    outputs:
+      - name: "{NAME}_merged_{UUID}.hdf5"
       
 job:        # Populated at runtime
     timestamp: <str>
@@ -161,7 +162,7 @@ schema:     # Used to check validity of user config files
         output.local.out_dir: <path>
         local.hosts: <map>
         local.xrootd: <map(map)>
-        method.defaults: <list(merging_method)>
+        standard_methods: <list(merging_method)>
         sites.site_distances: <map(float)>
         sites.site_distances[default]: <float>
         sites.rse_distances: <map(float)>

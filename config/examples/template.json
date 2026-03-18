@@ -1,10 +1,10 @@
 {
-  "version": "0.8.2",
+  "version": "0.8.3",
   "input": {
     "mode": "<opt(dids, files, dataset, query)>",
     "inputs": [],
     "search_dirs": "<set>",
-    "namespace": "usertests",
+    "namespace": "<str>",
     "skip": "<int>",
     "limit": "<int>",
     "tag": "<str>",
@@ -26,6 +26,11 @@
     "scratch": {
       "namespace": "<str>",
       "lifetime": "<int>"
+    },
+    "grouping": {
+      "mode": "<opt(size, count)>",
+      "target": "<float>",
+      "equalize": "<bool>"
     }
   },
   "metadata": {
@@ -69,13 +74,6 @@
       }
     }
   },
-  "grouping": {
-    "mode": "<opt(size, count)>",
-    "target": 10,
-    "equalize": true,
-    "chunk_min": 2,
-    "chunk_max": 100
-  },
   "method": {
     "method_name": "auto",
     "cmd": "<str>",
@@ -90,6 +88,11 @@
       "vars": "<map>",
       "image": "<str>",
       "products": "<set>"
+    },
+    "chunks": {
+      "max_count": "<int>",
+      "min_count": "<int>",
+      "max_size": "<float>"
     }
   }
 }

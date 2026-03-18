@@ -540,12 +540,12 @@ class MergeSet:
         :return: List of group divisions
         """
         # If there are fewer files than the target, just make one group
-        target = int(config.grouping.target.value)
+        target = int(config.output.grouping.target.value)
         if count < target:
             io_utils.log_print(f"Merging {count} inputs into 1 group")
             return []
         # Otherwise, make groups of the target count
-        if config.grouping.equalize:
+        if config.output.grouping.equalize:
             n_groups = math.ceil(count / target)
             target = count / n_groups
             divs = [round(i*target) for i in range(1, n_groups)]
@@ -554,7 +554,7 @@ class MergeSet:
         io_utils.log_print(
             f"Merging {count} inputs into {len(divs)+1} groups of {round(target)} files")
         # Warn about small groups
-        if target < config.grouping.chunk_min:
+        if target < config.method.chunks.min_count:
             io_utils.log_print(
                 "Target group count is smaller than recommended, did you mean to use size instead?",
                 logging.WARNING)
@@ -580,7 +580,7 @@ class MergeSet:
         spec = config.method.outputs[0].size
         fixed = spec.b + avg*spec.a
         estimate = fixed + count*spec.n + total*spec.s
-        target = config.grouping.target * 1024**3
+        target = config.output.grouping.target * 1024**3
         if estimate < target:
             io_utils.log_print(f"Merging {count} inputs into 1 group")
             return []
@@ -597,7 +597,7 @@ class MergeSet:
             estimate += delta
         group_sizes.append(estimate)
         # If we're not equalizing the groups then we're done
-        if not config.grouping.equalize:
+        if not config.output.grouping.equalize:
             return divs
         # Try to shuffle files between groups if it will improve equality
         while True:
@@ -641,12 +641,12 @@ class MergeSet:
         if len(indices) == 0:
             logger.critical("No files to group")
             sys.exit(1)
-        if config.grouping.mode == 'count':
+        if config.output.grouping.mode == 'count':
             divs = self.group_by_count(len(indices))
-        elif config.grouping.mode == 'size':
+        elif config.output.grouping.mode == 'size':
             divs = self.group_by_size(indices)
         else:
-            logger.critical("Unknown target mode: %s", config.grouping.mode)
+            logger.critical("Unknown output grouping mode: %s", config.output.grouping.mode)
             sys.exit(1)
         # Check if we have a single output group
         if len(divs) == 0:
@@ -661,7 +661,7 @@ class MergeSet:
             div = indices[div]
             group = MergeChunk(start, div - start, self.get_slice(start, div))
             start = div
-            if len(group) < config.grouping.chunk_min:
+            if len(group) < config.method.chunks.min_count:
                 small_groups = True
             if len(group) == 0:
                 logger.warning("Skipping group %d with 0 good files", gid)
@@ -676,14 +676,14 @@ class MergeSet:
             logger.debug("Yielding group %d with %d good files", len(divs), len(group))
             yield group
         # Warn about small groups
-        if len(group) < config.grouping.chunk_min and config.grouping.equalize:
+        if len(group) < config.method.chunks.min_count and config.output.grouping.equalize:
             small_groups = True
         if small_groups:
             io_utils.log_print(
                 "Some groups were smaller than the minimum chunk size, "
                 "consider adjusting grouping parameters",
                 logging.WARNING)
-        elif len(group) < config.grouping.chunk_min:
+        elif len(group) < config.method.chunks.min_count:
             io_utils.log_print(
                 f"Last group has only {len(group)} file{'s' if len(group) != 1 else ''}, "
                 "consider adjusting target or using equalize option",
