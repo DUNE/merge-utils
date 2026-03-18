@@ -56,6 +56,18 @@ class MetaRetriever(ABC):
         """Return the set of files from the source"""
         return self._files
 
+    @property
+    def namespace(self) -> str:
+        """
+        Return the default namespace for files without an explicit namespace.
+        Checks the config for input.namespace, then output.namespace, then defaults to 'usertests'.
+        """
+        if config.input.namespace:
+            return str(config.input.namespace)
+        if config.output.namespace:
+            return str(config.output.namespace)
+        return 'usertests'
+
     async def connect(self) -> None:
         """Connect to the MetaCat web API"""
         await self.client.connect()
@@ -356,7 +368,7 @@ class DidRetriever(MetaRetriever):
             if len(parts) == 2:
                 namespaces[parts[0]] += 1
         if len(namespaces) == 0:
-            ns = config.input.namespace
+            ns = self.namespace
             logger.info("DID list missing namespaces, using default namespace '%s'", ns)
             self.dids = [f"{ns}:{did}" for did in self.dids]
         elif len(namespaces) == 1:
@@ -370,7 +382,7 @@ class DidRetriever(MetaRetriever):
             sys.exit(1)
         else:
             count = sum(namespaces.values())
-            ns = config.input.namespace
+            ns = self.namespace
             if count < len(self.dids):
                 logger.warning("Some DIDs missing namespaces, assuming default namespace '%s'", ns)
                 self.dids = [f"{ns}:{did}" if ':' not in did else did for did in self.dids]
@@ -458,7 +470,7 @@ class LocalMetaRetriever(MetaRetriever):
         files = []
         skip = batch.skip
         end = min(skip + limit, len(self.paths))
-        namespace = str(config.input.namespace)
+        namespace = self.namespace
         # Read metadata from local files if possible
         missing = {}
         for path in self.paths[skip:end]:
@@ -531,8 +543,7 @@ def get() -> MetaRetriever:
         if len(json_files) > 0:
             return LocalMetaRetriever(paths=json_files)
         # Otherwise, return a DidRetriever based on the input file names
-        ns = config.input.namespace
-        return DidRetriever(dids=[f"{ns}:{os.path.basename(f)}" for f in inputs])
+        return DidRetriever(dids=[os.path.basename(f) for f in inputs])
     if config.input.mode == 'dids':
         return DidRetriever(dids=inputs)
     if config.input.mode == 'query':
