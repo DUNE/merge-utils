@@ -1192,6 +1192,8 @@ def set_cmd_opts(args: dict) -> None:
         logger.warning("Option --local has no effect in output mode '%s'", out_mode)
 
     # Job settings
+    if args.retry:
+        cfg_dict.validation.handling.already_done = 'gap'
     override("tag", cfg_dict.input.tag, args.tag)
     override("comment", cfg_dict.input.comment, args.comment)
     if args.skip is not None:

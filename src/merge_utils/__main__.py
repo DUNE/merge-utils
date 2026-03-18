@@ -22,6 +22,8 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('-v', '--verbose', action='count', default=0,
                         help='print more verbose output (e.g. -vvv for debug output)')
     parser.add_argument('--log', help='specify a custom log file path')
+    parser.add_argument('--retry', action='store_true',
+                        help='enable checking for already-merged files')
 
     in_group = parser.add_argument_group('input arguments')
     in_group.add_argument('input_mode', nargs='?', default=None, metavar='MODE',
