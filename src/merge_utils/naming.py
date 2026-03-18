@@ -4,7 +4,7 @@ import os
 import sys
 import logging
 
-from merge_utils import config, io_utils
+from merge_utils import config, io_utils, config_keys
 
 logger = logging.getLogger(__name__)
 
@@ -222,7 +222,7 @@ class Formatter:
             return Formatter.CfgFormatter(self._head, new_key, new_val)
 
         def __format__(self, spec):
-            if isinstance(self._val, config.ConfigString):
+            if isinstance(self._val, config_keys.ConfigString):
                 logger.debug("Recursively formatting config key '%s'", self._key)
                 Formatter(self._head.metadata).format(self._val, self._head.defer_uuid)
             val = self._val
@@ -272,7 +272,7 @@ class Formatter:
             return Formatter.ValFormatter(self, name, val)
         return Formatter.MetaFormatter(self, name)
 
-    def format(self, template: config.ConfigString, defer_uuid: bool = False):
+    def format(self, template: config_keys.ConfigString, defer_uuid: bool = False):
         """
         Format a config string using the metadata dictionary.
 
@@ -280,13 +280,13 @@ class Formatter:
         """
         name = template._name # pylint: disable=protected-access
         # Validate input
-        if not isinstance(template, config.ConfigKey):
+        if not isinstance(template, config_keys.ConfigKey):
             logger.critical("The name formatter expects a config key, got '%s'", type(template))
             sys.exit(1)
-        if not isinstance(template, config.ConfigString):
+        if not isinstance(template, config_keys.ConfigString):
             logger.critical("Config key '%s' is not a string and cannot be formatted", name)
             sys.exit(1)
-        config.string_keys.discard(name) # Remove from unformatted keys
+        config_keys.string_keys.discard(name) # Remove from unformatted keys
         # Skip keys witout any {...} fields
         val = template.value
         if val is None or '{' not in val or '}' not in val:

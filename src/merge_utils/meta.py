@@ -6,7 +6,7 @@ import logging
 import collections
 import copy
 
-from merge_utils import config, io_utils, naming
+from merge_utils import config, io_utils, naming, config_keys
 
 logger = logging.getLogger(__name__)
 
@@ -674,8 +674,8 @@ def make_names(files: list):
         logging.INFO
     )
     # Format any other strings in the config that may use metadata keys
-    while config.string_keys:
-        key_name = config.string_keys.pop()
+    while config_keys.string_keys:
+        key_name = config_keys.string_keys.pop()
         skip = False
         for prefix in ['method.cmd', 'method.defaults', 'naming', 'metadata']:
             if key_name.startswith(prefix):
