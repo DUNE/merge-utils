@@ -62,7 +62,7 @@ class RucioWrapper:
         self.rses[name] = rse
         return rse
 
-    async def get_rses(self, detailed: bool = False) -> AsyncGenerator[dict, None]:
+    async def get_rses(self, detailed: bool = True) -> AsyncGenerator[dict, None]:
         """
         Asynchronously retrieve information for all RSEs from Rucio.
 

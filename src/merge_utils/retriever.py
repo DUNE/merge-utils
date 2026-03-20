@@ -511,7 +511,7 @@ def get() -> MetaRetriever:
     :return: MetaRetriever object for retrieving file metadata
     """
     # Determine input mode and retrieve metadata
-    inputs = config.input.inputs
+    inputs = [str(f) for f in config.input.inputs]
     if config.input.mode == 'files':
         # We need to sort the input files into data and metadata files
         # Start by getting the set of all metadata file names (without the .json suffix)

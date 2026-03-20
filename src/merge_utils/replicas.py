@@ -864,7 +864,7 @@ class PathListFinder(PathFinder):
         await super().connect()
         # If we have access to Rucio, get the list of RSEs
         if self.client:
-            for rse_info in self.client.get_rses():
+            async for rse_info in self.client.get_rses():
                 self.add_rse(RucioRSE(rse_info))
             return
         # If this is a batch job, we need Rucio
@@ -972,6 +972,7 @@ def get(metadata: MetaRetriever) -> PathFinder:
         # Group data file paths by name
         paths = collections.defaultdict(set)
         for path in config.input.inputs:
+            path = str(path)
             # If we have a JSON file, strip the extension and look for a matching data file
             if path.endswith('.json'):
                 path = path[:-5]
