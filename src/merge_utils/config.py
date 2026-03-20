@@ -7,14 +7,18 @@ import sys
 import socket
 import fnmatch
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 from merge_utils import io_utils, __version__
 from merge_utils.config_keys import ConfigKey, ConfigDict, ConfigMap, ConfigList, type_defs, key_defs
 
+logger = logging.getLogger(__name__)
+
 DEFAULT_CONFIG = ["defaults/metadata.yaml", "defaults/defaults.yaml"]
 
-logger = logging.getLogger(__name__)
+OInt = Optional[int]
+OStr = Optional[str]
+OList = Optional[list]
 
 # Configuration dictionary
 cfg_dict = ConfigDict()
@@ -85,7 +89,7 @@ def update(file_name: str) -> None:
                           errors, level=logging.CRITICAL)
         sys.exit(1)
 
-def uuid(skip: int = None, limit: int = None, chunk: list[int] = None) -> str:
+def uuid(skip: OInt = None, limit: OInt = None, chunk: OList = None) -> str:
     """Generate a unique identifier based on the job tag and timestamp.
     
     :param skip: Number of initial entries to skip.
@@ -228,15 +232,19 @@ def dump() -> None:
     else:
         logger.info("Config:\n%s", json_dump)
 
-def override(name: str, option: ConfigKey, value: str = None) -> str:
+def override(args: dict, arg: str, option: ConfigKey, name: OStr = None) -> OStr:
     """
     Override a configuration option with a new value.
 
-    :param name: Name of the configuration option.
+    :param args: Dictionary of command-line arguments.
+    :param arg: Name of the command-line argument.
     :param option: Configuration option to override.
-    :param value: New value for the configuration option.
+    :param name: Optional name for logging purposes.
     :return: Resulting value of the configuration option.
     """
+    if name is None:
+        name = arg.replace('_', ' ')
+    value = args.pop(arg, None)
     if value is not None:
         if option:
             logger.info("Overriding %s: %s", name, repr(value))
@@ -254,27 +262,31 @@ def set_cmd_opts(args: dict) -> None:
     """
     # Override configuration with command line arguments
     # I/O modes
-    override("input mode", cfg_dict.input.mode, args.input_mode)
-    out_mode = override("output mode", cfg_dict.output.mode, args.output_mode)
-    local = override("local", cfg_dict.output.local, args.local)
+    override(args, "input_mode", cfg_dict.input.mode)
+    out_mode = override(args, "output_mode", cfg_dict.output.mode)
+    local = override(args, "local", cfg_dict.output.local)
     if local and out_mode in ['validate', 'dids']:
         logger.warning("Option --local has no effect in output mode '%s'", out_mode)
 
     # Job settings
-    if args.retry:
+    if args.pop("retry", False):
         cfg_dict.validation.handling.already_done = 'gap'
-    override("tag", cfg_dict.input.tag, args.tag)
-    override("comment", cfg_dict.input.comment, args.comment)
-    if args.skip is not None:
-        skip = args.skip if args.skip > 0 else None
+    override(args, "tag", cfg_dict.input.tag)
+    override(args, "comment", cfg_dict.input.comment)
+    skip = args.pop("skip", None)
+    if skip is not None:
+        if skip <= 0:
+            skip = None
         if cfg_dict.input.skip:
             if skip is None:
                 logger.info("Overriding skip: none")
             else:
                 logger.info("Overriding skip: %d", skip)
         cfg_dict.input.skip = skip
-    if args.limit is not None:
-        limit = args.limit if args.limit > 0 else None
+    limit = args.pop("limit", None)
+    if limit is not None:
+        if limit <= 0:
+            limit = None
         if cfg_dict.input.limit:
             if limit is None:
                 logger.info("Overriding limit: none")
@@ -283,11 +295,11 @@ def set_cmd_opts(args: dict) -> None:
         cfg_dict.input.limit = limit
 
     # Output settings
-    override("output name", cfg_dict.output.name, args.name)
-    override("output namespace", cfg_dict.output.namespace, args.namespace)
-    override("merge method", cfg_dict.method.method_name, args.method)
+    override(args, "name", cfg_dict.output.name, "output name")
+    override(args, "namespace", cfg_dict.output.namespace, "output namespace")
+    override(args, "method", cfg_dict.method.method_name, "merge method")
 
-def load(args: dict = None) -> None:
+def load(args: Optional[dict] = None) -> None:
     """
     Load the specified configuration files.
     Missing keys will be filled in with the defaults in DEFAULT_CONFIG.
@@ -309,7 +321,7 @@ def load(args: dict = None) -> None:
         return
 
     # Load user configuration files
-    user_cfgs = args.config if args.config else []
+    user_cfgs = args.pop("config", [])
     for cfg_file in user_cfgs:
         update(cfg_file)
         cfg_dict.job.config_files.append(cfg_file)
@@ -347,7 +359,7 @@ def resume(job_dir: str, args: dict) -> None:
     logger.info("Loaded old configuration file.")
 
     # Override output mode
-    out_mode = override("output mode", cfg_dict.output.mode, args.output_mode)
-    local = override("local", cfg_dict.output.local, args.local)
+    out_mode = override(args, "output_mode", cfg_dict.output.mode)
+    local = override(args, "local", cfg_dict.output.local)
     if local and out_mode in ['validate', 'dids']:
         logger.warning("Option --local has no effect in output mode '%s'", out_mode)

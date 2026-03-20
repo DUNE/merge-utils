@@ -1,5 +1,6 @@
 """Module for configuration key classes."""
 
+from __future__ import annotations
 import logging
 import operator
 from abc import ABC, abstractmethod
@@ -394,7 +395,7 @@ class ConfigSizeSpec(ConfigKey):
         :return: tuple of coefficents for (s,n,a,b)
         """
         errors = []
-        coeffs = [None]*len(self.PARAMS)
+        coeffs: list[float | None] = [None]*len(self.PARAMS)
         spec = spec_str.replace(' ', '').split('+')
         for term in spec:
             try:

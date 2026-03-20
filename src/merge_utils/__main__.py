@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import json
+import copy
 
 from merge_utils import io_utils, config, meta, naming, retriever, replicas, scheduler
 
@@ -58,7 +59,7 @@ def get_parser() -> argparse.ArgumentParser:
                            help='explicitly specify the merging method')
     return parser
 
-def get_inputs(args) -> None:
+def get_inputs(args: dict) -> None:
     """
     Collect the list of inputs from the command line, from standard input, or from files.
     If multiple sources are provided, this will give an error since it's likely a mistake.
@@ -69,7 +70,7 @@ def get_inputs(args) -> None:
     :return: None (updates config.input.inputs in place)
     """
     # Command line arguments
-    cmd_inputs = args.inputs
+    cmd_inputs = args.pop("inputs", [])
     io_utils.log_nonzero("Found {n} input{s} from command line", len(cmd_inputs))
     # Inputs piped to standard input
     pipe_inputs = []
@@ -78,15 +79,15 @@ def get_inputs(args) -> None:
         io_utils.log_nonzero("Found {n} input{s} from standard input", len(pipe_inputs))
     # Inputs from file lists
     file_inputs = []
-    if args.file:
-        for filelist in args.file:
-            if not os.path.isfile(filelist):
-                logger.critical("Input file list '%s' does not exist.", filelist)
-                sys.exit(1)
-            with open(filelist, encoding="utf-8") as f:
-                entries = f.readlines()
-            io_utils.log_nonzero("Found {n} input{s} in file %s" % filelist, len(entries))
-            file_inputs.extend([x.strip() for x in entries])
+    filelists = args.pop("file", [])
+    for filelist in filelists:
+        if not os.path.isfile(filelist):
+            logger.critical("Input file list '%s' does not exist.", filelist)
+            sys.exit(1)
+        with open(filelist, encoding="utf-8") as f:
+            entries = f.readlines()
+        io_utils.log_nonzero("Found {n} input{s} in file %s" % filelist, len(entries))
+        file_inputs.extend([x.strip() for x in entries])
     io_utils.log_nonzero("Found {n} total input{s} from file lists", len(file_inputs))
     # Inputs from the merge config
     cfg_inputs = config.input.inputs
@@ -116,7 +117,7 @@ def get_inputs(args) -> None:
         sys.exit(1)
 
 
-def start_job(args):
+def start_job(args: dict):
     """Start a new merge job with the given command line arguments."""
     # Load configuration
     config.load(args)
@@ -140,24 +141,32 @@ def start_job(args):
     # Collect file search directories
     dirs = config.input.search_dirs
     io_utils.log_nonzero("Found {n} search location{s} from config files", len(dirs))
-    if args.dir:
-        io_utils.log_nonzero("Found {n} search location{s} from command line", len(args.dir))
-        dirs.extend(args.dir)
+    cmd_dirs = args.pop("dir", [])
+    if cmd_dirs:
+        io_utils.log_nonzero("Found {n} search location{s} from command line", len(cmd_dirs))
+        dirs.extend(cmd_dirs)
     io_utils.log_list("Found {n} total search location{s}:", dirs, logging.INFO)
 
     # Dump final configuration
     config.dump()
 
-def resume_job(args):
+    # Quit if we have any unprocessed command line arguments
+    if len(args) > 0:
+        bad_args = ", ".join(args.keys())
+        logger.critical("Some command line arguments were not processed: %s", bad_args)
+        sys.exit(1)
+
+def resume_job(args: dict):
     """Resume a previously started merge job with the given command line arguments."""
     # Load default configuration
-    if len(args.inputs) == 0:
+    inputs = args.pop("inputs", [])
+    if len(inputs) == 0:
         logger.critical("Please provide a job directory to resume.")
         sys.exit(1)
-    if len(args.inputs) > 1:
+    if len(inputs) > 1:
         logger.critical("Multiple job directories provided, please only provide one.")
         sys.exit(1)
-    job_dir = args.inputs[0]
+    job_dir = inputs[0]
     config.load()
     formatter = naming.Formatter()
     formatter.format(config.output.tmp_dir)
@@ -167,6 +176,11 @@ def resume_job(args):
         logger.critical("Job directory '%s' does not exist.", job_dir)
         sys.exit(1)
     config.resume(job_dir, args)
+    # Quit if we have any unprocessed command line arguments
+    if len(args) > 0:
+        bad_args = ", ".join(args.keys())
+        logger.critical("Invalid command line arguments for resuming a job: %s", bad_args)
+        sys.exit(1)
     io_utils.setup_job_dir(job_dir)
     msg = [
         f"Restarting merge job {config.uuid()}",
@@ -243,13 +257,17 @@ def print_replicas(paths, mode):
 def main():
     """Run a merge job"""
     parser = get_parser()
-    args = parser.parse_args()
-    print ("main arguments are: ",args)
+    arguments = parser.parse_args()
+
+    # Convert command line arguments to a dict and remove any None values
+    args = {k: copy.deepcopy(v) for k, v in vars(arguments).items() if v}
+    print ("main arguments are:", args)
 
     # Set up logging
-    io_utils.setup_log(log_file=args.log, verbosity=args.verbose)
+    io_utils.setup_log(log_file=args.pop("log", None), verbosity=args.pop("verbose", None))
 
-    if args.input_mode == 'resume':
+    if arguments.input_mode == 'resume':
+        args.pop("input_mode", None)
         resume_job(args)
     else:
         start_job(args)

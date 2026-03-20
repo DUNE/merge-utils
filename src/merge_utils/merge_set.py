@@ -7,12 +7,14 @@ import collections
 import logging
 import math
 import enum
-import copy
-from typing import Iterable, Generator
+from typing import Iterable, Generator, Optional
 
 from merge_utils import io_utils, config, meta, metacat_utils
 
 logger = logging.getLogger(__name__)
+
+OInt = Optional[int]
+OList = Optional[list]
 
 class MergeFileError(enum.Flag):
     """Enumeration of possible file error flags"""
@@ -692,7 +694,7 @@ class MergeSet:
 class MergeChunk:
     """Class to keep track of a chunk of files for merging"""
 
-    def __init__(self, skip: int = None, limit: int = None, files: list = None):
+    def __init__(self, skip: OInt = None, limit: OInt = None, files: OList = None):
         self.skip = skip
         self.limit = limit
         self.files = []
@@ -778,7 +780,7 @@ class MergeChunk:
         outputs = []
         chunk = self.chunk_id
         for spec in specs:
-            output = {'name': self.make_name(spec.name, chunk)}
+            output: dict = {'name': self.make_name(spec.name, chunk)}
             if spec.size_min:
                 output['size'] = spec.size_min([f.size for f in self.files])
             if spec.checklist:
