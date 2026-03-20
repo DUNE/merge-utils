@@ -185,7 +185,7 @@ def setup_log(name: str = None, log_file: str = None, verbosity: int = 0) -> Non
 
 def set_log_level(level: int) -> None:
     """Override the logging level for the console"""
-    if level == 0:
+    if not level:
         level = "ERROR"
     elif level == 1:
         level = "WARNING"

@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 import collections
 from dataclasses import dataclass
 
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Callable
 
 from merge_utils import config, io_utils
 from merge_utils.merge_set import MergeSet, MergeFileError
@@ -38,6 +38,12 @@ class InputBatch:
     def __iter__(self):
         """Iterate over the files in the batch."""
         return iter(self.files)
+
+def file_serializer(obj):
+    """Custom JSON serializer for MergeFileError objects"""
+    if isinstance(obj, MergeFileError):
+        return obj.name
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 class MetaRetriever(ABC):
     """Base class for retrieving metadata from a source"""
@@ -87,7 +93,7 @@ class MetaRetriever(ABC):
         """
         # retrieve specific batch
 
-    async def get_batch(self, getter: callable, batch: InputBatch, **kwargs) -> InputBatch:
+    async def get_batch(self, getter: Callable, batch: InputBatch, **kwargs) -> InputBatch:
         """
         Asynchronously retrieve a batch of input data, with caching.
 
@@ -105,7 +111,7 @@ class MetaRetriever(ABC):
             logger.debug("Retrieving new %s input batch %d", self.name, skip)
             files = await getter(batch=batch, **kwargs)
             with open(cache, 'w', encoding="utf-8") as f:
-                f.write(json.dumps({'files': files}, indent=2))
+                f.write(json.dumps({'files': files}, indent=2, default=file_serializer))
         return InputBatch(skip=skip, files=files)
 
     async def check_existence(self, files: list) -> None:

@@ -144,7 +144,7 @@ def start_job(args: dict):
     cmd_dirs = args.pop("dir", [])
     if cmd_dirs:
         io_utils.log_nonzero("Found {n} search location{s} from command line", len(cmd_dirs))
-        dirs.extend(cmd_dirs)
+        dirs |= cmd_dirs
     io_utils.log_list("Found {n} total search location{s}:", dirs, logging.INFO)
 
     # Dump final configuration

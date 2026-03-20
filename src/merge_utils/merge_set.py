@@ -41,7 +41,7 @@ class MergeFileError(enum.Flag):
             return 'include'
         err_name = self.first.name
         assert err_name is not None
-        return config.validation.handling[err_name.lower()]
+        return str(config.validation.handling[err_name.lower()])
 
     @property
     def group(self) -> bool:
@@ -78,6 +78,8 @@ class MergeFile:
         # Set name and check for errors
         self._did = f"{data['namespace']}:{data['name']}"
         self.errors = data.get('errors', MergeFileError(0))
+        if isinstance(self.errors, str):
+            self.errors = MergeFileError[self.errors]
         if self.errors:
             return
         # Set FIDs and check for undeclared files
