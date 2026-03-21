@@ -5,7 +5,7 @@ metadata.yaml
 
 set in :ref:`config`
 
-.. literalinclude:: ../../config/metadata.yaml
+.. literalinclude:: ../../config/defaults/metadata.yaml
 
 
 

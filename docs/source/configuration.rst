@@ -14,4 +14,4 @@ Default configurations are set in the following files:
     defaults
     metadata
     logging
-    valid_values
+

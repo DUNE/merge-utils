@@ -1,4 +1,4 @@
-version: "0.8.1"
+version: "0.8.3"
 
 input:
     streaming: True 
@@ -12,16 +12,30 @@ output:
         lifetime: 1000 
     scratch:                # Settings for scratch merging
         lifetime: 300
+    grouping:
+        mode: count
+        target: 1000
+        equalize: False
+
 
 validation:
-    handling:
-        unreachable: "skip"
+    #handling:
+     #   default: "skip" #WHAT DOES THIS MEAN?????
+      #  unreachable: "skip"
+       # already_done: "gap" #### WHAT IS THIS?
+    handling:             # How to handle files with errors
+        default: skip    # <opt(quit,skip,gap)>         # Default handling mode
+        duplicate: skip  # <opt(default,quit,skip,gap)> # Duplicated files
+        no_metadata: quit #<opt(default,quit,skip,gap)> # Files without metadata
+        undeclared: quit  #<opt(default,quit,skip,gap)> # Files without a MetaCat record
+        retired: skip    # <opt(default,quit,skip,gap)> # Retired files
+        invalid: quit   # <opt(default,quit,skip,gap)> # Metadata failed validation
+        no_replicas: skip #<opt(default,quit,skip,gap)> # Files without any replicas
+        unreachable: skip #<opt(default,quit,skip,gap)> # Replicas exist but exceed max distance
+        inconsistent: quit #<opt(default,quit,skip,gap)> # Metadata inconsistent with other files
+        already_done: skip # <opt(include,quit,skip,gap)> # Files that have been merged in a previous job
 
-grouping:
-    mode: count
-    target: 20
-    equalize: False
-    chunk_max: 10
+
 
 method:
     method_name: "lar"
