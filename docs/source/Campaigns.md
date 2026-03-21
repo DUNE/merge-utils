@@ -10,9 +10,9 @@ source setup_campaign.sh <campaign_name>
 cd <campaign_name>
 ~~~
 
-the directory name will be stored in `$CAMPAIGN`
+the directory name will be stored in `$CAMPAIGN` and the full directory path will be in `$CAMPAIGN_DIR`
 
-In that directory you need to make a csv file `$CAMPAIGN.csv` that stores columns for each dataset you want to run over.
+In that directory you need to make a csv file `$CAMPAIGN.csv` that stores tagged rows for each dataset you want to run over.
 
 `TAG,CONFIG,CAMPAIGN,NAMESPACE,BATCH,DATASET`
 
@@ -20,7 +20,7 @@ In that directory you need to make a csv file `$CAMPAIGN.csv` that stores column
 - `CONFIG` is the merge yaml or json override of defaults. Should have the same name as the fcl file if using lar.
 - `CAMPAIGN` is the campaign 
 - `NAMESPACE` is the output namespace ('usertests')
-- `BATCH` is how many files are sent to the merger at once - for production batches of 2000-5000 are good. 
+- `BATCH` is how many input files are sent to the merger at once - for production batches of 2000-5000 are good. 
 - `DATASET` the metacat dataset you want to run over. Generally should be official 
 
 ## production scripts
@@ -31,7 +31,7 @@ when you run the `setup_campaign.sh` script it should be added to your path.
 
 - `build_jobs.py` this takes the original csv file, figures out how many files you will be running over and produces `<jobs csv>`
 
-- make_pass1.py `<tag>` makes a script that submits the pass1 jobs for `<tag>`
+- `make_pass1.py <tag>` makes a script that submits the pass1 jobs for `<tag>`
 
 ### utilities
 
