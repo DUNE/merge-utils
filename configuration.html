@@ -5,14 +5,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Configuration &#8212; merge-utils 0.0 documentation</title>
+    <title>Configuration &#8212; merge-utils 0.8 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css?v=0f882399" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
-    <script src="_static/documentation_options.js?v=837179f8"></script>
+    <script src="_static/documentation_options.js?v=a0e24af7"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <link rel="canonical" href="https://hschellman.github.io/merge-utils-test/configuration.html" />
+    <link rel="canonical" href="https://dune.github.io/merge-utils/configuration.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="defaults.yaml" href="defaults.html" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="startup.html" title="Installation and Startup"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.8 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Configuration</a></li> 
       </ul>
     </div>  
@@ -45,8 +45,9 @@
             
   <section id="configuration">
 <h1>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h1>
-<p>Configurations are set in the following files.</p>
-<p>You can specify a different configuration file with the option ‘-c newconfig.yaml’ (or json) on the command line.</p>
+<p>In most cases the user is expected to provide one or more config files with the option ‘-c my_config.yaml’ on the command line.  These config files can be written in yaml, json, or toml, and more formats may be added on request.  The script will search for the specified files in the merge-utils config directory, or the full file path may be provided.  If multiple user configs are provided the settings will be applied in the order they are given, this may be useful for large production campagins with a master config file plus minor adjustments for individual datasets.  Command line options are applied last and will override the relevant settings from any config files.</p>
+<p>Config keys are type-checked, and some types have special handling.</p>
+<p>Default configurations are set in the following files:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="defaults.html">defaults.yaml</a></li>
@@ -109,7 +110,7 @@
         <li class="right" >
           <a href="startup.html" title="Installation and Startup"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.8 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Configuration</a></li> 
       </ul>
     </div>

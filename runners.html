@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>runners &#8212; merge-utils 0.8 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
+    <script src="_static/documentation_options.js?v=a0e24af7"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://dune.github.io/merge-utils/runners.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="jobscript" href="jobscript.html" />
+    <link rel="prev" title="scheduler" href="scheduler.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="jobscript.html" title="jobscript"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="scheduler.html" title="scheduler"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.8 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">runners</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="runners">
+<span id="id1"></span><h1>runners<a class="headerlink" href="#runners" title="Link to this heading">¶</a></h1>
+<section id="do-merge">
+<h2>do_merge<a class="headerlink" href="#do-merge" title="Link to this heading">¶</a></h2>
+</section>
+<section id="merge-hdf5">
+<h2>merge_hdf5<a class="headerlink" href="#merge-hdf5" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-runners.merge_tar">
+<span id="merge-tar"></span><h2>merge_tar<a class="headerlink" href="#module-runners.merge_tar" title="Link to this heading">¶</a></h2>
+<p>Merge multiple files into a tar archive</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="runners.merge_tar.merge_tar">
+<span class="sig-prename descclassname"><span class="pre">runners.merge_tar.</span></span><span class="sig-name descname"><span class="pre">merge_tar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/runners/merge_tar.html#merge_tar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#runners.merge_tar.merge_tar" title="Link to this definition">¶</a></dt>
+<dd><p>Merge the input files into a tar.gz archive</p>
+</dd></dl>
+
+</section>
+<section id="module-merge_utils.pass2_fix">
+<span id="pass2-fix"></span><h2>pass2_fix<a class="headerlink" href="#module-merge_utils.pass2_fix" title="Link to this heading">¶</a></h2>
+<p>Update pass 2 json files and add to cvmfs directory before submission</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.pass2_fix.get_cfgs">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.pass2_fix.</span></span><span class="sig-name descname"><span class="pre">get_cfgs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/pass2_fix.html#get_cfgs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.pass2_fix.get_cfgs" title="Link to this definition">¶</a></dt>
+<dd><p>Get the configuration dictionaries from the list of files</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.pass2_fix.get_pfns">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.pass2_fix.</span></span><span class="sig-name descname"><span class="pre">get_pfns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/pass2_fix.html#get_pfns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.pass2_fix.get_pfns" title="Link to this definition">¶</a></dt>
+<dd><p>Get the physical file names from Rucio for the given input DIDs</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.pass2_fix.main">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.pass2_fix.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/pass2_fix.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.pass2_fix.main" title="Link to this definition">¶</a></dt>
+<dd><p>Main function for command line execution</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">runners</a><ul>
+<li><a class="reference internal" href="#do-merge">do_merge</a></li>
+<li><a class="reference internal" href="#merge-hdf5">merge_hdf5</a></li>
+<li><a class="reference internal" href="#module-runners.merge_tar">merge_tar</a><ul>
+<li><a class="reference internal" href="#runners.merge_tar.merge_tar"><code class="docutils literal notranslate"><span class="pre">merge_tar()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-merge_utils.pass2_fix">pass2_fix</a><ul>
+<li><a class="reference internal" href="#merge_utils.pass2_fix.get_cfgs"><code class="docutils literal notranslate"><span class="pre">get_cfgs()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.pass2_fix.get_pfns"><code class="docutils literal notranslate"><span class="pre">get_pfns()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.pass2_fix.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="scheduler.html"
+                          title="previous chapter">scheduler</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="jobscript.html"
+                          title="next chapter">jobscript</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/runners.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="jobscript.html" title="jobscript"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="scheduler.html" title="scheduler"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.8 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">runners</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>
