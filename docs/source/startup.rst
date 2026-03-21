@@ -50,13 +50,6 @@ You can check to see if it is set up by typing
 Dependencies
 ------------
 
-local.py 
-
-.. image:: merge_utils_local.png
-    :width: 600
-
-----
-
 io_utils.py
 
 .. image:: merge_utils_io_utils.png

@@ -34,35 +34,7 @@ Configuration
 
 .. toctree::
 
-    configuration
-
-Production scripts
-------------------
-
-.. toctree::
-
-    prod_utils
-
-python API
-----------
-
-.. toctree::
-       
-    do_merge
-    config
-    local
-    io_utils
-    metacat_utils
-    meta
-    rucio_utils
-    justin_utils
-    merge_rse
-    merge_set 
-    retriever
-    scheduler
-    CheckConfiguration
-    MetaValidator
-    
+    configuration   
 
 command line API
 ----------------
@@ -70,6 +42,13 @@ command line API
 .. toctree::
    
     scripts
+
+campaigns interface
+-------------------
+
+.. toctree::
+
+    Campaigns_holder
 
 
 
@@ -80,6 +59,30 @@ references
     design_docs
     Notes
     related
+
+python API
+----------
+
+
+.. toctree::
     
+    config_keys
+    config
+    io_utils
+    justin_utils
+    merge_set
+    meta
+    metacat_utils   
+    naming
+    replicas
+    retriever
+    rucio_utils
+    scheduler   
+
+.. toctree::
+       
+    runners
+    jobscript
+
 .. toctree::
     Ack
