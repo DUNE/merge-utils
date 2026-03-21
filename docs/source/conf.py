@@ -18,6 +18,8 @@ sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('../../src'))
 sys.path.insert(0, os.path.abspath('../config'))
 sys.path.insert(0, os.path.abspath('../../src/merge_utils'))
+sys.path.insert(0, os.path.abspath('../../src/runners'))
+sys.path.insert(0, os.path.abspath('../../src/prod_utils'))
 sys.path.insert(0, os.path.abspath('../..'))
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -41,7 +43,7 @@ copyright = '2025, Fermi National Accelerator Laboratory'
 author = 'Heidi Schellman and Ethan Muldoon'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0'
+release = '0.8'
 
 
 # -- General configuration ---------------------------------------------------
@@ -66,7 +68,7 @@ extensions = [
 
 autoclass_content = "both"  # from ivmfnal
 
-html_baseurl = 'https://hschellman.github.io/merge-utils-test/'
+html_baseurl = 'https://dune.github.io/merge-utils/'
 
 autosectionlabel_prefix_document = True
 

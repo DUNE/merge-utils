@@ -64,6 +64,13 @@ command line API
    
     scripts
 
+campaigns interface
+-------------------
+
+.. toctree::
+
+    Campaigns_holder
+
 
 
 references

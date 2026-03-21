@@ -8,6 +8,7 @@ else
 fi
 
 export MERGE_UTILS_DIR="$(dirname "$(realpath "$0")")"
+export MERGE_UTILS_DIR=$PWD
 echo "Setting MERGE_UTILS_DIR to $MERGE_UTILS_DIR"
 
 # Set up rucio configuration file

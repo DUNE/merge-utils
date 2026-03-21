@@ -5,7 +5,7 @@ defaults.yaml
 
 set in :ref:`config`
 
-.. literalinclude:: ../../config/defaults.yaml
+.. literalinclude:: ../../config/defaults/defaults.yaml
 
 
 

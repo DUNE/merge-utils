@@ -31,6 +31,7 @@ if __name__ == '__main__':
         
     if len(sys.argv)<2:
         print ("Need to specify a task")
+        print("Available tasks:", ', '.join(tasks.keys()))
         sys.exit(1)
     else:
         task = sys.argv[1]

@@ -19,9 +19,9 @@ validation:
 
 grouping:
     mode: count
-    target: 1000
+    target: 20
     equalize: False
-    chunk_max: 50
+    chunk_max: 10
 
 method:
     method_name: "lar"

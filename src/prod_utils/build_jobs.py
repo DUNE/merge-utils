@@ -11,15 +11,16 @@ DEBUG = True
 mc_client = MetaCatClient(os.environ["METACAT_SERVER_URL"])
 
 
-if len(sys.argv) < 2:
-    print ("Usage: python build_jobs.py <joblist.csv>")
-    print ("assumes the csv file is in the $CAMPAIGN_DIR")
-    sys.exit(1)
-if os.getenv("CAMPAIGN_DIR") is None:
-    print ("Please set CAMPAIGN_DIR environment variable")
+# if len(sys.argv) < 2:
+#     print ("Usage: python build_jobs.py <joblist.csv>")
+#     print ("assumes the csv file is in the $CAMPAIGN_DIR")
+#     sys.exit(1)
+if os.getenv("CAMPAIGN_DIR") is None or os.getenv("CAMPAIGN") is None:
+    print ("Please set CAMPAIGN_DIR and CAMPAIGN environment variables")
     sys.exit(1)  
 
-joblist = os.path.join(os.getenv("CAMPAIGN_DIR"),sys.argv[1])
+campaignfile  = os.getenv("CAMPAIGN")+".csv"
+joblist = os.path.join(os.getenv("CAMPAIGN_DIR"),campaignfile)
 print("Using joblist:",joblist)
 newlist = joblist.replace('.csv','_jobs.csv')
 with open(joblist,encoding='utf-8-sig') as csvfile:
@@ -28,6 +29,21 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
     newrows = []
     for row in reader:
         basedataset = row['DATASET']
+        config = row['CONFIG']
+        # check the config for fcl
+        fcl = config.replace('.yaml','.fcl').replace('.json','.fcl')
+        hasfcl = False
+        haslar = False
+        lines = open(config,'r').readlines()
+        for line in lines:
+            if "lar " in line: 
+                haslar = True
+            if fcl in line:
+                hasfcl = True
+                break
+        if haslar and not hasfcl:
+            print (f"lar config file {config} does not contain {fcl} - please fix this" )
+            sys.exit(1)
         if DEBUG: print(row["TAG"],  row['DATASET'])
         newrow = row.copy()
         query = "files from " + basedataset + " where dune.output_status=confirmed"
