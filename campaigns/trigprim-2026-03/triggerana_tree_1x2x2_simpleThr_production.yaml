@@ -1,5 +1,6 @@
 version: "0.8.3"
-
+# this is for trigger primitive tuple generation
+# March 22, 2026 HMS
 input:
     streaming: True 
 
@@ -14,7 +15,7 @@ output:
         lifetime: 300
     grouping:
         mode: count
-        target: 50
+        target: 20
         equalize: False
 
 
@@ -42,7 +43,7 @@ method:
     cmd: "lar -c {cfg} -n -1 {inputs} -T {output} -o /dev/null"
     cfg: "triggerana_tree_1x2x2_simpleThr_production.fcl"
     outputs:
-      - name: "{NAME}__{UUID}__tuple.root"
+      - name: "{NAME}__{UUID}__tps.root"
         metadata: {"core.file_format": "root", "core.data_tier":"root-tuple"}
     
 sites:
