@@ -74,9 +74,35 @@ class MetaRetriever(ABC):
             return str(config.output.namespace)
         return 'usertests'
 
+    async def get_done(self) -> None:
+        """Asynchronously query MetaCat for merged files with the same tag as this job"""
+        if config.validation.handling.already_done == 'include':
+            return
+        if not config.input.tag:
+            logger.critical("Already-done checking requires a job tag to be specified!")
+            sys.exit(1)
+        tag = str(config.input.tag)
+        logger.info("Checking MetaCat for already merged files with tag '%s'", tag)
+        query = f"files where merge.tag == '{tag}' and dune.output_status == confirmed"
+        dids = []
+        skip = 0
+        while True:
+            batch_query = query + f" skip {skip} limit {config.validation.batch_size}"
+            files = await self.client.query(batch_query, metadata=False, provenance=False)
+            self.files.children.update(f['fid'] for f in files)
+            dids.extend(f"{f['namespace']}:{f['name']}" for f in files)
+            if len(files) < config.validation.batch_size:
+                break
+            skip += config.validation.batch_size
+        if not dids:
+            logger.info("No already merged files found with tag '%s'", tag)
+            return
+        io_utils.log_list("Found {n} merged file{s} with tag '%s':" % tag, dids, logging.INFO)
+
     async def connect(self) -> None:
         """Connect to the MetaCat web API"""
         await self.client.connect()
+        await self.get_done()
 
     async def disconnect(self) -> None:
         """Disconnect from the MetaCat web API"""
@@ -168,14 +194,15 @@ class MetaRetriever(ABC):
         parents = await self.client.files(fid_list, metadata = False, provenance = True)
         children = collections.defaultdict(set)
         for parent in parents:
-            child_dids = [f"{c['namespace']}:{c['name']}" for c in parent.get('children', [])]
-            children[parent['fid']].update(child_dids)
+            child_fids = set(c['fid'] for c in parent.get('children', []))
+            children[parent['fid']].update(child_fids)
         # Override the children of the input files
         for file in files:
             siblings = set()
             for parent in file['parents']:
                 siblings.update(children[parent['fid']])
-            file['children'] = list(siblings - {f"{file['namespace']}:{file['name']}"})
+            siblings.discard(file.get('fid', None))
+            file['children'] = [{'fid': f} for f in siblings]
 
     async def check_parents(self, files: list) -> None:
         """
@@ -218,10 +245,11 @@ class MetaRetriever(ABC):
                 parent['fid'] = parent_info.get('fid')
                 if not provenance:
                     continue
-                child_dids = [f"{c['namespace']}:{c['name']}" for c in parent.get('children', [])]
-                children.update(child_dids)
+                child_fids = set(c['fid'] for c in parent.get('children', []))
+                children.update(child_fids)
             if provenance:
-                file['children'] = list(children - {f"{file['namespace']}:{file['name']}"})
+                children.discard(file.get('fid', None))
+                file['children'] = [{'fid': f} for f in children]
         # Log any missing parents
         if missing:
             io_utils.log_list("MetaCat missing {n} grandparent record{s}:", missing, logging.ERROR)

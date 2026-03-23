@@ -269,8 +269,6 @@ def set_cmd_opts(args: dict) -> None:
         logger.warning("Option --local has no effect in output mode '%s'", out_mode)
 
     # Job settings
-    if args.pop("retry", False):
-        cfg_dict.validation.handling.already_done = 'gap'
     override(args, "tag", cfg_dict.input.tag)
     override(args, "comment", cfg_dict.input.comment)
     skip = args.pop("skip", None)
@@ -293,6 +291,16 @@ def set_cmd_opts(args: dict) -> None:
             else:
                 logger.info("Overriding limit: %d", limit)
         cfg_dict.input.limit = limit
+
+    # Already-done handling
+    if args.pop("retry", False):
+        if not cfg_dict.input.tag:
+            logger.critical("Cannot use --retry without a job tag specified!")
+            sys.exit(1)
+        cfg_dict.validation.handling.already_done = 'gap'
+    if cfg_dict.validation.handling.already_done != 'include' and not cfg_dict.input.tag:
+        logger.warning("Already-done checking is disabled without a job tag specified!")
+        cfg_dict.validation.handling.already_done = 'include'
 
     # Output settings
     override(args, "name", cfg_dict.output.name, "output name")
