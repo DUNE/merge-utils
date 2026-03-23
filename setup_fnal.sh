@@ -1,7 +1,7 @@
 export DUNE_VERSION=${DUNE_VERSION:-v10_12_01d01}
 export DUNE_QUALIFIER=${DUNE_QUALIFIER:-e26:prof}
 
-export MERGE_UTILS_DIR="$(dirname `readlink -f "${BASH_SOURCE[0]}"`)"
+export MERGE_UTILS_DIR="$(dirname `realpath "${BASH_SOURCE[0]}"`)"
 echo "Setting MERGE_UTILS_DIR to $MERGE_UTILS_DIR"
 
 # Set up rucio configuration file
