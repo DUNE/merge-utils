@@ -119,6 +119,10 @@ standard_methods: # Built-in merging methods, matched using 'cond' in reverse or
     cond: "'{core.file_format}' in ['artroot']"
     cmd: "lar -c {cfg} -n -1 -o {output} {inputs}"
     cfg: "artcat.fcl"
+    dependencies:
+      - "messageService.fcl"
+      - "minimalMessageService.fcl"
+      - "standardMessageDestinations.fcl"
     outputs:
       - name: "{NAME}_merged_{UUID}.root"
   - method_name: "hdf5"
