@@ -435,7 +435,7 @@ class MergeSet:
                 msg.append(f"  {field}: '{bad_val}' (expected '{good_val}')")
         return msg
 
-    async def check_errors(self, final: bool = False) -> None:
+    def check_errors(self, final: bool = False) -> None:
         """
         Check and log errors in the set.
         

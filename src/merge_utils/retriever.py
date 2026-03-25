@@ -323,9 +323,10 @@ class MetaRetriever(ABC):
         await self.connect()
         # Loop over batches, checking for errors as we go
         async for _ in self.input_batches():
-            await self.files.check_errors()
+            self.files.check_errors()
         # Close connections and do final error checking
-        await asyncio.gather(self.client.disconnect(), self.files.check_errors(final = True))
+        await self.client.disconnect()
+        self.files.check_errors(final = True)
 
     def run(self) -> None:
         """Retrieve metadata for all files."""
