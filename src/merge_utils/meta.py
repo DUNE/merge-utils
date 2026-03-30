@@ -481,7 +481,7 @@ def set_method(method: config.ConfigDict, warn: bool = False) -> None:
         logger.log(lvl, "Explicity adding merge.dependencies:\n  %s",
                        "\n  ".join(config.method.dependencies))
         explicit = True
-    config.method.dependencies |= method.dependencies
+    config.method.dependencies.extend(method.dependencies)
     if config.method.outputs:
         logger.log(lvl, "Explicit list of merge.outputs overrides %s default", method_name)
         explicit = True
@@ -501,7 +501,6 @@ def set_method_auto(metadata: dict) -> None:
     if method is None:
         logger.critical("Failed to auto-select a merging method!")
         sys.exit(1)
-
     # Set merging method parameters
     config.method.method_name = method.method_name
     set_method(method, warn=True)

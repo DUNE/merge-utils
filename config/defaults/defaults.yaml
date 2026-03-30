@@ -88,7 +88,7 @@ method:
     cmd: <str>                    # Optionally specify merging command, eg. '{script} {cfg} {output} {inputs}'
     cfg: <str>                    # Optionally specify a config file for merging
     script: <str>                 # Optionally specify a custom merging script
-    transform: <str>              # Optionally specify an application name for transform jobs
+    transform: <str>              # For transform jobs, specify "app_familly.app_name"
     outputs: <list(output_file)>  # List of output files produced by the merging method      
     dependencies: <set>           # Optionally specify additional files required for merging
     environment:
@@ -119,6 +119,10 @@ standard_methods: # Built-in merging methods, matched using 'cond' in reverse or
     cond: "'{core.file_format}' in ['artroot']"
     cmd: "lar -c {cfg} -n -1 -o {output} {inputs}"
     cfg: "artcat.fcl"
+    dependencies:
+      - "messageService.fcl"
+      - "minimalMessageService.fcl"
+      - "standardMessageDestinations.fcl"
     outputs:
       - name: "{NAME}_merged_{UUID}.root"
   - method_name: "hdf5"
@@ -141,7 +145,7 @@ schema:     # Used to check validity of user config files
             tmp_metadata: <map>     # metadata for temporary files in multi-stage merges
             rename: <str>           # File name produced by merging method, if different from spec
             pass2: <str>            # Basic merging method for pass 2+ of a transform job
-            size: <size_spec> sum   # Size estimate for output file
+            size: <size_spec> sum   # File size estimate. Can be sum, avg, or an explicit value
             size_min: <size_spec> 0 # Minimum size for output file (for error checking)
             checklist: <path>       # Optional checklist file to verify the output file contents
         merging_method:

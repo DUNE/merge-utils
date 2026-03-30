@@ -1,0 +1,26 @@
+# Example config for merging ROOT files with hadd
+
+version: "0.8.3"        # Specify the merge-utils package version
+
+input:
+    streaming: True     # Stream files from remote sites instead of making a local copy
+
+output:
+    name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
+    namespace: <str>    # Optionally specify a namespace different from the parents
+    out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test" # Local output directory
+    grouping:           # Settings for how input files are grouped into the final merged files
+        mode: "size"    # Try to make output files of the specified size
+        target: 10      # Aim for output files of around 10 GB for optimal tape storage
+        equalize: True  # Try to equalize the size of the merged files
+
+method:
+    method_name: "hadd" # Use the standard hadd method for merging
+
+# The following isn't really necessary for a user config file.
+# It just makes it throw an error if you try to use this config with inputs that don't make sense
+metadata:
+    restricted:
+        "~core.file_format":  # Only merge files with a ROOT file format
+          - "root"
+          - "rootntuple"

@@ -53,6 +53,8 @@ class ConfigKey(ABC):
 
     def _set(self, value) -> None:
         """Clear and set the value of the key (used for assignment)"""
+        if value is self:
+            return
         self._clear()
         errors = self._update(value)
         if errors:
@@ -590,6 +592,10 @@ class ConfigSet(ConfigCollection):
         else:
             raise TypeError(self._err("can only merge with another set or list"))
         return self
+
+    def extend(self, other):
+        """Extend the set with another set or list"""
+        self |= other
 
 class ConfigMap(ConfigCollection):
     """Class to manage a configuration map"""

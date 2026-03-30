@@ -35,6 +35,7 @@ output:
 metadata:
     optional: <set>       # These metadata keys are optional (overrides required and conditional keys)
     consistent: <set>     # These metadata keys must be the same for all input files
+    overrides: <map>      # These metadata keys will be set to the specified values
 
 validation:
     batch_size: <int>     # Number of files to query metacat about at once
@@ -73,14 +74,14 @@ method:
     cmd: <str>                    # Optionally specify merging command, eg. '{script} {cfg} {output} {inputs}'
     cfg: <str>                    # Optionally specify a config file for merging
     script: <str>                 # Optionally specify a custom merging script
-    transform: <str>              # Optionally specify an application name for transform jobs
+    transform: <str>              # For transform jobs, specify "app_familly.app_name"
     outputs: <list(output_file)>  # List of output files produced by the merging method
     # - name: "{NAME}_merged_{UUID}.root" # Output file name template
     #   rename: "default_name.root"       # Output name as produced by the runner script
     #   metadata: <map>                   # Per-file metadata overrides
     #   tmp_metadata: <map>               # metadata for temporary files in multi-stage merges
     #   pass2: hadd                       # Alternate merge method for output files
-    #   size: sum                         # Size estimate for output file
+    #   size: sum                         # File size estimate. Can be sum, avg, or an explicit value
     #   size_min: 0                       # Minimum size for output file (for error checking)
     #   checklist: <path>                 # Checklist file to verify the output file contents
     dependencies: <set>           # Optionally specify additional files required for merging

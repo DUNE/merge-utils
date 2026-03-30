@@ -1,0 +1,35 @@
+# Minimal setup for a transform job
+
+version: "0.8.3"        # Specify the merge-utils package version
+
+input:
+    streaming: True     # Stream files from remote sites instead of making a local copy
+
+output:
+    name: "{core.run_type}_{dune.campaign}_{dune.config_file}_{core.application.name}"
+    namespace: <str>    # Optionally specify a namespace different from the parents
+    out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test" # Local output directory
+    grouping:           # Settings for how input files are grouped into the final merged files
+        mode: "count"   # Make output files by merging a specific number of inputs
+        target: 100     # Merge 100 inputs into each output file
+        equalize: False # Don't try to equalize the size of the merged files
+
+metadata:
+    overrides: {}       # These metadata keys will be set to the specified values
+
+method:
+    method_name: <str>  # Give your merging method a name
+    cmd: <str>          # Command to run, eg "lar -c {cfg} -n -1 -o {output} {inputs}"
+    cfg: <str>          # Config file, subbed into the command with {cfg}
+    script: <str>       # Script file, subbed into the command with {script}
+    transform: <str>    # Should be "application_family.application_name"
+    outputs:
+      - name: <str>     # Output file name, eg. "{NAME}_merged_{UUID}.root"
+        metadata: {}    # Per-file metadata overrides, only needed with multiple outputs
+        rename: <str>   # File name produced, if different from spec (eg. "out1.root")
+        pass2: <str>    # Basic merging method (eg. "hadd") if a 2nd pass is needed
+        size: sum       # File size estimate. Can be sum, avg, or an explicit value
+    dependencies: []    # Optionally specify additional files required for merging
+    environment:
+        dunesw_version: <str>     # Set a specific DUNE software version
+        dunesw_qualifier: <str>   # Set a specific DUNE software qualifier

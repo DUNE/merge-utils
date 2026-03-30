@@ -39,9 +39,15 @@ class MergeFileError(enum.Flag):
         """Get the error handling method from the configuration"""
         if self == MergeFileError(0):
             return 'include'
-        err_name = self.first.name
+        # Get the handling mode for the first error in the set
+        first_err = self.first
+        err_name = first_err.name
         assert err_name is not None
-        return str(config.validation.handling[err_name.lower()])
+        mode = str(config.validation.handling[err_name.lower()])
+        # If the mode is 'include' but there are multiple errors, check the next error handling
+        if mode == 'include' and first_err != self:
+            return MergeFileError(self.value & ~first_err.value).handling
+        return mode
 
     @property
     def group(self) -> bool:
@@ -95,9 +101,6 @@ class MergeFile:
         if data.get('retired', False):
             self.errors |= MergeFileError.RETIRED
             return
-        # Get list of children if needed for already merged check
-        self.children = set()
-        self.set_children(data.get('children', []))
         # Set other metadata and validate
         self.replicas = []
         self.size = data.get('size', None)
@@ -124,18 +127,6 @@ class MergeFile:
             self.errors |= MergeFileError.UNDECLARED
             io_utils.log_list("File %s has {n} parent{s} without an FID:" % self.did,
                               list(missing), logging.ERROR)
-
-    def set_children(self, children: Iterable) -> None:
-        """Set the child DIDs for the file, checking merge tag if available"""
-        self.children = set()
-        if config.validation.handling.already_done == 'include':
-            return
-        for child in children:
-            did = f"{child['namespace']}:{child['name']}"
-            # Skip children that don't have the right merge tag in the name, if configured
-            if config.input.tag and str(config.input.tag) not in did:
-                continue
-            self.children.add(did)
 
     def validate(self) -> None:
         """Check for errors or invalid metadata"""
@@ -329,11 +320,9 @@ class MergeSet:
         else:
             self.dids[did] = idx
         # Check for errors
+        self.errors |= file.errors
         if not file.good:
-            self.errors |= file.errors
             return
-        # Add children to the set for already merged check
-        self.children.update(file.children)
         # Check for consistency
         if self.consistent_fields is None:
             self.consistent_fields = file.get_fields(config.metadata.consistent)
@@ -351,6 +340,10 @@ class MergeSet:
         new_files = []
         for idx, file in enumerate(files, start=skip):
             new_file = MergeFile(file)
+            for child in file.get('children', []):
+                if child['fid'] in self.children:
+                    new_file.errors |= MergeFileError.ALREADY_DONE
+                    break
             self.insert(idx, new_file)
             if new_file.good:
                 new_files.append(new_file)
@@ -442,52 +435,7 @@ class MergeSet:
                 msg.append(f"  {field}: '{bad_val}' (expected '{good_val}')")
         return msg
 
-    async def check_done(self) -> None:
-        """
-        Check for files that have already been merged by another job and mark them as such.
-        """
-        # Query MetaCat to see which children are actually merged files
-        metacat = metacat_utils.MetaCatWrapper()
-        await metacat.connect()
-        dids = [{'did': did} for did in self.children]
-        children = await metacat.files(dids, metadata=True, provenance=False)
-        # Rebuild set of children including only matching merged files
-        namespace0 = self.good_files[0].namespace
-        namespace = str(config.output.namespace or namespace0)
-        namespace_tmp = str(config.output.scratch.namespace or namespace)
-        self.children = set()
-        for child in children:
-            metadata = child['metadata']
-            # Skip children that aren't confirmed
-            if metadata.get('dune.output_status') != 'confirmed':
-                continue
-            # Skip children that aren't merged files
-            if 'merge.version' not in metadata:
-                continue
-            # Skip children that don't have the right merge tag
-            if config.input.tag:
-                if metadata.get('merge.tag') != str(config.input.tag):
-                    continue
-            elif 'merge.tag' in metadata:
-                continue
-            # Skip children that aren't in the expected output namespace
-            if 'merge.chunk' in metadata:
-                if child['namespace'] != namespace_tmp:
-                    continue
-            elif child['namespace'] != namespace:
-                continue
-            # Child is a confirmed matching merge file, add it to the set
-            self.children.add(f"{child['namespace']}:{child['name']}")
-        # Mark files as already done if they have a child that is a merged file
-        for file in self.good_files:
-            for child in file.children:
-                if child in self.children:
-                    file.children = set(child)
-                    file.errors |= MergeFileError.ALREADY_DONE
-                    self.errors |= MergeFileError.ALREADY_DONE
-                    break
-
-    async def check_errors(self, final: bool = False) -> None:
+    def check_errors(self, final: bool = False) -> None:
         """
         Check and log errors in the set.
         
@@ -510,9 +458,6 @@ class MergeSet:
             if not final and not abort:
                 logger.debug("No critical errors after consistency check, continuing")
                 return
-        # Check for already done files if this is the final check
-        if final and self.children and len(self.good_files) > 0:
-            await self.check_done()
         # Log errors
         for err in MergeFileError:
             if err not in self.errors:
