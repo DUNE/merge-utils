@@ -1,4 +1,6 @@
 # Merge-Utils configuration template with most standard options
+# Angle brackets indicate the expected type of each setting, and will be ignored in user configs
+# See https://dune.github.io/merge-utils/configuration.html for details on the type checking
 
 version: "1.0.0" # Specify the merge-utils package version
 

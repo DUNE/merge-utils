@@ -1,5 +1,7 @@
 # Default configuration settings for merging
 # Please create your own config files instead of modifying this one directly!
+# Angle brackets indicate the expected type of each setting, and will be ignored in user configs
+# See https://dune.github.io/merge-utils/configuration.html for details on the type checking
 
 version: ~  # Specify the merge-utils package version
 
