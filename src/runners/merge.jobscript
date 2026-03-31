@@ -1,21 +1,8 @@
 #!/bin/sh
 : <<'EOF'
 
-Hello World jobscript for justIN
-
-Submit a workflow like this to run 10 jobs:
-
-justin simple-workflow --monte-carlo 10 --jobscript hello-world.jobscript
-
-
-Or like this to run jobs and put the output file into Rucio-managed storage:
-
-justin simple-workflow \
-     --monte-carlo 10 \
-     --jobscript hello-world.jobscript \
-     --description 'Hello World!!!' \
-     --scope usertests \
-     --output-pattern 'hello-world-*.txt:output-test-01'
+Merging jobscript for justIN
+Use the merge-utils package to set up and submit merging jobs
 
 EOF
 
@@ -29,6 +16,34 @@ fi
 # monte-carlo-000001-000001 000001 MONTECARLO
 jobkey=`echo $did_pfn_rse | cut -f2 -d' '`
 
+# Get DUNE software
+source /cvmfs/dune.opensciencegrid.org/products/dune/setup_dune.sh
+
+# Include any extra products
+if [ -n "$EXTRA_PRODUCTS" ]; then
+  # Make sure extra products exist
+  prod_list="${EXTRA_PRODUCTS}:"
+  while [ -n "${prod_list}" ]; do
+    prod=${prod_list%%:*}
+    prod_list=${prod_list#*:}
+    stat $prod
+    if [ $? -ne 0 ]; then
+      echo "Failed to stat extra product $prod. Aborting."
+      exit 1
+    fi
+  done
+  export PRODUCTS=$EXTRA_PRODUCTS:$PRODUCTS 
+fi
+
+# Setup DUNE environment
+#DUNE_VERSION=`grep 'dune_version' $CONFIG_DIR/$config | cut -d'"' -f4`
+#DUNE_QUALIFIER=`grep 'dune_qualifier' $CONFIG_DIR/$config | cut -d'"' -f4`
+DUNE_VERSION=${DUNE_VERSION:-v10_12_01d00}
+DUNE_QUALIFIER=${DUNE_QUALIFIER:-e26:prof}
+setup dunesw "$DUNE_VERSION" -q "$DUNE_QUALIFIER"
+# Setup other software
+pip install h5py
+
 # Get job configuration
 while [ ! -d $CONFIG_DIR ]; do
   echo "Waiting for config directory $CONFIG_DIR to be created"
@@ -38,25 +53,12 @@ config="${MERGE_CONFIG}_${jobkey}.json"
 echo "Config file: $config"
 cat $CONFIG_DIR/$config
 
-# Setup DUNE environment
-#DUNE_VERSION=`grep 'dune_version' $CONFIG_DIR/$config | cut -d'"' -f4`
-#DUNE_QUALIFIER=`grep 'dune_qualifier' $CONFIG_DIR/$config | cut -d'"' -f4`
-DUNE_VERSION=${DUNE_VERSION:-v10_12_01d00}
-DUNE_QUALIFIER=${DUNE_QUALIFIER:-e26:prof}
-source /cvmfs/dune.opensciencegrid.org/products/dune/setup_dune.sh
-setup dunesw "$DUNE_VERSION" -q "$DUNE_QUALIFIER"
-
-# Setup HDF5
-pip install h5py
-
-# Run the merge
 python3 $CONFIG_DIR/do_merge.py $CONFIG_DIR/$config $OUT_DIR
 
 # Check for errors
 exitcode=$?
-if [ $exitcode -ne 0 ];
-then
-  echo "failed to merge $config (exit code $exitcode)"
+if [ $exitcode -ne 0 ]; then
+  echo "failed to merge $config $exitcode"
   exit $exitcode
 fi
 

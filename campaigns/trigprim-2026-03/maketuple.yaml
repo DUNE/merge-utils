@@ -1,0 +1,36 @@
+version: "0.8.1"
+
+input:
+    streaming: True 
+
+output:
+    mode: merge
+    name: "{dune_mc.gen_fcl_filename}__{dune.config_file}__{core.application.name}__{core.application.version}__{DUNESW_VERSION}__{merge.cfg}"
+    namespace: "usertests"
+    out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test/triggerAna"
+    batch:                # Settings for batch merging
+        lifetime: 300 
+
+validation:
+    handling:
+        unreachable: "skip"
+
+grouping:
+    mode: count
+    target: 100
+    equalize: False
+    chunk_max: 100
+
+method:
+    method_name: "lar"
+    cmd: "lar -c {cfg} -n -1 {inputs} -T {output}"
+    cfg: "triggerana_tree_1x2x2_simpleThr_production.fcl"
+    outputs:
+      - name: "{NAME}__{UUID}__tuple.root"
+        metadata: {"core.file_format": "root", "core.data_tier":"root-tuple"}
+    
+sites:
+    site_distances:                       # Distance offsets for merging sites
+        default: .inf                     # Do not allow merging except at specified sites
+        "US_FNAL-FermiGrid": -5.0         # Increase priority
+        "CERN": 0.0

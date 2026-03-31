@@ -2,163 +2,201 @@
 from __future__ import annotations
 
 import logging
-import math
 import asyncio
-from typing import Generator
-
-from rucio.client.replicaclient import ReplicaClient
-
-from merge_utils.merge_set import MergeFile, MergeChunk
-from merge_utils.retriever import MetaRetriever, PathFinder
-from merge_utils.merge_rse import MergeRSEs
-from merge_utils import io_utils, config
+from typing import AsyncGenerator
 
 logger = logging.getLogger(__name__)
 
-class RucioFinder (PathFinder):
-    """Class for managing asynchronous queries to the Rucio web API."""
+try:
+    from rucio.client import Client #type: ignore pylint: disable=import-error
+    #from rucio.client.replicaclient import ReplicaClient #type: ignore pylint: disable=import-error
+    #from rucio.client.rseclient import RSEClient #type: ignore pylint: disable=import-error
+    HAS_RUCIO = True
+except ImportError:
+    logger.warning("Failed to import Rucio client, Rucio functionality will be unavailable!")
+    HAS_RUCIO = False
 
-    def __init__(self, source: MetaRetriever):
-        """
-        Initialize the RucioRetriever with a source of file metadata.
-        
-        :param source: FileRetriever object to use as the source of file metadata
-        """
-        super().__init__(source)
+#from merge_utils import io_utils, config
 
-        self.checksums = config.validation['checksums']
-        self.rses = MergeRSEs()
+class RucioWrapper:
+    """Class for sending asynchronous requests to the Rucio web API."""
 
+    def __init__(self):
+        """Initialize the RucioWrapper."""
         self.client = None
+        self.rses = {}
+
+    def __bool__(self) -> bool:
+        """Return True if the Rucio client is connected."""
+        return self.client is not None
 
     async def connect(self) -> None:
         """Connect to the Rucio web API"""
-        if not self.client:
+        if not HAS_RUCIO:
+            logger.warning("Rucio client is not available!")
+        elif not self.client:
             logger.debug("Connecting to Rucio")
-            src_connect = asyncio.create_task(self.meta.connect())
-            rse_connect = asyncio.create_task(self.rses.connect())
-            self.client = ReplicaClient()
-            await rse_connect
-            await src_connect
+            try:
+                self.client = await asyncio.to_thread(Client)
+            except Exception as e:
+                logger.warning("Failed to connect to Rucio: %s", e)
+                self.client = None
         else:
             logger.debug("Already connected to Rucio")
 
-    async def checksum(self, file: MergeFile, rucio: dict) -> bool:
-        """
-        Ensure file sizes and checksums from Rucio agree with the input metadata.
-        
-        :param file: MergeFile object to check
-        :param rucio: Rucio replicas dictionary
-        :return: True if files match, False otherwise
-        """
-        # Check the file size
-        if file.size != rucio['bytes']:
-            lvl = logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL
-            logger.log(lvl, "Size mismatch for %s: %d != %d", file.did, file.size, rucio['bytes'])
-            return False
-        # See if we should skip the checksum check
-        if len(self.checksums) == 0:
-            return True
-        # Check the checksum
-        for algo in self.checksums:
-            if algo in file.checksums and algo in rucio:
-                csum1 = file.checksums[algo]
-                csum2 = rucio[algo]
-                if csum1 == csum2:
-                    logger.debug("Found matching %s checksum for %s", algo, file.did)
-                    return True
-                logger.log(
-                    logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL,
-                    "%s checksum mismatch for %s: %s != %s", algo, file.did, csum1, csum2
-                )
-                return False
-            if algo not in file.checksums:
-                logger.debug("MetaCat missing %s checksum for %s", algo, file.did)
-            if algo not in rucio:
-                logger.debug("Rucio missing %s checksum for %s", algo, file.did)
-        # If we get here, we have no matching checksums
-        logger.log(
-            logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL,
-            "No matching checksums for %s", file.did
-        )
-        return False
+    async def disconnect(self) -> None:
+        """No need to explicitly disconnect from Rucio?"""
 
-    async def process(self, files: dict) -> None:
+    async def get_rse(self, name: str) -> dict:
         """
-        Process a batch of files to find their physical locations in Rucio.
-        
-        :param files: dictionary of files to process
+        Asynchronously retrieve information for a specific RSEfrom Rucio.
+
+        :param name: name of the RSE to retrieve
+        :return: dictionary of RSE attributes
         """
-        logger.debug("Retrieving physical file paths from Rucio")
-        found = set()
-        unreachable = []
-        query = [{'scope':file.namespace, 'name':file.name} for file in files.values()]
-        res = await asyncio.to_thread(self.client.list_replicas, query, ignore_availability=False)
-        for replicas in res:
-            did = replicas['scope'] + ':' + replicas['name']
-            found.add(did)
-            count = len(replicas['pfns'])
-            logger.debug("Found %d replicas for %s", count, did)
-            if count == 0:
-                unreachable.append(did)
+        # Check if we already have information about this RSE cached
+        if name in self.rses:
+            return self.rses[name]
+        rse = await asyncio.to_thread(self.client.get_rse, name)
+        rse['attrs'] = await asyncio.to_thread(self.client.list_rse_attributes, name)
+        self.rses[name] = rse
+        return rse
+
+    async def get_rses(self, detailed: bool = True) -> AsyncGenerator[dict, None]:
+        """
+        Asynchronously retrieve information for all RSEs from Rucio.
+
+        :param detailed: whether to include detailed RSE information
+        :return: dictionary of RSE attributes for each RSE
+        """
+        for rse in await asyncio.to_thread(self.client.list_rses):
+            name = rse['rse']
+            if rse['deleted']:
                 continue
+            if detailed:
+                details = await asyncio.to_thread(self.client.get_rse, name)
+                for key, value in details.items():
+                    if key in rse and rse[key] != value:
+                        logger.warning("RSE %s has conflicting values for %s: %s != %s",
+                                    name, key, rse[key], value)
+                    rse[key] = value
+            rse['attrs'] = await asyncio.to_thread(self.client.list_rse_attributes, name)
+            self.rses[name] = rse
+            yield rse
 
-            file = files[did]
-            added, csum = await asyncio.gather(
-                self.rses.add_replicas(did, replicas),
-                self.checksum(file, replicas)
-            )
-            if not csum:
-                added = 0
-            if not added:
-                unreachable.append(did)
-
-            logger.debug("Added %d replicas for %s", added, did)
-
-        missing = [did for did in files if did not in found]
-        lvl = logging.ERROR if config.validation['skip']['unreachable'] else logging.CRITICAL
-        io_utils.log_list("Failed to find {n} file{s} in Rucio database:", missing, lvl)
-        unreachable.extend(missing)
-        io_utils.log_list("Failed to retrieve {n} file{s} from Rucio:", unreachable, lvl)
-        self.files.set_unreachable(unreachable)
-
-    def run(self) -> None:
-        """Retrieve metadata for all files."""
-        super().run()
-        self.rses.cleanup()
-
-    def output_chunks(self) -> Generator[MergeChunk, None, None]:
+    async def get_replicas(self, files: list) -> list:
         """
-        Yield chunks of files for merging.
-        
-        :return: yeilds a series of MergeChunk objects
+        Asynchronously retrieve replicas for a specific batch of files.
+
+        :param files: list of files to retrieve paths for
+        :return: list of file path dictionaries
         """
-        for group in self.files.groups():
-            pfns = self.rses.get_pfns(group)
-            for site in pfns:
-                for did, pfn in pfns[site].items():
-                    group[did].path = pfn[0]
+        query = [{'scope':f.namespace, 'name':f.name} for f in files]
+        res = await asyncio.to_thread(self.client.list_replicas, query,
+                                      ignore_availability=False)
+        return list(res)
 
-            if len(pfns) == 1:
-                site = next(iter(pfns))
-                group.site = site
-                if len(pfns[site]) <= config.merging['chunk_max']:
-                    yield group
-                    continue
 
-            for site in pfns:
-                n_chunks = math.ceil(len(group) / config.merging['chunk_max'])
-                target_size = math.ceil(len(group) / n_chunks)
-                chunk = group.chunk()
-                chunk.site = site
-                for did in pfns[site]:
-                    if len(chunk) >= target_size:
-                        yield chunk
-                        chunk = group.chunk()
-                        chunk.site = site
-                    chunk.add(group[did])
-                yield chunk
+# Example RSE info from FNAL_DCACHE, as of February 2026
 
-            if not group.site:
-                group.site = config.sites['default']
-            yield from group.tier2_chunks()
+FNAL_DCACHE = {
+  "rse_type": "TAPE",
+  "time_zone": None,
+  "availability_write": True,
+  "deterministic": False,
+  "ISP": None,
+  "availability_delete": False,
+  "volatile": False,
+  "ASN": None,
+  "qos_class": None,
+  "id": "a9780baae23e48359e2a84d3b19261ae",
+  "staging_area": False,
+  "longitude": None,
+  "deleted": False,
+  "city": None,
+  "latitude": None,
+  "deleted_at": None,
+  "region_code": None,
+  "availability": 6,
+  "created_at": "2018-08-07 18:23:04",
+  "vo": "def",
+  "country_name": "US",
+  "availability_read": True,
+  "updated_at": "2025-05-08 12:59:30",
+  "continent": None
+}
+
+FNAL_DCACHE_DETAILS = {
+  "credentials": None,
+  "domain": [
+    "lan",
+    "wan"
+  ],
+  "lfn2pfn_algorithm": "DUNE",
+  "protocols": [
+    {
+      "hostname": "fndcadoor.fnal.gov",
+      "scheme": "davs",
+      "port": 2880,
+      "prefix": "/dune/tape_backed/dunepro",
+      "impl": "rucio.rse.protocols.gfal.Default",
+      "domains": {
+        "lan": {
+          "read": 2,
+          "write": 1,
+          "delete": 1
+        },
+        "wan": {
+          "read": 2,
+          "write": 1,
+          "delete": 1,
+          "third_party_copy_read": 1,
+          "third_party_copy_write": 1
+        }
+      },
+      "extended_attributes": None
+    },
+    {
+      "hostname": "fndcadoor.fnal.gov",
+      "scheme": "root",
+      "port": 1094,
+      "prefix": "/pnfs/fnal.gov/usr/dune/tape_backed/dunepro",
+      "impl": "rucio.rse.protocols.gfal.Default",
+      "domains": {
+        "lan": {
+          "read": 1,
+          "write": 2,
+          "delete": 2
+        },
+        "wan": {
+          "read": 1,
+          "write": 2,
+          "delete": 2,
+          "third_party_copy_read": 0,
+          "third_party_copy_write": 0
+        }
+      },
+      "extended_attributes": None
+    }
+  ],
+  "sign_url": None,
+  "verify_checksum": True,
+  "read_protocol": 1,
+  "write_protocol": 1,
+  "delete_protocol": 1,
+  "third_party_copy_read_protocol": 1,
+  "third_party_copy_write_protocol": 1,
+}
+
+FNAL_DCACHE_ATTRIBUTES = {
+    'FNAL_DCACHE': True,
+    'US_SITES': True,
+    'country': 'US',
+    'country_name': 'US',
+    'fts': 'https://fts3-public.cern.ch:8446',
+    'istape': True,
+    'naming_convention': 'DUNE_metacat',
+    'site': 'US_FNAL-FermiGrid',
+    'srr_url': 'https://fndca.fnal.gov/FNAL-WLCG-tape-statistics.json',
+    'staging_buffer': 'FNAL_DCACHE_STAGING'
+}

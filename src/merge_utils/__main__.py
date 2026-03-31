@@ -1,32 +1,38 @@
 """Command line interface for merge_utils."""
 
 import argparse
+import collections
 import logging
+import os
 import sys
+import json
+import copy
 
-from merge_utils import io_utils, config, scheduler, local
+from merge_utils import io_utils, config, meta, naming, retriever, replicas, scheduler
 
 logger = logging.getLogger(__name__)
 
-def main():
-    """Test the command line interface for merge_utils."""
-
+def get_parser() -> argparse.ArgumentParser:
+    """Set up the command line argument parser."""
     parser = argparse.ArgumentParser(
         description='Command line interface for merge_utils')
     parser.add_argument('-c', '--config', action='append', metavar='CFG',
                         help='a configuration file')
     parser.add_argument('-t', '--tag', type=str, help='tag to help identify this run')
     parser.add_argument('-r', '--retry', action='store_true', help='retry a failed workflow requires tag')
+    parser.add_argument('-r', '--retry', action='store_true', help='retry a failed workflow requires tag')
     parser.add_argument('--comment', type=str, help='a comment describing the workflow')
     parser.add_argument('-v', '--verbose', action='count', default=0,
                         help='print more verbose output (e.g. -vvv for debug output)')
     parser.add_argument('--log', help='specify a custom log file path')
+    parser.add_argument('--retry', action='store_true',
+                        help='enable checking for already-merged files')
 
     in_group = parser.add_argument_group('input arguments')
     in_group.add_argument('input_mode', nargs='?', default=None, metavar='MODE',
-                          choices=['query', 'dids', 'files', 'dataset'],
-                          help='input mode (query, dids, files, dir)')
-    in_group.add_argument('-f', '--file', action='append',
+                          choices=['query', 'dataset', 'dids', 'files', 'resume'],
+                          help='input mode (query, dataset, dids, files), or resume a partial job')
+    in_group.add_argument('-f', '--file', action='append', default=[],
                           help='a text file with a list of input files')
     in_group.add_argument('-d', '--dir', action='append',
                           help='a directory to add to search locations')
@@ -38,196 +44,260 @@ def main():
     in_group.add_argument('inputs', nargs='*', help='remaining command line inputs')
 
     out_group = parser.add_argument_group('output arguments')
-    out_group.add_argument('--validate', action='store_true',
-                           help='only validate metadata instead of merging')
-    out_group.add_argument('--list', choices=['dids', 'replicas', 'pfns'], metavar='OPT',
-                           help='list (dids, replicas, pfns) instead of merging')
-    out_group.add_argument('-n', '--name', type=str, help='specify a name for the output files')
-    out_group.add_argument('-m', '--method', type=str, metavar='MTD',
-                           help='explicitly specify the merge method to use')
+    out_mode = out_group.add_mutually_exclusive_group()
+    out_mode.add_argument('--merge', dest='output_mode', action='store_const', const='merge',
+                          help='generate a merge job (default)')
+    out_mode.add_argument('--validate', dest='output_mode', action='store_const', const='validate',
+                          help='only validate metadata instead of merging')
+    out_mode.add_argument('--list', dest='output_mode', metavar='OPT',
+                          choices=['metadata', 'dids', 'replicas', 'pfns', 'rses'],
+                          help='list (metadata, dids, replicas, pfns, rses) instead of merging')
     out_group.add_argument('-l', '--local', action='store_true',
                            help='run merge locally instead of submitting to JustIN')
+    out_group.add_argument('-n', '--name', type=str, help='override the base name for output files')
+    out_group.add_argument('-s', '--namespace', type=str, metavar='NS',
+                           help='override the namespace for output files')
+    out_group.add_argument('-m', '--method', type=str, metavar='MTD',
+                           help='explicitly specify the merging method')
+    return parser
 
-    args = parser.parse_args()
-    print ("main arguments are: ",args)
-
-    # Set up logging and configuration
-    name = "merge"
-    if args.validate:
-        name = "validate"
-        args.list = 'dids'
-    elif args.list:
-        name = "list "+args.list
-    io_utils.setup_log(name, log_file=args.log, verbosity=args.verbose)
-    config.load(args.config)
-
-    if args.local:
-        config.output['mode'] = 'local'
-
-    if args.input_mode:
-        config.inputs['mode'] = args.input_mode
-    input_mode = config.inputs['mode']
-    logger.info("Input mode: %s", input_mode)
-
-    if args.tag:
-        config.inputs['tag'] = args.tag
-        logger.debug("Overriding tag: %s", args.tag)
-    if args.retry:
-        if not args.tag:
-            logger.critical("Retry option requires a tag to identify the workflow to retry.")
+def get_inputs(args: dict) -> None:
+    """
+    Collect the list of inputs from the command line, from standard input, or from files.
+    If multiple sources are provided, this will give an error since it's likely a mistake.
+    If a single source is provided, it will override the config.
+    Inputs from the config file(s) will be used if no other sources are provided.
+    
+    :param args: command line arguments
+    :return: None (updates config.input.inputs in place)
+    """
+    # Command line arguments
+    cmd_inputs = args.pop("inputs", [])
+    io_utils.log_nonzero("Found {n} input{s} from command line", len(cmd_inputs))
+    # Inputs piped to standard input
+    pipe_inputs = []
+    if not sys.stdin.isatty():
+        pipe_inputs = [x.strip() for x in sys.stdin.readlines()]
+        io_utils.log_nonzero("Found {n} input{s} from standard input", len(pipe_inputs))
+    # Inputs from file lists
+    file_inputs = []
+    filelists = args.pop("file", [])
+    for filelist in filelists:
+        if not os.path.isfile(filelist):
+            logger.critical("Input file list '%s' does not exist.", filelist)
             sys.exit(1)
-        config.inputs['retry'] = args.retry
-        logger.debug("Retrying tag: %s", args.tag)
-    if args.comment:
-        config.inputs['comment'] = args.comment
-        logger.debug("Overriding comment: %s", args.comment)
-    if args.skip is not None:
-        skip = args.skip if args.skip >= 0 else None
-        config.inputs['skip'] = skip
-        if skip is None:
-            logger.debug("Overriding skip: none")
-        else:
-            logger.debug("Overriding skip: %d", skip)
-    if args.limit is not None:
-        limit = args.limit if args.limit >= 0 else None
-        config.inputs['limit'] = limit
-        if limit is None:
-            logger.debug("Overriding limit: none")
-        else:
-            logger.debug("Overriding limit: %d", limit)
-    if args.name:
-        config.output['name'] = args.name
-        logger.info("Setting output name: %s", args.name)
-    if args.method:
-        config.merging['method']['name'] = args.method
-        logger.info("Setting merge method: %s", args.method)
-
-    # Collect inputs
-    inputs = config.inputs['inputs'] or []
-    io_utils.log_nonzero("Found {n} input{s} from config files", len(inputs))
-    if io_utils.log_nonzero("Found {n} input{s} from command line", len(args.inputs)):
-        inputs.extend(args.inputs)
-    inputs.extend(io_utils.get_inputs(args.file))
-    if len(inputs) == 0:
+        with open(filelist, encoding="utf-8") as f:
+            entries = f.readlines()
+        io_utils.log_nonzero("Found {n} input{s} in file %s" % filelist, len(entries))
+        file_inputs.extend([x.strip() for x in entries])
+    io_utils.log_nonzero("Found {n} total input{s} from file lists", len(file_inputs))
+    # Inputs from the merge config
+    cfg_inputs = config.input.inputs
+    # Give an error if we have mixed input sources, since this is likely a mistake
+    sources = sum(bool(x) for x in [cmd_inputs, pipe_inputs, file_inputs])
+    if sources > 1:
+        logger.critical("Multiple input sources detected, please only provide one!")
+        sys.exit(1)
+    # If we have a single source, override the config inputs with that source
+    if cmd_inputs:
+        io_utils.log_nonzero("Overriding {n} default config input{s} with command line inputs",
+                             len(cfg_inputs))
+        config.input.inputs = cmd_inputs
+    elif pipe_inputs:
+        io_utils.log_nonzero("Overriding {n} default config input{s} with piped inputs",
+                             len(cfg_inputs))
+        config.input.inputs = pipe_inputs
+    elif file_inputs:
+        io_utils.log_nonzero("Overriding {n} default config input{s} with file list inputs",
+                             len(cfg_inputs))
+        config.input.inputs = file_inputs
+    # If we have no other sources, use the config inputs (if any)
+    elif cfg_inputs:
+        io_utils.log_nonzero("Using {n} default input{s} from config", len(cfg_inputs))
+    else:
         logger.critical("No input provided, exiting.")
         sys.exit(1)
-    io_utils.log_list("Found {n} total input{s}:", inputs, logging.INFO)
+
+
+def start_job(args: dict):
+    """Start a new merge job with the given command line arguments."""
+    # Load configuration
+    config.load(args)
+    formatter = naming.Formatter()
+    formatter.format(config.output.tmp_dir)
+    job_uuid = config.uuid()
+    job_dir = os.path.join(str(config.output.tmp_dir), job_uuid)
+    config.job.dir = job_dir
+    io_utils.setup_job_dir(job_dir)
+    msg = [
+        f"Starting merge job {job_uuid}",
+        f"Dir: {config.job.dir}",
+        f"Input mode: {config.input.mode}",
+        f"Output mode: {config.output.mode}"
+    ]
+    io_utils.log_print("\n  ".join(msg))
+
+    # Collect inputs
+    get_inputs(args)
 
     # Collect file search directories
-    dirs = config.inputs['search_dirs'] or []
+    dirs = config.input.search_dirs
     io_utils.log_nonzero("Found {n} search location{s} from config files", len(dirs))
-    if args.dir:
-        io_utils.log_nonzero("Found {n} search location{s} from command line", len(args.dir))
-        dirs.extend(args.dir)
+    cmd_dirs = args.pop("dir", [])
+    if cmd_dirs:
+        io_utils.log_nonzero("Found {n} search location{s} from command line", len(cmd_dirs))
+        dirs |= cmd_dirs
     io_utils.log_list("Found {n} total search location{s}:", dirs, logging.INFO)
 
-    # Determine input mode and retrieve metadata
-    paths = None
-    metadata = None
-    if input_mode == 'files':
-        if config.inputs['skip'] is not None or config.inputs['limit'] is not None:
-            skip = config.inputs['skip'] or 0
-            limit = config.inputs['limit'] or len(inputs)
-            inputs = inputs[skip:skip+limit]
-        if len(inputs) == 0:
-            logger.critical("No input files provided, exiting.")
-            sys.exit(1)
-        paths = local.get_local_files(inputs, dirs)
-        metadata = paths.meta
-    elif input_mode == 'query':
-        from merge_utils.metacat_utils import MetaCatRetriever #pylint: disable=import-outside-toplevel
-        if len(inputs) != 1:
-            logger.critical("Query mode currently only supports a single MetaCat query.")
-            sys.exit(1)
-        query = inputs[0]
-        config.inputs['query'] = query
-        if 'ordered' in query:
-            logger.info("The 'ordered' keyword is automatically appeneded to queries.")
-        if 'skip' in query or 'limit' in query:
-            logger.warning("Consider using command line options for 'skip' and 'limit'.")
-        query += " ordered"
-        if config.inputs['skip'] is not None:
-            query += f" skip {config.inputs['skip']}"
-        if config.inputs['limit'] is not None:
-            query += f" limit {config.inputs['limit']}"
-        metadata = MetaCatRetriever(query=query)
-    elif input_mode == 'dataset':
-        from merge_utils.metacat_utils import MetaCatRetriever #pylint: disable=import-outside-toplevel
-        if len(inputs) != 1:
-            logger.critical("Dataset mode currently only supports a single dataset name.")
-            sys.exit(1)
-        config.inputs['dataset'] = inputs[0]
-        query = f"files from {inputs[0]} where dune.output_status=confirmed ordered"
-        if config.inputs['skip'] is not None:
-            query += f" skip {config.inputs['skip']}"
-        if config.inputs['limit'] is not None:
-            query += f" limit {config.inputs['limit']}"
-        metadata = MetaCatRetriever(query=query)
-    elif input_mode == 'dids':
-        from merge_utils.metacat_utils import MetaCatRetriever #pylint: disable=import-outside-toplevel
-        if config.inputs['skip'] is not None or config.inputs['limit'] is not None:
-            skip = config.inputs['skip'] or 0
-            limit = config.inputs['limit'] or len(inputs)
-            inputs = inputs[skip:skip+limit]
-        if len(inputs) == 0:
-            logger.critical("No input DIDs provided, exiting.")
-            sys.exit(1)
-        metadata = MetaCatRetriever(dids=inputs)
-    else:
-        logger.critical("Unknown input mode: %s", input_mode)
+    # Dump final configuration
+    config.dump()
+
+    # Quit if we have any unprocessed command line arguments
+    if len(args) > 0:
+        bad_args = ", ".join(args.keys())
+        logger.critical("Some command line arguments were not processed: %s", bad_args)
         sys.exit(1)
 
-    # If we're only listing DIDs, we can skip the rest of the setup
-    if args.validate:
-        metadata.run()
-        io_utils.log_print(f"{len(metadata.files)} inputs passed validation")
-        nerrs = metadata.files.count_errors()
+def resume_job(args: dict):
+    """Resume a previously started merge job with the given command line arguments."""
+    # Load default configuration
+    inputs = args.pop("inputs", [])
+    if len(inputs) == 0:
+        logger.critical("Please provide a job directory to resume.")
+        sys.exit(1)
+    if len(inputs) > 1:
+        logger.critical("Multiple job directories provided, please only provide one.")
+        sys.exit(1)
+    job_dir = inputs[0]
+    config.load()
+    formatter = naming.Formatter()
+    formatter.format(config.output.tmp_dir)
+    if not os.path.exists(job_dir):
+        job_dir = os.path.join(str(config.output.tmp_dir), job_dir)
+    if not os.path.exists(job_dir):
+        logger.critical("Job directory '%s' does not exist.", job_dir)
+        sys.exit(1)
+    config.resume(job_dir, args)
+    # Quit if we have any unprocessed command line arguments
+    if len(args) > 0:
+        bad_args = ", ".join(args.keys())
+        logger.critical("Invalid command line arguments for resuming a job: %s", bad_args)
+        sys.exit(1)
+    io_utils.setup_job_dir(job_dir)
+    msg = [
+        f"Restarting merge job {config.uuid()}",
+        f"Dir: {config.job.dir}",
+        f"Input mode: {config.input.mode}",
+        f"Output mode: {config.output.mode}"
+    ]
+    io_utils.log_print("\n  ".join(msg))
+
+def print_metadata(metadata, mode):
+    """Print info about the metadata for a list of files."""
+    metadata.run()
+    good_files = metadata.files.good_files
+    ngood = len(good_files)
+    nerrs = len(metadata.files) - ngood
+    # In DID mode, list all valid DIDs and exit
+    if mode == 'dids':
+        io_utils.log_print(f"Found {ngood} valid input files:")
+        for file in good_files:
+            print(f"  {file.did}")
         if nerrs:
-            io_utils.log_print(f"{nerrs} inputs failed validation")
+            logger.error("An additional %d files failed validation!", nerrs)
+        return
+    # Otherwise, print summary of validation results
+    if nerrs:
+        logger.error("%d input files passed validation, but %d files failed!", ngood, nerrs)
+        return
+    io_utils.log_print(f"All {ngood} input files passed validation!", logging.INFO)
+    # Check the metadata for the output files
+    meta.make_names(good_files)
+    if mode == 'validate':
+        io_utils.log_print("All input and output metadata passed validation!")
+        return
+    # In metadata mode, also print the combined output metadata
+    merged_metadata = meta.merged_keys(good_files, True)
+    io_utils.log_print(f"Combined metadata:\n{json.dumps(merged_metadata, indent=2)}")
+    for idx, output in enumerate(config.method.outputs):
+        if not output.metadata:
+            continue
+        overrides = json.dumps({k: v.value for k, v in output.metadata.items()}, indent=2)
+        io_utils.log_print(f"Additional metadata overrides for output {idx}:\n{overrides}")
+
+def print_replicas(paths, mode):
+    """Print info about the replicas for a list of files."""
+    paths.run()
+    if mode == 'replicas':
+        print("File replicas:")
+        for file in paths.files.good_files:
+            print(f"{file.did}:")
+            for replica in sorted(file.replicas):
+                print(f"  {replica}")
+    elif mode == 'pfns':
+        print("File PFNs:")
+        for file in paths.files.good_files:
+            print(f"{file.did}:")
+            for replica in sorted(file.replicas):
+                if replica.status.good:
+                    print(f"  {replica.path}")
+    elif mode == 'rses':
+        rses = {}
+        good_files = paths.files.good_files
+        for file in good_files:
+            for replica in file.replicas:
+                rse_name = replica.rse.name
+                if rse_name not in rses:
+                    rses[rse_name] = collections.defaultdict(int)
+                rses[rse_name][replica.status] += 1
+        print(f"Found {len(good_files)} valid input files with replicas at {len(rses)} RSEs:")
+        for rse_name, statuses in rses.items():
+            print(f"{rse_name}:")
+            for status, count in sorted(statuses.items(), key=lambda x: x[1]):
+                print(f"  {status.name} replicas: {count}")
+
+def main():
+    """Run a merge job"""
+    parser = get_parser()
+    arguments = parser.parse_args()
+
+    # Convert command line arguments to a dict and remove any None values
+    args = {k: copy.deepcopy(v) for k, v in vars(arguments).items() if v}
+    print ("main arguments are:", args)
+
+    # Set up logging
+    io_utils.setup_log(log_file=args.pop("log", None), verbosity=args.pop("verbose", None))
+
+    if arguments.input_mode == 'resume':
+        args.pop("input_mode", None)
+        resume_job(args)
+    else:
+        start_job(args)
+
+    # Set up metadata retriever
+    metadata = retriever.get()
+
+    # If we're only validating or listing DIDs, we can skip the rest of the setup
+    if config.output.mode in ['validate', 'metadata', 'dids']:
+        print_metadata(metadata, config.output.mode)
         return
 
-    if args.list == 'dids':
-        metadata.run()
-        io_utils.log_print(f"Found {len(metadata.files)} valid inputs:")
-        for file in metadata.files:
-            print(file.did)
-        return
-
-    # Set up a retriever for physical file locations if needed
-    if not paths:
-        if dirs:
-            logger.info("Searching for local data files in provided directories")
-            paths = local.LocalPathFinder(metadata, dirs=dirs)
-        else:
-            logger.info("No local search directories provided, querying Rucio to find data files")
-            from merge_utils.rucio_utils import RucioFinder #pylint: disable=import-outside-toplevel
-            paths = RucioFinder(metadata)
+    # Set up physical path finder
+    paths = replicas.get(metadata)
 
     # Process the other list options
-    if args.list:
-        paths.run()
-        if args.list == 'replicas':
-            if input_mode in ['files']:
-                print("Local file paths:")
-                for file in paths.files:
-                    print(f"  {file.path}")
-            else:
-                for name, rse in paths.rses.items():
-                    print(f"RSE {name}:")
-                    for pfn in rse.pfns.values():
-                        print(f"  {pfn}")
-        elif args.list == 'pfns':
-            for chunk in paths.output_chunks():
-                print(f"Output file {chunk.name} (site {chunk.site}):")
-                for pfn in chunk.values():
-                    print(f"  {pfn.path}")
-        else:
-            raise ValueError(f"Unknown list option: {args.list}")
+    if config.output.mode in ['replicas', 'pfns', 'rses']:
+        print_replicas(paths, config.output.mode)
         return
 
     # Process merging
-    if args.local:
-        sched = scheduler.LocalScheduler(paths)
-    else:
-        sched = scheduler.JustinScheduler(paths)
-    sched.run()
+    if config.output.mode == 'merge':
+        if config.output.local:
+            sched = scheduler.LocalScheduler(paths)
+        else:
+            sched = scheduler.JustinScheduler(paths)
+        sched.run()
+        return
+
+    logger.critical("Unknown output mode: %s", config.output.mode)
+    sys.exit(1)
