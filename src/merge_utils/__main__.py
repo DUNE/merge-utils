@@ -20,6 +20,7 @@ def get_parser() -> argparse.ArgumentParser:
                         help='a configuration file')
     parser.add_argument('-t', '--tag', type=str, help='tag to help identify this run')
     parser.add_argument('-r', '--retry', action='store_true', help='retry a failed workflow requires tag')
+    parser.add_argument('-r', '--retry', action='store_true', help='retry a failed workflow requires tag')
     parser.add_argument('--comment', type=str, help='a comment describing the workflow')
     parser.add_argument('-v', '--verbose', action='count', default=0,
                         help='print more verbose output (e.g. -vvv for debug output)')

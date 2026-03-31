@@ -55,6 +55,7 @@ cat $CONFIG_DIR/$config
 
 python3 $CONFIG_DIR/do_merge.py $CONFIG_DIR/$config $OUT_DIR
 
+# Check for errors
 exitcode=$?
 if [ $exitcode -ne 0 ]; then
   echo "failed to merge $config $exitcode"

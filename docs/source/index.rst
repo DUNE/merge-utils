@@ -35,27 +35,7 @@ Configuration
 .. toctree::
 
     configuration   
-
-python API
-----------
-
-.. toctree::
-       
-    do_merge
-    config
-    local
-    io_utils
-    metacat_utils
-    meta
-    rucio_utils
-    justin_utils
-    merge_rse
-    merge_set 
-    retriever
-    scheduler
-    CheckConfiguration
-    MetaValidator
-    
+    configuration   
 
 command line API
 ----------------
