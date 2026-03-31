@@ -1,7 +1,27 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
-Note that the package versin number is defined in src/merge_utils/__init__.py
+Note that the package versin number is defined in `src/merge_utils/__init__.py`
+
+## [Unreleased]
+
+### Added
+
+- 
+
+### Changed
+
+- 
+
+### Removed
+
+- 
+
+### Fixed
+
+- 
+
+## [1.0.0] - 2026-03-31
 
 ## [0.7.4] - 2025-11-21
 
