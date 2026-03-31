@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>retriever &#8212; merge-utils 0.8 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
+    <script src="../_static/documentation_options.js?v=a0e24af7"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://dune.github.io/merge-utils/_modules/retriever.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">retriever</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for retriever</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;FileRetriever classes&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span><span class="p">,</span> <span class="n">Callable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span><span class="p">,</span> <span class="n">io_utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeSet</span><span class="p">,</span> <span class="n">MergeFileError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.metacat_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaCatWrapper</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="InputBatch">
+<a class="viewcode-back" href="../retriever.html#retriever.InputBatch">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InputBatch</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class representing a batch of input file data, starting at a specific skip index.&quot;&quot;&quot;</span>
+    <span class="n">skip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">files</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__bool__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return True if the batch contains any files.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the number of files in the batch.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate over the files in the batch.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="file_serializer">
+<a class="viewcode-back" href="../retriever.html#retriever.file_serializer">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">file_serializer</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom JSON serializer for MergeFileError objects&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">MergeFileError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is not JSON serializable&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MetaRetriever">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MetaRetriever</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for retrieving metadata from a source&quot;&quot;&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;metadata&quot;</span>
+    <span class="n">file_owner</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_owner</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_files</span> <span class="o">=</span> <span class="n">MergeSet</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span><span class="p">),</span> <span class="s1">&#39;cache&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">MetaCatWrapper</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeSet</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the set of files from the source&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">namespace</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the default namespace for files without an explicit namespace.</span>
+<span class="sd">        Checks the config for input.namespace, then output.namespace, then defaults to &#39;usertests&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">namespace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">namespace</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">namespace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">namespace</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s1">&#39;usertests&#39;</span>
+
+<div class="viewcode-block" id="MetaRetriever.get_done">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever.get_done">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_done</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Asynchronously query MetaCat for merged files with the same tag as this job&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">already_done</span> <span class="o">==</span> <span class="s1">&#39;include&#39;</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">tag</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Already-done checking requires a job tag to be specified!&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">tag</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">tag</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Checking MetaCat for already merged files with tag &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;files where merge.tag == &#39;</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&#39; and dune.output_status == confirmed&quot;</span>
+        <span class="n">dids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">batch_query</span> <span class="o">=</span> <span class="n">query</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; skip </span><span class="si">{</span><span class="n">skip</span><span class="si">}</span><span class="s2"> limit </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">files</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">batch_query</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s1">&#39;fid&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">)</span>
+            <span class="n">dids</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">f</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">f</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">batch_size</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">skip</span> <span class="o">+=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">batch_size</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dids</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No already merged files found with tag &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> merged file</span><span class="si">{s}</span><span class="s2"> with tag &#39;</span><span class="si">%s</span><span class="s2">&#39;:&quot;</span> <span class="o">%</span> <span class="n">tag</span><span class="p">,</span> <span class="n">dids</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MetaRetriever.connect">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever.connect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Connect to the MetaCat web API&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_done</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="MetaRetriever.disconnect">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever.disconnect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Disconnect from the MetaCat web API&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="MetaRetriever.get_metadata">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever.get_metadata">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve metadata for a specific batch of files.</span>
+
+<span class="sd">        :param batch: empty InputBatch object with the skip index set</span>
+<span class="sd">        :param limit: maximum number of files to retrieve</span>
+<span class="sd">        :return: list of file metadata dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+        <span class="c1"># retrieve specific batch</span>
+
+<div class="viewcode-block" id="MetaRetriever.get_batch">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever.get_batch">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">getter</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InputBatch</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve a batch of input data, with caching.</span>
+
+<span class="sd">        :param getter: function to call to retrieve inputs</span>
+<span class="sd">        :param batch: InputBatch object to retrieve data for</span>
+<span class="sd">        :param kwargs: additional arguments to pass to getter</span>
+<span class="sd">        :return: list of file dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">skip</span>
+        <span class="n">cache</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;batch_</span><span class="si">{</span><span class="n">skip</span><span class="si">}</span><span class="s2">.json&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cache</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Loading cached </span><span class="si">%s</span><span class="s2"> input batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">skip</span><span class="p">)</span>
+            <span class="n">files</span> <span class="o">=</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">read_config_file</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;files&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Retrieving new </span><span class="si">%s</span><span class="s2"> input batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">skip</span><span class="p">)</span>
+            <span class="n">files</span> <span class="o">=</span> <span class="k">await</span> <span class="n">getter</span><span class="p">(</span><span class="n">batch</span><span class="o">=</span><span class="n">batch</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;files&#39;</span><span class="p">:</span> <span class="n">files</span><span class="p">},</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">file_serializer</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">InputBatch</span><span class="p">(</span><span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MetaRetriever.check_existence">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever.check_existence">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_existence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check that MetaCat records exist for a batch of input files.</span>
+
+<span class="sd">        :param files: list of file metadata dictionaries to check</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Checking MetaCat to verify file records&quot;</span><span class="p">)</span>
+        <span class="n">skip_fids</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">check_fids</span>
+        <span class="n">provenance</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># To check for already merged files, we need the children of all input files</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">already_done</span> <span class="o">!=</span> <span class="s1">&#39;include&#39;</span><span class="p">:</span>
+            <span class="n">skip_fids</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">provenance</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># Build list of DIDs to check, skipping files with FIDs if we can</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">file</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">files</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;errors&#39;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">skip_fids</span> <span class="ow">and</span> <span class="s1">&#39;fid&#39;</span> <span class="ow">in</span> <span class="n">file</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">indices</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
+        <span class="c1"># Request file info from MetaCat, with provenance if necessary</span>
+        <span class="n">dids</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;did&#39;</span><span class="p">:</span> <span class="n">did</span><span class="p">}</span> <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">]</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">files</span><span class="p">(</span><span class="n">dids</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="n">provenance</span><span class="p">)</span>
+        <span class="c1"># Update file list with the returned records</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+            <span class="n">did</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">indices</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
+            <span class="n">files</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+        <span class="c1"># Mark any files that were missing from MetaCat with an error</span>
+        <span class="k">if</span> <span class="n">indices</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">indices</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="n">files</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s1">&#39;errors&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MergeFileError</span><span class="o">.</span><span class="n">NO_METADATA</span>
+            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;MetaCat missing </span><span class="si">{n}</span><span class="s2"> file record</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
+            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="s2">&quot;Did you mean to enable the grandparents option?&quot;</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MetaRetriever.get_siblings">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever.get_siblings">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_siblings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        We check for already merged files by looking at the children of the input files.</span>
+<span class="sd">        But in grandparents mode, we actually want the children of the input file parents instead.</span>
+<span class="sd">        We don&#39;t need the original children in that case, so just replace them with the siblings.</span>
+
+<span class="sd">        :param files: list of file metadata dictionaries to check</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Collect list of all parent FIDs to check</span>
+        <span class="n">parent_fids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">file</span><span class="p">[</span><span class="s1">&#39;parents&#39;</span><span class="p">]:</span>
+                <span class="n">parent_fids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">parent</span><span class="p">[</span><span class="s1">&#39;fid&#39;</span><span class="p">])</span>
+        <span class="n">fid_list</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;fid&#39;</span><span class="p">:</span> <span class="n">fid</span><span class="p">}</span> <span class="k">for</span> <span class="n">fid</span> <span class="ow">in</span> <span class="n">parent_fids</span><span class="p">]</span>
+        <span class="c1"># Retrieve children of parents from MetaCat</span>
+        <span class="n">parents</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">files</span><span class="p">(</span><span class="n">fid_list</span><span class="p">,</span> <span class="n">metadata</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">provenance</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">parents</span><span class="p">:</span>
+            <span class="n">child_fids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s1">&#39;fid&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">parent</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;children&#39;</span><span class="p">,</span> <span class="p">[]))</span>
+            <span class="n">children</span><span class="p">[</span><span class="n">parent</span><span class="p">[</span><span class="s1">&#39;fid&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">child_fids</span><span class="p">)</span>
+        <span class="c1"># Override the children of the input files</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="n">siblings</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">file</span><span class="p">[</span><span class="s1">&#39;parents&#39;</span><span class="p">]:</span>
+                <span class="n">siblings</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">children</span><span class="p">[</span><span class="n">parent</span><span class="p">[</span><span class="s1">&#39;fid&#39;</span><span class="p">]])</span>
+            <span class="n">siblings</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fid&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+            <span class="n">file</span><span class="p">[</span><span class="s1">&#39;children&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;fid&#39;</span><span class="p">:</span> <span class="n">f</span><span class="p">}</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">siblings</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="MetaRetriever.check_parents">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever.check_parents">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_parents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check that MetaCat records exist for the parents of a batch of input files.</span>
+<span class="sd">        Also get the siblings if we need them for the already merged check.</span>
+
+<span class="sd">        :param files: list of file metadata dictionaries to check</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Checking MetaCat to verify parent records&quot;</span><span class="p">)</span>
+        <span class="n">skip_fids</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">check_fids</span>
+        <span class="n">provenance</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># To check for already merged files, we need the children of all input files</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">already_done</span> <span class="o">!=</span> <span class="s1">&#39;include&#39;</span><span class="p">:</span>
+            <span class="n">skip_fids</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">provenance</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># Collect list of all parent DIDs to check</span>
+        <span class="n">parent_dids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;errors&#39;</span><span class="p">)]:</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;parents&#39;</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="k">if</span> <span class="n">skip_fids</span> <span class="ow">and</span> <span class="s1">&#39;fid&#39;</span> <span class="ow">in</span> <span class="n">parent</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">parent_dids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parent</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">parent</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># Request parent info from MetaCat, with provenance if necessary</span>
+        <span class="n">dids</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;did&#39;</span><span class="p">:</span> <span class="n">did</span><span class="p">}</span> <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">parent_dids</span><span class="p">]</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">files</span><span class="p">(</span><span class="n">dids</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="n">provenance</span><span class="p">)</span>
+        <span class="n">parents</span> <span class="o">=</span> <span class="p">{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">file</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">res</span><span class="p">}</span>
+        <span class="c1"># Check for missing parents, and build child list if needed for already merged check</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;errors&#39;</span><span class="p">)]:</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;parents&#39;</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="k">if</span> <span class="n">skip_fids</span> <span class="ow">and</span> <span class="s1">&#39;fid&#39;</span> <span class="ow">in</span> <span class="n">parent</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">did</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parent</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">parent</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">parent_info</span> <span class="o">=</span> <span class="n">parents</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">parent_info</span><span class="p">:</span>
+                    <span class="n">file</span><span class="p">[</span><span class="s1">&#39;errors&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MergeFileError</span><span class="o">.</span><span class="n">UNDECLARED</span>
+                    <span class="n">missing</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;did: </span><span class="si">{</span><span class="n">did</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">parent</span><span class="p">[</span><span class="s1">&#39;fid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parent_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fid&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">provenance</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">child_fids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s1">&#39;fid&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">parent</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;children&#39;</span><span class="p">,</span> <span class="p">[]))</span>
+                <span class="n">children</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">child_fids</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">provenance</span><span class="p">:</span>
+                <span class="n">children</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fid&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+                <span class="n">file</span><span class="p">[</span><span class="s1">&#39;children&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;fid&#39;</span><span class="p">:</span> <span class="n">f</span><span class="p">}</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">children</span><span class="p">]</span>
+        <span class="c1"># Log any missing parents</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;MetaCat missing </span><span class="si">{n}</span><span class="s2"> grandparent record</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="n">missing</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MetaRetriever.get_files">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever.get_files">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve file metadata for a specific list of DIDs.</span>
+<span class="sd">        Also gets the siblings if we need them for the already merged check.</span>
+
+<span class="sd">        :param query: list of dictionaries with &#39;did&#39; keys to retrieve</span>
+<span class="sd">        :return: list of file metadata dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># In grandparents mode, we need the parents of the input files</span>
+        <span class="n">parents</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">grandparents</span><span class="p">)</span>
+        <span class="c1"># To check for already merged files, we need the children of the input files</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">already_done</span> <span class="o">!=</span> <span class="s1">&#39;include&#39;</span><span class="p">)</span>
+        <span class="c1"># Request files from MetaCat, with provenance if necessary</span>
+        <span class="n">provenance</span> <span class="o">=</span> <span class="n">parents</span> <span class="ow">or</span> <span class="n">children</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">files</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">metadata</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">provenance</span> <span class="o">=</span> <span class="n">provenance</span><span class="p">)</span>
+        <span class="c1"># In grandparents mode, we actually need the children of the parents</span>
+        <span class="k">if</span> <span class="n">parents</span> <span class="ow">and</span> <span class="n">children</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_siblings</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">files</span></div>
+
+
+<div class="viewcode-block" id="MetaRetriever.input_batches">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever.input_batches">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_batches</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">InputBatch</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve input file metadata in batches.</span>
+
+<span class="sd">        :return: InputBatch object containing skip index and list of MergeFile objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">skip0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">skip</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="n">skip0</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># Determine file limit for next batch</span>
+            <span class="n">limit</span> <span class="o">=</span> <span class="n">step</span>
+            <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">limit</span><span class="p">:</span>
+                <span class="n">limit</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">limit</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">limit</span> <span class="o">+</span> <span class="n">skip0</span> <span class="o">-</span> <span class="n">skip</span><span class="p">)</span>
+            <span class="c1"># Get previous batch to process, if we have a request in flight</span>
+            <span class="n">batch</span> <span class="o">=</span> <span class="k">await</span> <span class="n">task</span> <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="c1"># Start request for next batch</span>
+            <span class="k">if</span> <span class="n">limit</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">req</span> <span class="o">=</span> <span class="n">InputBatch</span><span class="p">(</span><span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">)</span>
+                <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_batch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">,</span> <span class="n">req</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">))</span>
+            <span class="c1"># Increment skip for next batch</span>
+            <span class="n">skip</span> <span class="o">+=</span> <span class="n">step</span>
+            <span class="c1"># Process previous batch while we wait, if we have one</span>
+            <span class="k">if</span> <span class="n">batch</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Processing new </span><span class="si">%s</span><span class="s2"> input batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">skip</span><span class="p">)</span>
+            <span class="c1"># Add file to merge set, and yield if we added any</span>
+            <span class="n">added</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">add</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">skip</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">added</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">InputBatch</span><span class="p">(</span><span class="n">skip</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">skip</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">added</span><span class="p">)</span>
+            <span class="c1"># If there is no next task, we&#39;re done</span>
+            <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="c1"># If the last batch was a partial batch, we&#39;re done</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">step</span><span class="p">:</span>
+                <span class="c1"># Need to wait for the the last task to finish</span>
+                <span class="k">await</span> <span class="n">task</span>
+                <span class="k">break</span>
+        <span class="c1"># Yield empty batch to signal completion</span>
+        <span class="k">yield</span> <span class="n">InputBatch</span><span class="p">()</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Repeatedly get input_batches until all files are retrieved.&quot;&quot;&quot;</span>
+        <span class="c1"># Connect to source</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="c1"># Loop over batches, checking for errors as we go</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_batches</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">check_errors</span><span class="p">()</span>
+        <span class="c1"># Close connections and do final error checking</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">check_errors</span><span class="p">(</span><span class="n">final</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MetaRetriever.run">
+<a class="viewcode-back" href="../retriever.html#retriever.MetaRetriever.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve metadata for all files.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="p">())</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+</div>
+
+
+<div class="viewcode-block" id="QueryRetriever">
+<a class="viewcode-back" href="../retriever.html#retriever.QueryRetriever">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">QueryRetriever</span><span class="p">(</span><span class="n">MetaRetriever</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for retrieving metadata from MetaCat using an MQL query.&quot;&quot;&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;metacat_query&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the QueryRetriever with an MQL query.</span>
+
+<span class="sd">        :param query: MQL query to find files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;skip&#39;</span> <span class="ow">in</span> <span class="n">query</span> <span class="ow">or</span> <span class="s1">&#39;limit&#39;</span> <span class="ow">in</span> <span class="n">query</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Consider using command line options for &#39;skip&#39; and &#39;limit&#39;!&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">query</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39; ordered&#39;</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Merge-Utils will append the &#39;ordered&#39; keyword to queries automatically.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">+=</span> <span class="s1">&#39; ordered&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">=</span> <span class="n">query</span>
+
+<div class="viewcode-block" id="QueryRetriever.get_metadata">
+<a class="viewcode-back" href="../retriever.html#retriever.QueryRetriever.get_metadata">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously query MetaCat for a specific batch of files</span>
+
+<span class="sd">        :param batch: InputBatch object with skip index set</span>
+<span class="sd">        :param limit: maximum number of files to retrieve</span>
+<span class="sd">        :return: list of file metadata dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">query_batch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; skip </span><span class="si">{</span><span class="n">batch</span><span class="o">.</span><span class="n">skip</span><span class="si">}</span><span class="s2"> limit </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="c1"># In grandparents mode, we need the parents of the input files</span>
+        <span class="n">parents</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">grandparents</span><span class="p">)</span>
+        <span class="c1"># To check for already merged files, we need the children of the input files</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">already_done</span> <span class="o">!=</span> <span class="s1">&#39;include&#39;</span><span class="p">)</span>
+        <span class="c1"># Query MetaCat, with provenance if necessary</span>
+        <span class="n">provenance</span> <span class="o">=</span> <span class="n">parents</span> <span class="ow">or</span> <span class="n">children</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">query_batch</span><span class="p">,</span> <span class="n">metadata</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">provenance</span> <span class="o">=</span> <span class="n">provenance</span><span class="p">)</span>
+        <span class="c1"># In grandparents mode, we actually need the children of the parents</span>
+        <span class="k">if</span> <span class="n">parents</span> <span class="ow">and</span> <span class="n">children</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_siblings</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">files</span></div>
+</div>
+
+
+<div class="viewcode-block" id="DidRetriever">
+<a class="viewcode-back" href="../retriever.html#retriever.DidRetriever">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DidRetriever</span><span class="p">(</span><span class="n">MetaRetriever</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for retrieving metadata from MetaCat using a list of DIDs.&quot;&quot;&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;metacat_dids&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dids</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">dupes</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the DidRetriever with a list of DIDs.</span>
+
+<span class="sd">        :param dids: list of file DIDs to find</span>
+<span class="sd">        :param dupes: set of indices of duplicate DIDs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dids</span> <span class="o">=</span> <span class="n">dids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_namespaces</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dupes</span> <span class="o">=</span> <span class="n">dupes</span> <span class="k">if</span> <span class="n">dupes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_duplicates</span><span class="p">()</span>
+
+<div class="viewcode-block" id="DidRetriever.check_namespaces">
+<a class="viewcode-back" href="../retriever.html#retriever.DidRetriever.check_namespaces">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_namespaces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check DID list for namespace issues.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check namespaces</span>
+        <span class="n">namespaces</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dids</span><span class="p">:</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">did</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">namespaces</span><span class="p">[</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">namespaces</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespace</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;DID list missing namespaces, using default namespace &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">ns</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dids</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ns</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">did</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dids</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">namespaces</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ns</span><span class="p">,</span> <span class="n">count</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">namespaces</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dids</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Some DIDs missing namespaces, assuming shared namespace &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">ns</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dids</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ns</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">did</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="s1">&#39;:&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">did</span> <span class="k">else</span> <span class="n">did</span> <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dids</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">inconsistent</span> <span class="o">==</span> <span class="s1">&#39;quit&#39;</span><span class="p">:</span>
+            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;DID list contains multiple namespaces:&quot;</span><span class="p">,</span>
+                              <span class="n">namespaces</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">namespaces</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="n">ns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespace</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dids</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Some DIDs missing namespaces, assuming default namespace &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">ns</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dids</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ns</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">did</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="s1">&#39;:&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">did</span> <span class="k">else</span> <span class="n">did</span> <span class="k">for</span> <span class="n">did</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dids</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DidRetriever.check_duplicates">
+<a class="viewcode-back" href="../retriever.html#retriever.DidRetriever.check_duplicates">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_duplicates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check DID list for duplicate entries.</span>
+
+<span class="sd">        :return: set of indices of duplicate DIDs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">dupes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">did</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dids</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">did</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                <span class="n">dupes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+            <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dupes</span> <span class="ow">and</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">duplicate</span> <span class="o">==</span> <span class="s1">&#39;quit&#39;</span><span class="p">:</span>
+            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;DID list contains </span><span class="si">{n}</span><span class="s2"> duplicate file</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span>
+                              <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dupes</span><span class="p">),</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dupes</span></div>
+
+
+<div class="viewcode-block" id="DidRetriever.get_metadata">
+<a class="viewcode-back" href="../retriever.html#retriever.DidRetriever.get_metadata">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously request a batch of DIDs from MetaCat</span>
+
+<span class="sd">        :param batch: InputBatch object with skip index set</span>
+<span class="sd">        :param limit: maximum number of files to retrieve</span>
+<span class="sd">        :return: list of file metadata dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">skip</span>
+        <span class="n">dids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dids</span><span class="p">[</span><span class="n">skip</span><span class="p">:</span><span class="n">skip</span><span class="o">+</span><span class="n">limit</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dids</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No DIDs to request for skip=</span><span class="si">%d</span><span class="s2">, limit=</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">skip</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="c1"># Build query and list of placeholder files</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">did</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dids</span><span class="p">):</span>
+            <span class="n">namespace</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">did</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+            <span class="n">placeholder</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;namespace&#39;</span><span class="p">:</span> <span class="n">namespace</span><span class="p">,</span>
+                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                <span class="s1">&#39;errors&#39;</span><span class="p">:</span> <span class="n">MergeFileError</span><span class="o">.</span><span class="n">NO_METADATA</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="n">skip</span><span class="o">+</span><span class="n">idx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dupes</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Skipping duplicate DID: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">did</span><span class="p">)</span>
+                <span class="n">placeholder</span><span class="p">[</span><span class="s1">&#39;errors&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MergeFileError</span><span class="o">.</span><span class="n">DUPLICATE</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">query</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;did&#39;</span><span class="p">:</span> <span class="n">did</span><span class="p">})</span>
+                <span class="n">indices</span><span class="p">[</span><span class="n">did</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
+            <span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">placeholder</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;All DIDs in batch are duplicates, skipping MetaCat request&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">files</span>
+        <span class="c1"># Request files from MetaCat</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_files</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="c1"># Add returned files to output list in correct order</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+            <span class="n">files</span><span class="p">[</span><span class="n">indices</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">file</span>
+        <span class="k">return</span> <span class="n">files</span></div>
+</div>
+
+
+<div class="viewcode-block" id="LocalMetaRetriever">
+<a class="viewcode-back" href="../retriever.html#retriever.LocalMetaRetriever">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LocalMetaRetriever</span><span class="p">(</span><span class="n">MetaRetriever</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;MetaRetriever for local files&quot;&quot;&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;local_meta&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the LocalMetaRetriever with a list of json files.</span>
+
+<span class="sd">        :param paths: list of metadata file paths</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paths</span> <span class="o">=</span> <span class="n">paths</span>
+
+<div class="viewcode-block" id="LocalMetaRetriever.get_metadata">
+<a class="viewcode-back" href="../retriever.html#retriever.LocalMetaRetriever.get_metadata">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve metadata for a specific batch of files.</span>
+
+<span class="sd">        :param batch: InputBatch object containing skip index and list of file names</span>
+<span class="sd">        :param limit: maximum number of files to retrieve</span>
+<span class="sd">        :return: list of file metadata dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">skip</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">skip</span> <span class="o">+</span> <span class="n">limit</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="p">))</span>
+        <span class="n">namespace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespace</span>
+        <span class="c1"># Read metadata from local files if possible</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="p">[</span><span class="n">skip</span><span class="p">:</span><span class="n">end</span><span class="p">]:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="c1"># If file is missing or unreadable, create a placeholder</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">metadata</span><span class="p">:</span>
+                <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s1">&#39;namespace&#39;</span><span class="p">:</span> <span class="n">namespace</span><span class="p">,</span>
+                    <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                    <span class="s1">&#39;errors&#39;</span><span class="p">:</span> <span class="n">MergeFileError</span><span class="o">.</span><span class="n">NO_METADATA</span>
+                <span class="p">}</span>
+                <span class="n">missing</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+            <span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="c1"># Make sure files exist in MetaCat, for parent listing</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">grandparents</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_parents</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_existence</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+        <span class="c1"># If we were missing any local files, try to find them in MetaCat</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Checking MetaCat for </span><span class="si">{n}</span><span class="s2"> missing metadata file</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span>
+                              <span class="n">missing</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_files</span><span class="p">([{</span><span class="s1">&#39;did&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">namespace</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">missing</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+                <span class="n">files</span><span class="p">[</span><span class="n">missing</span><span class="p">[</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">file</span>
+        <span class="k">return</span> <span class="n">files</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="get">
+<a class="viewcode-back" href="../retriever.html#retriever.get">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MetaRetriever</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create and return a metadata retriever based on input mode:</span>
+<span class="sd">    files: LocalMetaRetriever if any metadata files were provided, otherwise DidRetriever</span>
+<span class="sd">    dids: DidRetriever</span>
+<span class="sd">    query: QueryRetriever</span>
+<span class="sd">    dataset: QueryRetriever with query for files in the specified dataset</span>
+<span class="sd">    </span>
+<span class="sd">    :return: MetaRetriever object for retrieving file metadata</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Determine input mode and retrieve metadata</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">inputs</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;files&#39;</span><span class="p">:</span>
+        <span class="c1"># We need to sort the input files into data and metadata files</span>
+        <span class="c1"># Start by getting the set of all metadata file names (without the .json suffix)</span>
+        <span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">f</span><span class="p">)[:</span><span class="o">-</span><span class="mi">5</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">inputs</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;.json&#39;</span><span class="p">)</span>
+        <span class="c1"># Then go through the input list in order</span>
+        <span class="n">json_files</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">:</span>
+            <span class="c1"># If we have a JSON file, just add it to the list and continue</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">path</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;.json&#39;</span><span class="p">:</span>
+                <span class="n">json_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="c1"># Skip data files if we already have a metadata file with that name</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="c1"># Otherwise, try to find a matching metadata file in the same directory</span>
+            <span class="n">meta_path</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">meta_path</span><span class="p">):</span>
+                <span class="n">json_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">meta_path</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="c1"># Or in the provided search directories</span>
+            <span class="k">for</span> <span class="n">search_dir</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">search_dirs</span><span class="p">:</span>
+                <span class="n">meta_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">search_dir</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">meta_path</span><span class="p">):</span>
+                    <span class="n">json_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">meta_path</span><span class="p">)</span>
+                    <span class="k">break</span>
+        <span class="c1"># If we found any metadata files, return a LocalMetaRetriever</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">json_files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">LocalMetaRetriever</span><span class="p">(</span><span class="n">paths</span><span class="o">=</span><span class="n">json_files</span><span class="p">)</span>
+        <span class="c1"># Otherwise, return a DidRetriever based on the input file names</span>
+        <span class="k">return</span> <span class="n">DidRetriever</span><span class="p">(</span><span class="n">dids</span><span class="o">=</span><span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;dids&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">DidRetriever</span><span class="p">(</span><span class="n">dids</span><span class="o">=</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;query&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Multiple query inputs detected, did you forget to quote the query?&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">QueryRetriever</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;dataset&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Dataset input mode currently only supports a single dataset name.&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;files from </span><span class="si">{</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> where dune.output_status=confirmed&quot;</span>
+        <span class="k">return</span> <span class="n">QueryRetriever</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Unknown input mode: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">retriever</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>

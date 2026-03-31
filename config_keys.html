@@ -45,6 +45,273 @@
             
   <section id="config-keys">
 <span id="id1"></span><h1>config_keys<a class="headerlink" href="#config-keys" title="Link to this heading">¶</a></h1>
+<p id="module-config_keys">Module for configuration key classes.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigBool">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigBool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigBool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigBool" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration boolean option</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigCollection">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigCollection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigCollection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigCollection" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for configuration collections</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigCondition">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigCondition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigCondition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigCondition" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration condition expression</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigDict">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigDict" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration dictionary</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigDict.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigDict.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigDict.get" title="Link to this definition">¶</a></dt>
+<dd><p>Get a value from the config dict, returning default if not found</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigDict.items">
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigDict.items"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigDict.items" title="Link to this definition">¶</a></dt>
+<dd><p>Get the items in the config dict</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigFloat">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigFloat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigFloat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigFloat" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration float</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigInt">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigInt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigInt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigInt" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration integer</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigKey">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigKey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigKey"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigKey" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for configuration keys</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigList">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigList" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration list</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigList.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config_keys.html#ConfigList.append"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigList.append" title="Link to this definition">¶</a></dt>
+<dd><p>Append a new item to the list</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigList.extend">
+<span class="sig-name descname"><span class="pre">extend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config_keys.html#ConfigList.extend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigList.extend" title="Link to this definition">¶</a></dt>
+<dd><p>Extend the list with new items</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigMap">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigMap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigMap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigMap" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration map</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigMap.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigMap.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigMap.get" title="Link to this definition">¶</a></dt>
+<dd><p>Get a value from the config map, returning default if not found</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigMap.items">
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigMap.items"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigMap.items" title="Link to this definition">¶</a></dt>
+<dd><p>Get the items in the config map</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigMap.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigMap.keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigMap.keys" title="Link to this definition">¶</a></dt>
+<dd><p>Get the keys in the config map</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigMap.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigMap.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigMap.update" title="Link to this definition">¶</a></dt>
+<dd><p>Update the config map with another dictionary or ConfigMap</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigMap.values">
+<span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigMap.values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigMap.values" title="Link to this definition">¶</a></dt>
+<dd><p>Get the values in the config map</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigNum">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigNum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigNum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigNum" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration number</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigOption">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigOption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigOption"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigOption" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration option with predefined choices</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigPath">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigPath</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigPath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigPath" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration file path</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigSet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigSet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigSet" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration set (of strings)</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigSet.extend">
+<span class="sig-name descname"><span class="pre">extend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigSet.extend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigSet.extend" title="Link to this definition">¶</a></dt>
+<dd><p>Extend the set with another set or list</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigSizeSpec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigSizeSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigSizeSpec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigSizeSpec" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration size prediction specification</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="config_keys.ConfigSizeSpec.a">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">a</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#config_keys.ConfigSizeSpec.a" title="Link to this definition">¶</a></dt>
+<dd><p>Coefficient for average input size term</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="config_keys.ConfigSizeSpec.b">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">b</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#config_keys.ConfigSizeSpec.b" title="Link to this definition">¶</a></dt>
+<dd><p>Constant term in bytes</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="config_keys.ConfigSizeSpec.n">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#config_keys.ConfigSizeSpec.n" title="Link to this definition">¶</a></dt>
+<dd><p>Coefficient for number of inputs term</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigSizeSpec.parse_spec">
+<span class="sig-name descname"><span class="pre">parse_spec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec_str</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/config_keys.html#ConfigSizeSpec.parse_spec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigSizeSpec.parse_spec" title="Link to this definition">¶</a></dt>
+<dd><p>Parse size specification consisting of a sum of terms of the form
+‘number * param’ or ‘number param’,
+where param is one of PARAMS, or ‘’ for bytes. For example: ‘2*s + 0.5*n + 10mb’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>spec_str</strong> – specification string</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple of coefficents for (s,n,a,b)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigSizeSpec.parse_term">
+<span class="sig-name descname"><span class="pre">parse_term</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">term</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/config_keys.html#ConfigSizeSpec.parse_term"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigSizeSpec.parse_term" title="Link to this definition">¶</a></dt>
+<dd><p>Parse a term of the form ‘number*param’ or ‘number param’</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="config_keys.ConfigSizeSpec.s">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">s</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#config_keys.ConfigSizeSpec.s" title="Link to this definition">¶</a></dt>
+<dd><p>Coefficient for sum of input sizes term</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigString">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigString</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigString"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigString" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration string</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigString.format">
+<span class="sig-name descname"><span class="pre">format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigString.format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigString.format" title="Link to this definition">¶</a></dt>
+<dd><p>Format the string value with the given arguments</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigTuple">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigTuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigTuple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigTuple" title="Link to this definition">¶</a></dt>
+<dd><p>Class to manage a configuration tuple</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="config_keys.ConfigValue">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">ConfigValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigValue" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for individual configuration values</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigValue.set">
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config_keys.html#ConfigValue.set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigValue.set" title="Link to this definition">¶</a></dt>
+<dd><p>Set the value of the key</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="config_keys.ConfigValue.val">
+<span class="sig-name descname"><span class="pre">val</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config_keys.html#ConfigValue.val"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.ConfigValue.val" title="Link to this definition">¶</a></dt>
+<dd><p>Get the value of the key, or a default if not set</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="config_keys.ConfigValue.value">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#config_keys.ConfigValue.value" title="Link to this definition">¶</a></dt>
+<dd><p>Get the raw value of the key</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config_keys.check_condition">
+<span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">check_condition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">condition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="reference internal" href="_modules/config_keys.html#check_condition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.check_condition" title="Link to this definition">¶</a></dt>
+<dd><p>Check that a condition expression is valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>condition</strong> – Condition expression string</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of (normalized condition string, list of errors)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config_keys.make_cfg_key">
+<span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">make_cfg_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="reference internal" href="_modules/config_keys.html#make_cfg_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.make_cfg_key" title="Link to this definition">¶</a></dt>
+<dd><p>Factory function to create appropriate ConfigKey subclass based on type name.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config_keys.parse_type">
+<span class="sig-prename descclassname"><span class="pre">config_keys.</span></span><span class="sig-name descname"><span class="pre">parse_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="reference internal" href="_modules/config_keys.html#parse_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config_keys.parse_type" title="Link to this definition">¶</a></dt>
+<dd><p>Parse a type string into a list of type components.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> – Raw value or string of the form ‘&lt;type(subtype)&gt;value’</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of (type, subtype, value)</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -54,6 +321,69 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">config_keys</a><ul>
+<li><a class="reference internal" href="#config_keys.ConfigBool"><code class="docutils literal notranslate"><span class="pre">ConfigBool</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigCollection"><code class="docutils literal notranslate"><span class="pre">ConfigCollection</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigCondition"><code class="docutils literal notranslate"><span class="pre">ConfigCondition</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigDict"><code class="docutils literal notranslate"><span class="pre">ConfigDict</span></code></a><ul>
+<li><a class="reference internal" href="#config_keys.ConfigDict.get"><code class="docutils literal notranslate"><span class="pre">ConfigDict.get()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigDict.items"><code class="docutils literal notranslate"><span class="pre">ConfigDict.items()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#config_keys.ConfigFloat"><code class="docutils literal notranslate"><span class="pre">ConfigFloat</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigInt"><code class="docutils literal notranslate"><span class="pre">ConfigInt</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigKey"><code class="docutils literal notranslate"><span class="pre">ConfigKey</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigList"><code class="docutils literal notranslate"><span class="pre">ConfigList</span></code></a><ul>
+<li><a class="reference internal" href="#config_keys.ConfigList.append"><code class="docutils literal notranslate"><span class="pre">ConfigList.append()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigList.extend"><code class="docutils literal notranslate"><span class="pre">ConfigList.extend()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#config_keys.ConfigMap"><code class="docutils literal notranslate"><span class="pre">ConfigMap</span></code></a><ul>
+<li><a class="reference internal" href="#config_keys.ConfigMap.get"><code class="docutils literal notranslate"><span class="pre">ConfigMap.get()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigMap.items"><code class="docutils literal notranslate"><span class="pre">ConfigMap.items()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigMap.keys"><code class="docutils literal notranslate"><span class="pre">ConfigMap.keys()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigMap.update"><code class="docutils literal notranslate"><span class="pre">ConfigMap.update()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigMap.values"><code class="docutils literal notranslate"><span class="pre">ConfigMap.values()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#config_keys.ConfigNum"><code class="docutils literal notranslate"><span class="pre">ConfigNum</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigOption"><code class="docutils literal notranslate"><span class="pre">ConfigOption</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigPath"><code class="docutils literal notranslate"><span class="pre">ConfigPath</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigSet"><code class="docutils literal notranslate"><span class="pre">ConfigSet</span></code></a><ul>
+<li><a class="reference internal" href="#config_keys.ConfigSet.extend"><code class="docutils literal notranslate"><span class="pre">ConfigSet.extend()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#config_keys.ConfigSizeSpec"><code class="docutils literal notranslate"><span class="pre">ConfigSizeSpec</span></code></a><ul>
+<li><a class="reference internal" href="#config_keys.ConfigSizeSpec.a"><code class="docutils literal notranslate"><span class="pre">ConfigSizeSpec.a</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigSizeSpec.b"><code class="docutils literal notranslate"><span class="pre">ConfigSizeSpec.b</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigSizeSpec.n"><code class="docutils literal notranslate"><span class="pre">ConfigSizeSpec.n</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigSizeSpec.parse_spec"><code class="docutils literal notranslate"><span class="pre">ConfigSizeSpec.parse_spec()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigSizeSpec.parse_term"><code class="docutils literal notranslate"><span class="pre">ConfigSizeSpec.parse_term()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigSizeSpec.s"><code class="docutils literal notranslate"><span class="pre">ConfigSizeSpec.s</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#config_keys.ConfigString"><code class="docutils literal notranslate"><span class="pre">ConfigString</span></code></a><ul>
+<li><a class="reference internal" href="#config_keys.ConfigString.format"><code class="docutils literal notranslate"><span class="pre">ConfigString.format()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#config_keys.ConfigTuple"><code class="docutils literal notranslate"><span class="pre">ConfigTuple</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigValue"><code class="docutils literal notranslate"><span class="pre">ConfigValue</span></code></a><ul>
+<li><a class="reference internal" href="#config_keys.ConfigValue.set"><code class="docutils literal notranslate"><span class="pre">ConfigValue.set()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigValue.val"><code class="docutils literal notranslate"><span class="pre">ConfigValue.val()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.ConfigValue.value"><code class="docutils literal notranslate"><span class="pre">ConfigValue.value</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#config_keys.check_condition"><code class="docutils literal notranslate"><span class="pre">check_condition()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.make_cfg_key"><code class="docutils literal notranslate"><span class="pre">make_cfg_key()</span></code></a></li>
+<li><a class="reference internal" href="#config_keys.parse_type"><code class="docutils literal notranslate"><span class="pre">parse_type()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="related.html"

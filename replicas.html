@@ -45,6 +45,562 @@
             
   <section id="replicas">
 <span id="id1"></span><h1>replicas<a class="headerlink" href="#replicas" title="Link to this heading">¶</a></h1>
+<p id="module-replicas">Tools for working with paths and xrootd URLs.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="replicas.BaseRSE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">BaseRSE</span></span><a class="reference internal" href="_modules/replicas.html#BaseRSE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for an RSE, which can be used to check the status of file replicas</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.BaseRSE.cache_local">
+<span class="sig-name descname"><span class="pre">cache_local</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.Replica" title="replicas.Replica"><span class="pre">Replica</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#BaseRSE.cache_local"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE.cache_local" title="Link to this definition">¶</a></dt>
+<dd><p>Check if a replica is online or nearline by reading the locality stat file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>replica</strong> – Replica object to check</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.BaseRSE.cache_xrootd">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cache_xrootd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.Replica" title="replicas.Replica"><span class="pre">Replica</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#BaseRSE.cache_xrootd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE.cache_xrootd" title="Link to this definition">¶</a></dt>
+<dd><p>Check if a replica is online or nearline by using gfal-xattr to query user.status</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>replica</strong> – Replica object to check</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.BaseRSE.check">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.Replica" title="replicas.Replica"><span class="pre">Replica</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cksums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/replicas.html#BaseRSE.check"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE.check" title="Link to this definition">¶</a></dt>
+<dd><p>Check the status of a file replica on the RSE</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>replica</strong> – Replica object to check</p></li>
+<li><p><strong>size</strong> – optionally check the file size against an expected value</p></li>
+<li><p><strong>cksums</strong> – optionally check the file checksums against a dict of {algorithm: checksum}</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.BaseRSE.check_cache">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.Replica" title="replicas.Replica"><span class="pre">Replica</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#BaseRSE.check_cache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE.check_cache" title="Link to this definition">¶</a></dt>
+<dd><p>Check if a replica is online or nearline using the appropriate method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>replica</strong> – Replica object to check</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.BaseRSE.check_local">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_local</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.Replica" title="replicas.Replica"><span class="pre">Replica</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cksums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/replicas.html#BaseRSE.check_local"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE.check_local" title="Link to this definition">¶</a></dt>
+<dd><p>Check the status of a local file replica</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>replica</strong> – Replica object to check</p></li>
+<li><p><strong>size</strong> – optionally check the file size against an expected value</p></li>
+<li><p><strong>cksums</strong> – optionally check the file checksums against a dict of {algorithm: checksum}</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.BaseRSE.check_xrootd">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_xrootd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.Replica" title="replicas.Replica"><span class="pre">Replica</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cksums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/replicas.html#BaseRSE.check_xrootd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE.check_xrootd" title="Link to this definition">¶</a></dt>
+<dd><p>Check the status of a remote file replica accessed via xrootd</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>replica</strong> – Replica object to check</p></li>
+<li><p><strong>size</strong> – optionally check the file size against an expected value</p></li>
+<li><p><strong>cksums</strong> – optionally check the file checksums against a dict of {algorithm: checksum}</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.BaseRSE.checksum_local">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">checksum_local</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cksums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/replicas.html#BaseRSE.checksum_local"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE.checksum_local" title="Link to this definition">¶</a></dt>
+<dd><p>Check the checksums of a local file against expected values</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – path to the local file</p></li>
+<li><p><strong>cksums</strong> – dict of {algorithm: expected_checksum} pairs to check against</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if any matching checksums are found, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.BaseRSE.checksum_xrootd">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">checksum_xrootd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.Replica" title="replicas.Replica"><span class="pre">Replica</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cksums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/replicas.html#BaseRSE.checksum_xrootd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE.checksum_xrootd" title="Link to this definition">¶</a></dt>
+<dd><p>Check the checksums of a remote file against expected values</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>replica</strong> – Replica object to check</p></li>
+<li><p><strong>cksums</strong> – dict of {algorithm: expected_checksum} pairs to check against</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if any matching checksums are found, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.BaseRSE.ping">
+<span class="sig-name descname"><span class="pre">ping</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/replicas.html#BaseRSE.ping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE.ping" title="Link to this definition">¶</a></dt>
+<dd><p>Get the ping time to the RSE in ms</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.BaseRSE.xrdfs">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">xrdfs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.Replica" title="replicas.Replica"><span class="pre">Replica</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/replicas.html#BaseRSE.xrdfs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE.xrdfs" title="Link to this definition">¶</a></dt>
+<dd><p>Run an xrdfs command on a replica and return the output
+In case of failure, set the replica status accordingly and return None</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>replica</strong> – Replica object to check</p></li>
+<li><p><strong>cmd</strong> – xrdfs command to run (e.g. ‘ls -l’)</p></li>
+<li><p><strong>timeout</strong> – timeout for the xrdfs command in seconds</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>stdout of the xrdfs command, or None if it failed</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="replicas.GenericRSE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">GenericRSE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/replicas.html#GenericRSE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.GenericRSE" title="Link to this definition">¶</a></dt>
+<dd><p>Class to store information about an unknown RSE</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="replicas.PathFinder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">PathFinder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MetaRetriever</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/replicas.html#PathFinder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathFinder" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for finding paths to files</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathFinder.add_replica">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_replica</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile" title="merge_utils.merge_set.MergeFile"><span class="pre">MergeFile</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rse_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#PathFinder.add_replica"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathFinder.add_replica" title="Link to this definition">¶</a></dt>
+<dd><p>Add a replica to a MergeFile object, including its path and RSE information</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> – MergeFile object to add the replica to</p></li>
+<li><p><strong>path</strong> – file path for the replica</p></li>
+<li><p><strong>rse_name</strong> – optional RSE name; if not provided, it will be inferred from the path</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathFinder.check_replica">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_replica</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.Replica" title="replicas.Replica"><span class="pre">Replica</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cksums</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#PathFinder.check_replica"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathFinder.check_replica" title="Link to this definition">¶</a></dt>
+<dd><p>Add a replica to the replica queue for asynchronous checking</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>replica</strong> – Replica object to check</p></li>
+<li><p><strong>size</strong> – optionally check the file size against an expected value</p></li>
+<li><p><strong>cksums</strong> – optionally check the file checksums against a dict of {algorithm: checksum}</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathFinder.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#PathFinder.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathFinder.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Connect to the file source and rucio</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathFinder.disconnect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">disconnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#PathFinder.disconnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathFinder.disconnect" title="Link to this definition">¶</a></dt>
+<dd><p>Disconnect from the file source and rucio, and stop the replica checkers</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="replicas.PathFinder.files">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">files</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet" title="merge_utils.merge_set.MergeSet"><span class="pre">MergeSet</span></a></em><a class="headerlink" href="#replicas.PathFinder.files" title="Link to this definition">¶</a></dt>
+<dd><p>Return the set of files from the source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathFinder.get_metadata">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InputBatch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/replicas.html#PathFinder.get_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathFinder.get_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve metadata for a specific batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> – empty InputBatch object with the skip index set</p></li>
+<li><p><strong>limit</strong> – maximum number of files to retrieve</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file metadata dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathFinder.get_paths">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InputBatch</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/replicas.html#PathFinder.get_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathFinder.get_paths" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve paths for a specific batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>batch</strong> – InputBatch object containing files to retrieve paths for</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file path dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathFinder.input_batches">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_batches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AsyncGenerator</span><span class="p"><span class="pre">[</span></span><span class="pre">InputBatch</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/replicas.html#PathFinder.input_batches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathFinder.input_batches" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve paths for the next batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>InputBatch object containing skip index and list of MergeFile objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathFinder.replica_checker">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">replica_checker</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#PathFinder.replica_checker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathFinder.replica_checker" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronous worker method to check the status of replicas from the replica queue</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathFinder.set_paths">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InputBatch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#PathFinder.set_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathFinder.set_paths" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously set paths for a specific batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> – InputBatch object containing files to process</p></li>
+<li><p><strong>paths</strong> – list of file path dictionaries to use for setting paths</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="replicas.PathListFinder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">PathListFinder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MetaRetriever</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/replicas.html#PathListFinder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathListFinder" title="Link to this definition">¶</a></dt>
+<dd><p>Class for finding paths from a list of explicit file paths</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathListFinder.add_replica">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_replica</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile" title="merge_utils.merge_set.MergeFile"><span class="pre">MergeFile</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rse_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#PathListFinder.add_replica"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathListFinder.add_replica" title="Link to this definition">¶</a></dt>
+<dd><p>Add a replica to a MergeFile object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> – MergeFile object to add the replica to</p></li>
+<li><p><strong>path</strong> – file path for the replica</p></li>
+<li><p><strong>rse_name</strong> – RSE name for the replica</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathListFinder.add_rse">
+<span class="sig-name descname"><span class="pre">add_rse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rse</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.BaseRSE" title="replicas.BaseRSE"><span class="pre">BaseRSE</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#PathListFinder.add_rse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathListFinder.add_rse" title="Link to this definition">¶</a></dt>
+<dd><p>Add an RSE to the list of known RSEs</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathListFinder.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#PathListFinder.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathListFinder.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Connect to the file source and rucio</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathListFinder.get_paths">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InputBatch</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/replicas.html#PathListFinder.get_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathListFinder.get_paths" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve paths for a specific batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>batch</strong> – InputBatch object containing files to retrieve paths for</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file path dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.PathListFinder.set_paths">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InputBatch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#PathListFinder.set_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.PathListFinder.set_paths" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously set paths for a specific batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> – InputBatch object containing files to process</p></li>
+<li><p><strong>paths</strong> – list of file path dictionaries from Rucio</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="replicas.Replica">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">Replica</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rse</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.BaseRSE" title="replicas.BaseRSE"><span class="pre">BaseRSE</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#replicas.Status" title="replicas.Status"><span class="pre">Status</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Status.UNREACHABLE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">inf</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/replicas.html#Replica"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.Replica" title="Link to this definition">¶</a></dt>
+<dd><p>Class representing a file replica, including its path and status.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="replicas.Replica.protocol">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">protocol</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#replicas.Replica.protocol" title="Link to this definition">¶</a></dt>
+<dd><p>Get the protocol of the replica’s path</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="replicas.RucioFinder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">RucioFinder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MetaRetriever</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/replicas.html#RucioFinder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.RucioFinder" title="Link to this definition">¶</a></dt>
+<dd><p>Class for managing asynchronous queries to the Rucio web API.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.RucioFinder.add_replica">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_replica</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile" title="merge_utils.merge_set.MergeFile"><span class="pre">MergeFile</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rse_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#RucioFinder.add_replica"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.RucioFinder.add_replica" title="Link to this definition">¶</a></dt>
+<dd><p>Add a replica to a MergeFile object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> – MergeFile object to add the replica to</p></li>
+<li><p><strong>path</strong> – file path for the replica</p></li>
+<li><p><strong>rse_name</strong> – RSE name for the replica</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.RucioFinder.checksum">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">checksum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile" title="merge_utils.merge_set.MergeFile"><span class="pre">MergeFile</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rucio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/replicas.html#RucioFinder.checksum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.RucioFinder.checksum" title="Link to this definition">¶</a></dt>
+<dd><p>Ensure file sizes and checksums from Rucio agree with the input metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> – MergeFile object to check</p></li>
+<li><p><strong>rucio</strong> – Rucio replicas dictionary</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if files match, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.RucioFinder.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#RucioFinder.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.RucioFinder.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Connect to the file source and rucio</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.RucioFinder.get_paths">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InputBatch</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/replicas.html#RucioFinder.get_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.RucioFinder.get_paths" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve paths for a specific batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>batch</strong> – InputBatch object containing files to retrieve paths for</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file path dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.RucioFinder.set_paths">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InputBatch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#RucioFinder.set_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.RucioFinder.set_paths" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously set paths for a specific batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> – InputBatch object containing files to process</p></li>
+<li><p><strong>paths</strong> – list of file path dictionaries from Rucio</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="replicas.RucioRSE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">RucioRSE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/replicas.html#RucioRSE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.RucioRSE" title="Link to this definition">¶</a></dt>
+<dd><p>Class to store information about a Rucio RSE</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.RucioRSE.set_distance">
+<span class="sig-name descname"><span class="pre">set_distance</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#RucioRSE.set_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.RucioRSE.set_distance" title="Link to this definition">¶</a></dt>
+<dd><p>Get the distance offset for this RSE from the config</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.RucioRSE.set_urls">
+<span class="sig-name descname"><span class="pre">set_urls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">protocols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/replicas.html#RucioRSE.set_urls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.RucioRSE.set_urls" title="Link to this definition">¶</a></dt>
+<dd><p>Get the URL prefixes for this RSE from the protocols list</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>protocols</strong> – list of protocol dictionaries from Rucio</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="replicas.Status">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">Status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/replicas.html#Status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.Status" title="Link to this definition">¶</a></dt>
+<dd><p>Enumeration of possible file statuses</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="replicas.Status.bad">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bad</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#replicas.Status.bad" title="Link to this definition">¶</a></dt>
+<dd><p>Return True if this status indicates a bad file replica</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="replicas.Status.good">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">good</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#replicas.Status.good" title="Link to this definition">¶</a></dt>
+<dd><p>Return True if this status indicates a good file replica</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="replicas.StatusMeta">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">StatusMeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bases</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classdict</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwds</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/replicas.html#StatusMeta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.StatusMeta" title="Link to this definition">¶</a></dt>
+<dd><p>Metaclass for Status enum to allow special handling of ‘ONLINE AND NEARLINE’ status.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="replicas.get">
+<span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MetaRetriever</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#replicas.PathFinder" title="replicas.PathFinder"><span class="pre">PathFinder</span></a></span></span><a class="reference internal" href="_modules/replicas.html#get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.get" title="Link to this definition">¶</a></dt>
+<dd><p>Create and return a physical path finder:
+PathListFinder if any data files were provided in files input mode
+PathListFinder if any search directories were provided in other input modes
+RucioFinder if no data files or search directories were provided</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>PathFinder object for finding file locations</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="replicas.get_host">
+<span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">get_host</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/replicas.html#get_host"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.get_host" title="Link to this definition">¶</a></dt>
+<dd><p>Extract the host from a URL or local file path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>url</strong> – URL of the form ‘protocol://host:port/path’, or a local file path</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>host from URL, or ‘local’ if it is a local file path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="replicas.get_path">
+<span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">get_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/replicas.html#get_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.get_path" title="Link to this definition">¶</a></dt>
+<dd><p>Extract the path from a URL or local file path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>url</strong> – URL of the form ‘protocol://host:port/path’, or a local file path</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>path from URL, or the original string if it is a local file path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="replicas.get_port">
+<span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">get_port</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/replicas.html#get_port"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.get_port" title="Link to this definition">¶</a></dt>
+<dd><p>Extract the port from a URL or local file path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>url</strong> – URL of the form ‘protocol://host:port/path’, or a local file path</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>port from URL, or None if it is a local file path or no port is specified</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="replicas.get_protocol">
+<span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">get_protocol</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/replicas.html#get_protocol"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.get_protocol" title="Link to this definition">¶</a></dt>
+<dd><p>Extract the protocol from a URL or local file path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>url</strong> – URL of the form ‘protocol://host:port/path’, or a local file path</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>protocol from URL, or ‘file’ if it is a local file path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="replicas.path_to_xrootd">
+<span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">path_to_xrootd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/replicas.html#path_to_xrootd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.path_to_xrootd" title="Link to this definition">¶</a></dt>
+<dd><p>Convert a local file path to an xrootd URL</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – local file path</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>xrootd URL corresponding to the local file path, or None if conversion fails</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="replicas.xrootd_to_path">
+<span class="sig-prename descclassname"><span class="pre">replicas.</span></span><span class="sig-name descname"><span class="pre">xrootd_to_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/replicas.html#xrootd_to_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.xrootd_to_path" title="Link to this definition">¶</a></dt>
+<dd><p>Convert an xrootd URL to a local file path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>url</strong> – xrootd URL</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>local file path corresponding to the xrootd URL, or None if conversion fails</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -54,6 +610,80 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">replicas</a><ul>
+<li><a class="reference internal" href="#replicas.BaseRSE"><code class="docutils literal notranslate"><span class="pre">BaseRSE</span></code></a><ul>
+<li><a class="reference internal" href="#replicas.BaseRSE.cache_local"><code class="docutils literal notranslate"><span class="pre">BaseRSE.cache_local()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.BaseRSE.cache_xrootd"><code class="docutils literal notranslate"><span class="pre">BaseRSE.cache_xrootd()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.BaseRSE.check"><code class="docutils literal notranslate"><span class="pre">BaseRSE.check()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.BaseRSE.check_cache"><code class="docutils literal notranslate"><span class="pre">BaseRSE.check_cache()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.BaseRSE.check_local"><code class="docutils literal notranslate"><span class="pre">BaseRSE.check_local()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.BaseRSE.check_xrootd"><code class="docutils literal notranslate"><span class="pre">BaseRSE.check_xrootd()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.BaseRSE.checksum_local"><code class="docutils literal notranslate"><span class="pre">BaseRSE.checksum_local()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.BaseRSE.checksum_xrootd"><code class="docutils literal notranslate"><span class="pre">BaseRSE.checksum_xrootd()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.BaseRSE.ping"><code class="docutils literal notranslate"><span class="pre">BaseRSE.ping()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.BaseRSE.xrdfs"><code class="docutils literal notranslate"><span class="pre">BaseRSE.xrdfs()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#replicas.GenericRSE"><code class="docutils literal notranslate"><span class="pre">GenericRSE</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathFinder"><code class="docutils literal notranslate"><span class="pre">PathFinder</span></code></a><ul>
+<li><a class="reference internal" href="#replicas.PathFinder.add_replica"><code class="docutils literal notranslate"><span class="pre">PathFinder.add_replica()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathFinder.check_replica"><code class="docutils literal notranslate"><span class="pre">PathFinder.check_replica()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathFinder.connect"><code class="docutils literal notranslate"><span class="pre">PathFinder.connect()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathFinder.disconnect"><code class="docutils literal notranslate"><span class="pre">PathFinder.disconnect()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathFinder.files"><code class="docutils literal notranslate"><span class="pre">PathFinder.files</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathFinder.get_metadata"><code class="docutils literal notranslate"><span class="pre">PathFinder.get_metadata()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathFinder.get_paths"><code class="docutils literal notranslate"><span class="pre">PathFinder.get_paths()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathFinder.input_batches"><code class="docutils literal notranslate"><span class="pre">PathFinder.input_batches()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathFinder.replica_checker"><code class="docutils literal notranslate"><span class="pre">PathFinder.replica_checker()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathFinder.set_paths"><code class="docutils literal notranslate"><span class="pre">PathFinder.set_paths()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#replicas.PathListFinder"><code class="docutils literal notranslate"><span class="pre">PathListFinder</span></code></a><ul>
+<li><a class="reference internal" href="#replicas.PathListFinder.add_replica"><code class="docutils literal notranslate"><span class="pre">PathListFinder.add_replica()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathListFinder.add_rse"><code class="docutils literal notranslate"><span class="pre">PathListFinder.add_rse()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathListFinder.connect"><code class="docutils literal notranslate"><span class="pre">PathListFinder.connect()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathListFinder.get_paths"><code class="docutils literal notranslate"><span class="pre">PathListFinder.get_paths()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.PathListFinder.set_paths"><code class="docutils literal notranslate"><span class="pre">PathListFinder.set_paths()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#replicas.Replica"><code class="docutils literal notranslate"><span class="pre">Replica</span></code></a><ul>
+<li><a class="reference internal" href="#replicas.Replica.protocol"><code class="docutils literal notranslate"><span class="pre">Replica.protocol</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#replicas.RucioFinder"><code class="docutils literal notranslate"><span class="pre">RucioFinder</span></code></a><ul>
+<li><a class="reference internal" href="#replicas.RucioFinder.add_replica"><code class="docutils literal notranslate"><span class="pre">RucioFinder.add_replica()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.RucioFinder.checksum"><code class="docutils literal notranslate"><span class="pre">RucioFinder.checksum()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.RucioFinder.connect"><code class="docutils literal notranslate"><span class="pre">RucioFinder.connect()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.RucioFinder.get_paths"><code class="docutils literal notranslate"><span class="pre">RucioFinder.get_paths()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.RucioFinder.set_paths"><code class="docutils literal notranslate"><span class="pre">RucioFinder.set_paths()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#replicas.RucioRSE"><code class="docutils literal notranslate"><span class="pre">RucioRSE</span></code></a><ul>
+<li><a class="reference internal" href="#replicas.RucioRSE.set_distance"><code class="docutils literal notranslate"><span class="pre">RucioRSE.set_distance()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.RucioRSE.set_urls"><code class="docutils literal notranslate"><span class="pre">RucioRSE.set_urls()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#replicas.Status"><code class="docutils literal notranslate"><span class="pre">Status</span></code></a><ul>
+<li><a class="reference internal" href="#replicas.Status.bad"><code class="docutils literal notranslate"><span class="pre">Status.bad</span></code></a></li>
+<li><a class="reference internal" href="#replicas.Status.good"><code class="docutils literal notranslate"><span class="pre">Status.good</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#replicas.StatusMeta"><code class="docutils literal notranslate"><span class="pre">StatusMeta</span></code></a></li>
+<li><a class="reference internal" href="#replicas.get"><code class="docutils literal notranslate"><span class="pre">get()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.get_host"><code class="docutils literal notranslate"><span class="pre">get_host()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.get_path"><code class="docutils literal notranslate"><span class="pre">get_path()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.get_port"><code class="docutils literal notranslate"><span class="pre">get_port()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.get_protocol"><code class="docutils literal notranslate"><span class="pre">get_protocol()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.path_to_xrootd"><code class="docutils literal notranslate"><span class="pre">path_to_xrootd()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.xrootd_to_path"><code class="docutils literal notranslate"><span class="pre">xrootd_to_path()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="naming.html"

@@ -42,236 +42,11 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span><span class="p">,</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">__version__</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span><span class="p">,</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">naming</span><span class="p">,</span> <span class="n">config_keys</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-
-<div class="viewcode-block" id="MetaNameDict">
-<a class="viewcode-back" href="../meta.html#meta.MetaNameDict">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MetaNameDict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrapper class to access metadata dictionary.&quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialize the MetaNameDict with a metadata dictionary.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">metadata</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
-
-<div class="viewcode-block" id="MetaNameDict.get">
-<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.get">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get a metadata value by key.</span>
-
-<span class="sd">        :param key: metadata key</span>
-<span class="sd">        :param default: default value if key not found</span>
-<span class="sd">        :return: metadata value</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="MetaNameDict.MetaVal">
-<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.MetaVal">[docs]</a>
-    <span class="k">class</span><span class="w"> </span><span class="nc">MetaVal</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class to read metadata values.&quot;&quot;&quot;</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="n">meta</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">key</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="o">=</span> <span class="n">idx</span>
-
-        <span class="nd">@property</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Get the metadata key.</span>
-
-<span class="sd">            :return: metadata key</span>
-<span class="sd">            &quot;&quot;&quot;</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="si">}</span><span class="s2">[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="si">}</span><span class="s2">]&quot;</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span>
-
-<div class="viewcode-block" id="MetaNameDict.MetaVal.read_list">
-<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.MetaVal.read_list">[docs]</a>
-        <span class="k">def</span><span class="w"> </span><span class="nf">read_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">any</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Try to extract a value from a list.</span>
-<span class="sd">            </span>
-<span class="sd">            :param data: list of data</span>
-<span class="sd">            :return: extracted value</span>
-<span class="sd">            &quot;&quot;&quot;</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-                    <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="p">]</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; index out of range&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">idx</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="k">else</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)]</span>
-                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-                        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
-                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-                        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">idx</span><span class="p">[</span><span class="mi">2</span><span class="p">])]</span>
-                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-                    <span class="k">pass</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; has invalid slice&quot;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; has invalid index&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="kc">None</span></div>
-
-
-<div class="viewcode-block" id="MetaNameDict.MetaVal.read_dict">
-<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.MetaVal.read_dict">[docs]</a>
-        <span class="k">def</span><span class="w"> </span><span class="nf">read_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">any</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Try to extract a value from a dictionary.</span>
-<span class="sd">            </span>
-<span class="sd">            :param data: dictionary of data</span>
-<span class="sd">            :return: extracted value</span>
-<span class="sd">            &quot;&quot;&quot;</span>
-            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span>
-            <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">key</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">):</span>
-                <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="k">elif</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">key</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">):</span>
-                <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; has invalid index&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">val</span></div>
-
-
-        <span class="nd">@property</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">any</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Get the metadata value.</span>
-
-<span class="sd">            :return: metadata value</span>
-<span class="sd">            &quot;&quot;&quot;</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;$&#39;</span><span class="p">):</span>
-                <span class="n">val</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="kc">None</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Environment variable &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="si">}</span><span class="s2">&#39; not found&quot;</span><span class="p">)</span>
-                <span class="k">return</span> <span class="n">val</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="si">}</span><span class="s2">&#39; not found&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-                    <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_list</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                    <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_dict</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-                <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="s1">&#39;__getitem__&#39;</span><span class="p">):</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="p">]</span>
-                    <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; has invalid index&quot;</span><span class="p">)</span>
-                        <span class="n">val</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="si">}</span><span class="s2">&#39; is not subscriptable&quot;</span><span class="p">)</span>
-                    <span class="n">val</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">return</span> <span class="n">val</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="fm">__format__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">):</span>
-            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span>
-            <span class="c1">#logger.debug(&quot;Formatting metadata key &#39;%s&#39; with spec &#39;%s&#39;&quot;, key, format_spec)</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
-            <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">format_spec</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">format_spec</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
-                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                <span class="c1"># Apply specific abbreviations</span>
-                <span class="n">val</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;abbreviations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
-                <span class="c1"># Remove known extensions</span>
-                <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;abbreviations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;extensions&#39;</span><span class="p">,</span> <span class="p">[]):</span>
-                    <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;.</span><span class="si">{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">):</span>
-                        <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">[:</span><span class="o">-</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
-                        <span class="k">break</span>
-            <span class="c1"># Apply formatting</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">output</span> <span class="o">=</span> <span class="nb">format</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">)</span>
-            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to format key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; (</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s2">) with spec &#39;</span><span class="si">{</span><span class="n">format_spec</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
-                <span class="p">)</span>
-                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">format_spec</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
-            <span class="c1"># Apply general substitutions</span>
-            <span class="k">for</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;abbreviations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;substitutions&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="n">output</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">output</span></div>
-
-
-<div class="viewcode-block" id="MetaNameDict.MetaKey">
-<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.MetaKey">[docs]</a>
-    <span class="k">class</span><span class="w"> </span><span class="nc">MetaKey</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class to parse metadata keys.&quot;&quot;&quot;</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="n">meta</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">key</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaKey</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="fm">__format__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">):</span>
-            <span class="k">return</span> <span class="nb">format</span><span class="p">(</span><span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaVal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">),</span> <span class="n">format_spec</span><span class="p">)</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaVal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;$&#39;</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaVal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;TIMESTAMP&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">timestamp</span>
-        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;UUID&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">uuid</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;NAME&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">MetaNameDict</span><span class="o">.</span><span class="n">MetaKey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-
-<div class="viewcode-block" id="MetaNameDict.format">
-<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.format">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">template</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Format a string using the metadata dictionary.</span>
-
-<span class="sd">        :param template: template string</span>
-<span class="sd">        :return: formatted string</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">output</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">format_map</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
-            <span class="n">errors</span> <span class="o">=</span> <span class="p">[</span><span class="n">output</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">errors</span>
-            <span class="k">if</span> <span class="n">strict</span><span class="p">:</span>
-                <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Failed to parse name template:&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
-                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Failed to parse name template:&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">return</span> <span class="n">output</span></div>
-
-
-<div class="viewcode-block" id="MetaNameDict.eval">
-<a class="viewcode-back" href="../meta.html#meta.MetaNameDict.eval">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">condition</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Evaluate a condition using the metadata dictionary.</span>
-
-<span class="sd">        :param condition: condition string to evaluate</span>
-<span class="sd">        :return: evaluated value</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span> <span class="c1">#pylint: disable=eval-used</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error evaluating condition (</span><span class="si">{</span><span class="n">condition</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
-        <span class="k">return</span> <span class="n">val</span></div>
-</div>
-
 
 <div class="viewcode-block" id="fix">
 <a class="viewcode-back" href="../meta.html#meta.fix">[docs]</a>
@@ -284,26 +59,24 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">fixes</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="c1"># Fix misspelled keys</span>
-    <span class="k">for</span> <span class="n">bad_key</span><span class="p">,</span> <span class="n">good_key</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;fixes&#39;</span><span class="p">][</span><span class="s1">&#39;keys&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">bad_key</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
-            <span class="n">fixes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Key &#39;</span><span class="si">{</span><span class="n">bad_key</span><span class="si">}</span><span class="s2">&#39; -&gt; &#39;</span><span class="si">{</span><span class="n">good_key</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-            <span class="n">metadata</span><span class="p">[</span><span class="n">good_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">bad_key</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">replacement</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">fixes</span><span class="o">.</span><span class="n">bad_keys</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+            <span class="n">fixes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; -&gt; &#39;</span><span class="si">{</span><span class="n">replacement</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="n">metadata</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">replacement</span><span class="p">)]</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 
     <span class="c1"># Fix missing keys</span>
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;fixes&#39;</span><span class="p">][</span><span class="s1">&#39;missing&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">fixes</span><span class="o">.</span><span class="n">missing_keys</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
             <span class="n">fixes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; value None -&gt; &#39;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-            <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">_value</span> <span class="c1"># pylint: disable=protected-access</span>
 
     <span class="c1"># Fix misspelled values</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;fixes&#39;</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span> <span class="s1">&#39;missing&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
-            <span class="k">continue</span>
-        <span class="n">value</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;fixes&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]:</span>
-            <span class="n">new_value</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;fixes&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">][</span><span class="n">value</span><span class="p">]</span>
-            <span class="n">fixes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; value &#39;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39; -&gt; &#39;</span><span class="si">{</span><span class="n">new_value</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-            <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_value</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">replacements</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">fixes</span><span class="o">.</span><span class="n">bad_values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">replacement</span> <span class="o">=</span> <span class="n">replacements</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">replacement</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fixes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; value &#39;</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39; -&gt; &#39;</span><span class="si">{</span><span class="n">replacement</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">replacement</span><span class="o">.</span><span class="n">_value</span> <span class="c1"># pylint: disable=protected-access</span>
 
     <span class="k">if</span> <span class="n">fixes</span><span class="p">:</span>
         <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Applying </span><span class="si">{n}</span><span class="s2"> metadata fix</span><span class="si">{es}</span><span class="s2"> to file </span><span class="si">%s</span><span class="s2">:&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span> <span class="n">fixes</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span></div>
@@ -321,25 +94,26 @@
     <span class="n">errs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="c1"># Check for required keys</span>
     <span class="n">required</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;required&#39;</span><span class="p">]:</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">required</span><span class="p">]:</span>
         <span class="n">required</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;optional&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">optional</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing required key: </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># Check for conditionally required keys</span>
-    <span class="n">name_dict</span> <span class="o">=</span> <span class="n">MetaNameDict</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">condition</span><span class="p">,</span> <span class="n">keys</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;conditional&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">name_dict</span> <span class="o">=</span> <span class="n">naming</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">conditional</span><span class="p">:</span>
+        <span class="n">condition</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">cond</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">name_dict</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">condition</span><span class="p">):</span>
             <span class="c1">#logger.debug(&quot;Skipping condition: %s&quot;, condition)</span>
             <span class="k">continue</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Matched condition: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">required</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">required</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="n">required</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;optional&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">optional</span><span class="p">:</span>
                 <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing conditionally required key: </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> (from </span><span class="si">{</span><span class="n">condition</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">errs</span></div>
@@ -364,7 +138,7 @@
         <span class="n">errs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">check_required</span><span class="p">(</span><span class="n">metadata</span><span class="p">))</span>
 
     <span class="c1"># Check for restricted keys</span>
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">options</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;restricted&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">options</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">restricted</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
             <span class="k">continue</span>
         <span class="n">value</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -372,8 +146,8 @@
             <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid value for </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># Check value types</span>
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">expected_type</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;types&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;restricted&#39;</span><span class="p">]:</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">expected_type</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">restricted</span><span class="p">:</span>
             <span class="k">continue</span>
         <span class="n">value</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="n">type_name</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
@@ -382,7 +156,8 @@
         <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid type for </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> (expected </span><span class="si">{</span><span class="n">expected_type</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">errs</span><span class="p">:</span>
-        <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">][</span><span class="s1">&#39;invalid&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
+        <span class="n">crit</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">invalid</span> <span class="o">==</span> <span class="s1">&#39;quit&#39;</span>
+        <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span> <span class="k">if</span> <span class="n">crit</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span>
         <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> has </span><span class="si">{n}</span><span class="s2"> invalid metadata key</span><span class="si">{s}</span><span class="s2">:&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span> <span class="n">errs</span><span class="p">,</span> <span class="n">lvl</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">False</span>
 
@@ -609,49 +384,125 @@
 <span class="sd">    :return: dictionary of merging configuration keys</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">keys</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="n">__version__</span><span class="p">,</span>
-        <span class="s1">&#39;method&#39;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
-        <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">timestamp</span>
+        <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">version</span><span class="p">,</span>
+        <span class="s1">&#39;method&#39;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">method_name</span><span class="p">,</span>
+        <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">timestamp</span>
     <span class="p">}</span>
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;cmd&#39;</span><span class="p">,</span> <span class="s1">&#39;script&#39;</span><span class="p">,</span> <span class="s1">&#39;cfg&#39;</span><span class="p">]:</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">val</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;script&#39;</span><span class="p">,</span> <span class="s1">&#39;cfg&#39;</span><span class="p">]:</span>
-                <span class="n">val</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
             <span class="n">keys</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">,</span> <span class="s1">&#39;limit&#39;</span><span class="p">,</span> <span class="s1">&#39;tag&#39;</span><span class="p">,</span> <span class="s1">&#39;comment&#39;</span><span class="p">,</span> <span class="s1">&#39;query&#39;</span><span class="p">,</span> <span class="s1">&#39;dataset&#39;</span><span class="p">]:</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">,</span> <span class="s1">&#39;limit&#39;</span><span class="p">,</span> <span class="s1">&#39;tag&#39;</span><span class="p">,</span> <span class="s1">&#39;comment&#39;</span><span class="p">]:</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">val</span><span class="p">:</span>
             <span class="n">keys</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;query&#39;</span><span class="p">:</span>
+        <span class="n">keys</span><span class="p">[</span><span class="s1">&#39;query&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;dataset&#39;</span><span class="p">:</span>
+        <span class="n">keys</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">keys</span></div>
+
+
+<div class="viewcode-block" id="add_origin">
+<a class="viewcode-back" href="../meta.html#meta.add_origin">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_origin</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">app</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add origin information to the metadata dictionary for transform jobs.</span>
+
+<span class="sd">    :param metadata: metadata dictionary</span>
+<span class="sd">    :param app: name of the application</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get existing application information</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;core.application.name&#39;</span><span class="p">)</span>
+    <span class="n">ver</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;core.application.version&#39;</span><span class="p">)</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dune.config_file&#39;</span><span class="p">)</span> <span class="c1">#TODO: make sure this is correct for all applications</span>
+
+    <span class="c1"># If missing, should be raw data</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">tier</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;core.data_tier&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tier</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;raw&#39;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Transform job missing core.application.name for </span><span class="si">%s</span><span class="s2"> data!&quot;</span><span class="p">,</span> <span class="n">tier</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;names&#39;</span><span class="p">,</span> <span class="s1">&#39;versions&#39;</span><span class="p">,</span> <span class="s1">&#39;config_files&#39;</span><span class="p">]:</span>
+            <span class="n">full_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;origin.applications.</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="n">full_key</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Transform job missing core.application.name but has origin info!&quot;</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;origin.applications.names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;origin.applications.versions&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;origin.applications.config_files&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Add current application information</span>
+    <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;core.application&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">app</span>
+    <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;core.application.family&#39;</span><span class="p">],</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;core.application.name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;core.application.version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">dunesw_version</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="s2">&quot;Running a transform job without a config file!&quot;</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+    <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;dune.config_file&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">cfg</span><span class="p">)</span>
+
+    <span class="c1"># if there is no origin application then we&#39;re done</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Increment stage until we find a unique name</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;origin.applications.names&#39;</span><span class="p">,</span> <span class="p">[]))</span>
+    <span class="k">if</span> <span class="s1">&#39;origin.applications.versions&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+        <span class="n">names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;origin.applications.versions&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="k">if</span> <span class="s1">&#39;origin.applications.config_files&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+        <span class="n">names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;origin.applications.config_files&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+        <span class="n">stage</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="s1">&#39;_stage&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">stage</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_stage&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">stage</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">stage</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">while</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_stage</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">&quot;</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+            <span class="n">stage</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_stage</span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Add origin information</span>
+    <span class="k">if</span> <span class="s1">&#39;origin.applications.names&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;origin.applications.names&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;origin.applications.names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s1">&#39;origin.applications.versions&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;origin.applications.versions&#39;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ver</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;origin.applications.versions&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">ver</span><span class="p">}</span>
+    <span class="k">if</span> <span class="s1">&#39;origin.applications.config_files&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;origin.applications.config_files&#39;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">cfg</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;origin.applications.config_files&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">cfg</span><span class="p">}</span></div>
 
 
 <div class="viewcode-block" id="merged_keys">
 <a class="viewcode-back" href="../meta.html#meta.merged_keys">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">merged_keys</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">warn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">merged_keys</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">warn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Merge metadata from multiple files into a single dictionary.</span>
 
-<span class="sd">    :param files: set of files to merge</span>
+<span class="sd">    :param files: list of files to merge</span>
 <span class="sd">    :param warn: whether to warn about inconsistent metadata</span>
 <span class="sd">    :return: merged metadata</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">metadata</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span>
-        <span class="n">MERGE_META_CLASSES</span><span class="p">[</span><span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;merging&#39;</span><span class="p">][</span><span class="s1">&#39;default&#39;</span><span class="p">]]</span>
+        <span class="n">MERGE_META_CLASSES</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">])]</span>
     <span class="p">)</span>
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">mode</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;merging&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="s1">&#39;overrides&#39;</span><span class="p">]:</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">mode</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">merging</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span>
             <span class="k">continue</span>
-        <span class="k">if</span> <span class="n">mode</span> <span class="ow">in</span> <span class="n">MERGE_META_CLASSES</span><span class="p">:</span>
-            <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">MERGE_META_CLASSES</span><span class="p">[</span><span class="n">mode</span><span class="p">]()</span>
+        <span class="n">merge_class</span> <span class="o">=</span> <span class="n">MERGE_META_CLASSES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">mode</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">merge_class</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">merge_class</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">MergeMetaOverride</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;overrides&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">MergeMetaOverride</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">overrides</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">MergeMetaOverride</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>  <span class="c1"># pylint: disable=protected-access</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">merge_cfg_keys</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">metadata</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;merge.</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MergeMetaOverride</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;merge.</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MergeMetaOverride</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
 
-    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
@@ -660,6 +511,10 @@
             <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">warn</span><span class="p">]</span>
         <span class="p">)</span>
     <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">valid</span><span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">transform</span><span class="p">:</span>
+        <span class="n">add_origin</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">transform</span><span class="p">))</span>
+
     <span class="k">if</span> <span class="ow">not</span> <span class="n">validate</span><span class="p">(</span><span class="s2">&quot;output&quot;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">requirements</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Merged metadata is invalid, cannot continue!&quot;</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Merged metadata is invalid&quot;</span><span class="p">)</span>
@@ -668,58 +523,85 @@
 
 <div class="viewcode-block" id="parents">
 <a class="viewcode-back" href="../meta.html#meta.parents">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">parents</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">parents</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Retrieve all the parents from a set of files.</span>
 
-<span class="sd">    :param files: set of files to merge</span>
-<span class="sd">    :return: set of parents</span>
+<span class="sd">    :param files: list of files to merge</span>
+<span class="sd">    :return: list of parent dictionaries of the form {&quot;fid&quot;: fid}</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;grandparents&#39;</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">grandparents</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Listing direct parents&quot;</span><span class="p">)</span>
-        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">fid</span><span class="p">:</span>
-                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;fid&#39;</span><span class="p">:</span> <span class="n">file</span><span class="o">.</span><span class="n">fid</span><span class="p">})</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;namespace&quot;</span><span class="p">:</span> <span class="n">file</span><span class="o">.</span><span class="n">namespace</span><span class="p">})</span>
-        <span class="k">return</span> <span class="n">output</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Listing grandparents instead of direct parents&quot;</span><span class="p">)</span>
-    <span class="n">grandparents</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-        <span class="k">for</span> <span class="n">grandparent</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
-            <span class="n">grandparents</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">grandparent</span><span class="o">.</span><span class="n">items</span><span class="p">())))</span>
-    <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">grandparents</span><span class="p">]</span></div>
+        <span class="n">fids</span> <span class="o">=</span> <span class="p">{</span><span class="n">file</span><span class="o">.</span><span class="n">fid</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Listing grandparents instead of direct parents&quot;</span><span class="p">)</span>
+        <span class="n">fids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="n">fids</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">parents</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[{</span><span class="s2">&quot;fid&quot;</span><span class="p">:</span> <span class="n">fid</span><span class="p">}</span> <span class="k">for</span> <span class="n">fid</span> <span class="ow">in</span> <span class="n">fids</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="match_method">
 <a class="viewcode-back" href="../meta.html#meta.match_method">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">match_method</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">match_method</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">config</span><span class="o">.</span><span class="n">ConfigDict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Find a built-in merging method by name or metadata conditions.</span>
 
 <span class="sd">    :param name: name of the merging method</span>
 <span class="sd">    :param metadata: metadata dictionary</span>
-<span class="sd">    :return: merging method dictionary</span>
+<span class="sd">    :return: merging method ConfigDict</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Match by name</span>
     <span class="k">if</span> <span class="n">name</span><span class="p">:</span>
-        <span class="n">methods</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;methods&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">m</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">name</span><span class="p">]</span>
+        <span class="n">methods</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">standard_methods</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">method_name</span> <span class="o">==</span> <span class="n">name</span><span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">methods</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="n">methods</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
     <span class="c1"># Match by conditions</span>
     <span class="k">if</span> <span class="n">metadata</span><span class="p">:</span>
-        <span class="n">name_dict</span> <span class="o">=</span> <span class="n">MetaNameDict</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;methods&#39;</span><span class="p">]):</span>
-            <span class="n">condition</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cond&#39;</span><span class="p">,</span> <span class="s1">&#39;False&#39;</span><span class="p">)</span>
+        <span class="n">name_dict</span> <span class="o">=</span> <span class="n">naming</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">standard_methods</span><span class="p">):</span>
+            <span class="n">condition</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">cond</span>
             <span class="k">if</span> <span class="n">name_dict</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">condition</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">condition</span> <span class="o">==</span> <span class="s1">&#39;True&#39;</span><span class="p">:</span>
                     <span class="n">condition</span> <span class="o">=</span> <span class="s2">&quot;unconditional&quot;</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Auto-selected merging method &#39;</span><span class="si">%s</span><span class="s2">&#39; (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">method</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">condition</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Auto-selected merging method &#39;</span><span class="si">%s</span><span class="s2">&#39; (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">method</span><span class="o">.</span><span class="n">method_name</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">method</span>
     <span class="c1"># No match found</span>
     <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="set_method">
+<a class="viewcode-back" href="../meta.html#meta.set_method">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_method</span><span class="p">(</span><span class="n">method</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">ConfigDict</span><span class="p">,</span> <span class="n">warn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set merging method parameters.</span>
+
+<span class="sd">    :param method: merging method ConfigDict</span>
+<span class="sd">    :param warn: whether to warn about overriding existing method parameters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span> <span class="k">if</span> <span class="n">warn</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span>
+    <span class="n">explicit</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">method_name</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">method_name</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;script&#39;</span><span class="p">,</span> <span class="s1">&#39;cmd&#39;</span><span class="p">,</span> <span class="s1">&#39;cfg&#39;</span><span class="p">,</span> <span class="s1">&#39;transform&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="s2">&quot;Explicit value for merge.</span><span class="si">%s</span><span class="s2"> overrides </span><span class="si">%s</span><span class="s2"> default&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">method_name</span><span class="p">)</span>
+            <span class="n">explicit</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">method</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">dependencies</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="s2">&quot;Explicity adding merge.dependencies:</span><span class="se">\n</span><span class="s2">  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                       <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">dependencies</span><span class="p">))</span>
+        <span class="n">explicit</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">method</span><span class="o">.</span><span class="n">dependencies</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="s2">&quot;Explicit list of merge.outputs overrides </span><span class="si">%s</span><span class="s2"> default&quot;</span><span class="p">,</span> <span class="n">method_name</span><span class="p">)</span>
+        <span class="n">explicit</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">outputs</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">overrides</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">method</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">warn</span> <span class="ow">and</span> <span class="n">explicit</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Consider explicitly specifying a merging method instead of using &#39;auto&#39;!&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="set_method_auto">
@@ -734,52 +616,9 @@
     <span class="k">if</span> <span class="n">method</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Failed to auto-select a merging method!&quot;</span><span class="p">)</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
     <span class="c1"># Set merging method parameters</span>
-    <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">method</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
-    <span class="n">explicit</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;script&#39;</span><span class="p">,</span> <span class="s1">&#39;cmd&#39;</span><span class="p">,</span> <span class="s1">&#39;cfg&#39;</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Explicit value for merge.</span><span class="si">%s</span><span class="s2"> overrides </span><span class="si">%s</span><span class="s2"> default&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">method</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
-            <span class="n">explicit</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Explicity adding merge.dependencies:</span><span class="se">\n</span><span class="s2">  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
-                       <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]))</span>
-        <span class="n">explicit</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">method</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dependencies&#39;</span><span class="p">,</span> <span class="p">[]))</span>
-    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Explicit list of merge.outputs overrides </span><span class="si">%s</span><span class="s2"> default&quot;</span><span class="p">,</span> <span class="n">method</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
-        <span class="n">explicit</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;outputs&#39;</span><span class="p">,</span> <span class="p">[])</span>
-    <span class="k">if</span> <span class="n">explicit</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Consider specifying an explicity merging method instead of using &#39;auto&#39;!&quot;</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="set_method">
-<a class="viewcode-back" href="../meta.html#meta.set_method">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">set_method</span><span class="p">(</span><span class="n">method</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Set merging method parameters.</span>
-
-<span class="sd">    :param method: merging method dictionary</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using built-in merging method &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">method</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;script&#39;</span><span class="p">,</span> <span class="s1">&#39;cmd&#39;</span><span class="p">,</span> <span class="s1">&#39;cfg&#39;</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Explicit value for merge.</span><span class="si">%s</span><span class="s2"> overrides </span><span class="si">%s</span><span class="s2"> default&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">method</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Explicity adding merge.dependencies:</span><span class="se">\n</span><span class="s2">  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
-                       <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]))</span>
-    <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">method</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dependencies&#39;</span><span class="p">,</span> <span class="p">[]))</span>
-    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Explicit list of merge.outputs overrides </span><span class="si">%s</span><span class="s2"> default&quot;</span><span class="p">,</span> <span class="n">method</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;outputs&#39;</span><span class="p">,</span> <span class="p">[])</span></div>
+    <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">method_name</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">method_name</span>
+    <span class="n">set_method</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">warn</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="set_method_custom">
@@ -788,29 +627,25 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Set merging method parameters for a custom script.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
-    <span class="n">cmd</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;cmd&#39;</span><span class="p">)</span>
-    <span class="n">script</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;script&#39;</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">method_name</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">cmd</span>
+    <span class="n">script</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">script</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">script</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">cmd</span> <span class="ow">or</span> <span class="s1">&#39;</span><span class="si">{script}</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">cmd</span><span class="p">):</span>
         <span class="c1"># Assume the name is a script</span>
-        <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;script&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-        <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using custom merging method: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-
-    <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;cfg&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;dependencies&#39;</span><span class="p">,</span> <span class="p">[])</span>
-    <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;outputs&#39;</span><span class="p">,</span> <span class="p">[])</span></div>
+        <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">script</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">method_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using custom merging method: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="auto_output">
 <a class="viewcode-back" href="../meta.html#meta.auto_output">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">auto_output</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">auto_output</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Auto-generate an output file name with the same extension as the inputs, if needed.</span>
 
-<span class="sd">    :param files: set of files to merge</span>
+<span class="sd">    :param files: list of files to merge</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">:</span>
         <span class="k">return</span>
     <span class="n">extensions</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
@@ -819,7 +654,7 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Cannot determine extension for merged files!&quot;</span><span class="p">)</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">ext</span> <span class="o">=</span> <span class="n">extensions</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
-    <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2">name</span><span class="se">}}</span><span class="s2">_merged</span><span class="si">{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}]</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2">NAME</span><span class="se">}}</span><span class="s2">_merged_</span><span class="se">{{</span><span class="s2">UUID</span><span class="se">}}</span><span class="si">{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}]</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Auto-detected file extension &#39;</span><span class="si">%s</span><span class="s2">&#39; from input files&quot;</span><span class="p">,</span> <span class="n">ext</span><span class="p">)</span></div>
 
 
@@ -829,34 +664,39 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Log the final merging method configuration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;Final settings for merging method &#39;</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;:&quot;</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;cmd&#39;</span><span class="p">,</span> <span class="s1">&#39;script&#39;</span><span class="p">,</span> <span class="s1">&#39;cfg&#39;</span><span class="p">]:</span>
-        <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;Final settings for merging method &#39;</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">method_name</span><span class="si">}</span><span class="s2">&#39;:&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;cmd&#39;</span><span class="p">,</span> <span class="s1">&#39;script&#39;</span><span class="p">,</span> <span class="s1">&#39;cfg&#39;</span><span class="p">,</span> <span class="s1">&#39;transform&#39;</span><span class="p">]:</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;dependencies:&quot;</span><span class="p">)</span>
-    <span class="n">msg</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">dep</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]])</span>
+    <span class="n">msg</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">dep</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">dependencies</span><span class="p">])</span>
     <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;outputs:&quot;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="s1">&#39;rename&#39;</span> <span class="ow">in</span> <span class="n">output</span><span class="p">:</span>
-            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> (renamed from </span><span class="si">{</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;rename&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">rename</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">output</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (renamed from </span><span class="si">{</span><span class="n">output</span><span class="o">.</span><span class="n">rename</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;metadata&#39;</span> <span class="ow">in</span> <span class="n">output</span><span class="p">:</span>
-            <span class="n">msg</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;    </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
-        <span class="k">if</span> <span class="s1">&#39;method&#39;</span> <span class="ow">in</span> <span class="n">output</span><span class="p">:</span>
-            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    method: </span><span class="si">{</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">output</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    size: </span><span class="si">{</span><span class="n">output</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">size_min</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    size_min: </span><span class="si">{</span><span class="n">output</span><span class="o">.</span><span class="n">size_min</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">checklist</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    checklist: </span><span class="si">{</span><span class="n">output</span><span class="o">.</span><span class="n">checklist</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;    </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
+        <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">pass2</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    pass2 method: </span><span class="si">{</span><span class="n">output</span><span class="o">.</span><span class="n">pass2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="check_method">
 <a class="viewcode-back" href="../meta.html#meta.check_method">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">check_method</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_method</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check and set the merging method based on the input file metadata.</span>
 
-<span class="sd">    :param files: set of files to merge</span>
+<span class="sd">    :param files: list of files to merge</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Figure out merging method</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">method_name</span>
     <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
         <span class="n">set_method_auto</span><span class="p">(</span><span class="n">merged_keys</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">warn</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
     <span class="k">else</span><span class="p">:</span>
@@ -870,45 +710,57 @@
     <span class="c1"># Set the output file name if not provided</span>
     <span class="n">auto_output</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
 
-    <span class="c1"># Convert dependencies to a unique set of full paths</span>
-    <span class="n">dependencies</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;script&#39;</span><span class="p">]:</span>
-        <span class="n">dependencies</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">find_runner</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;script&#39;</span><span class="p">]))</span>
-    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;cfg&#39;</span><span class="p">]:</span>
-        <span class="n">dependencies</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">find_cfg</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;cfg&#39;</span><span class="p">]))</span>
-    <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]:</span>
-        <span class="n">dependencies</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">find_file</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="s2">&quot;src&quot;</span><span class="p">],</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-    <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dependencies</span><span class="p">)</span>
+    <span class="c1"># Locate full paths for any dependencies</span>
+    <span class="n">deps</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">script</span><span class="p">:</span>
+        <span class="n">deps</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">find_runner</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">script</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+        <span class="n">deps</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">find_cfg</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">cfg</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">dependencies</span><span class="p">:</span>
+        <span class="n">deps</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">find_file</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="s2">&quot;src&quot;</span><span class="p">],</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
     <span class="c1"># Check for issues with the merging command</span>
-    <span class="n">cmd</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;cmd&#39;</span><span class="p">]</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">cmd</span>
     <span class="k">if</span> <span class="n">cmd</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;script&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="s1">&#39;</span><span class="si">{script}</span><span class="s1">&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cmd</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">script</span> <span class="ow">and</span> <span class="s1">&#39;</span><span class="si">{script}</span><span class="s1">&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cmd</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Merging command does not call provided &#39;</span><span class="si">{script}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;cfg&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="s1">&#39;</span><span class="si">{cfg}</span><span class="s1">&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cmd</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s1">&#39;</span><span class="si">{cfg}</span><span class="s1">&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cmd</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Merging command does not use provided &#39;</span><span class="si">{cfg}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="s1">&#39;</span><span class="si">{inputs}</span><span class="s1">&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cmd</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Merging command does not specify &#39;</span><span class="si">{inputs}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">n_out</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;rename&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">output</span><span class="p">)</span>
+        <span class="n">n_out</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="o">.</span><span class="n">rename</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">n_out</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="s1">&#39;{output&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cmd</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Merging command does not specify &#39;</span><span class="si">{output}</span><span class="s2">&#39; (or &#39;</span><span class="si">{outputs[#]}</span><span class="s2">&#39;)&quot;</span><span class="p">)</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-    <span class="c1"># Make sure stage-2 merging only produces 1 output</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">output</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]):</span>
-        <span class="k">if</span> <span class="s1">&#39;method&#39;</span> <span class="ow">in</span> <span class="n">output</span><span class="p">:</span>
-            <span class="n">method2</span> <span class="o">=</span> <span class="n">match_method</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">])</span>
+    <span class="c1"># Check for issues with the merging outputs, and add any additional dependencies</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Single output with metadata, adding to general metadata overrides&quot;</span><span class="p">)</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">overrides</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">output</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">checklist</span> <span class="ow">and</span> <span class="n">output</span><span class="o">.</span><span class="n">checklist</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;skip&#39;</span><span class="p">,</span> <span class="s1">&#39;auto&#39;</span><span class="p">]:</span>
+            <span class="n">deps</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">find_file</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">checklist</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="s2">&quot;src&quot;</span><span class="p">],</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">pass2</span><span class="p">:</span>
+            <span class="n">method2</span> <span class="o">=</span> <span class="n">match_method</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">output</span><span class="o">.</span><span class="n">pass2</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">method2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Output </span><span class="si">%d</span><span class="s2"> has unknown merging method &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">])</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Output </span><span class="si">%d</span><span class="s2"> has unknown merging method &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">method</span><span class="p">)</span>
                 <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">method2</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">method2</span><span class="o">.</span><span class="n">outputs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Output </span><span class="si">%d</span><span class="s2"> merging method &#39;</span><span class="si">%s</span><span class="s2">&#39; must produce exactly 1 output!&quot;</span><span class="p">,</span>
-                                <span class="n">idx</span><span class="p">,</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">])</span>
+                                <span class="n">idx</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">method</span><span class="p">)</span>
                 <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">method2</span><span class="o">.</span><span class="n">script</span><span class="p">:</span>
+                <span class="n">deps</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">find_runner</span><span class="p">(</span><span class="n">method2</span><span class="o">.</span><span class="n">script</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">method2</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+                <span class="n">deps</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">find_cfg</span><span class="p">(</span><span class="n">method2</span><span class="o">.</span><span class="n">cfg</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Output </span><span class="si">%d</span><span class="s2"> must specify a merging method for stage-2 merges!&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Convert dependencies set back to a list and store in config</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">dependencies</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">deps</span><span class="p">)</span>
 
     <span class="c1"># Log final merging method configuration</span>
     <span class="n">log_method</span><span class="p">()</span></div>
@@ -916,32 +768,66 @@
 
 <div class="viewcode-block" id="make_names">
 <a class="viewcode-back" href="../meta.html#meta.make_names">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">make_names</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_names</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Update merging method and create a name for the merged files.</span>
 
-<span class="sd">    :param files: set of files to merge</span>
-<span class="sd">    :return: merged file name</span>
+<span class="sd">    :param files: list of files to merge</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">check_method</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
     <span class="n">metadata</span> <span class="o">=</span> <span class="n">merged_keys</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">warn</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># recalculate with correct method settings</span>
     <span class="c1"># Set output namespaces if they are not given</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;namespace&#39;</span><span class="p">):</span>
-        <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">files</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span><span class="o">.</span><span class="n">namespace</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;scratch&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;namespace&#39;</span><span class="p">):</span>
-        <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;scratch&#39;</span><span class="p">][</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span>
-    <span class="n">name_dict</span> <span class="o">=</span> <span class="n">MetaNameDict</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="n">name_dict</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
-    <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-    <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]:</span>
-        <span class="c1">#name, ext = os.path.splitext(name_dict.format(output[&#39;name&#39;]))</span>
-        <span class="c1">#output[&#39;name&#39;] = f&quot;{name}_{config.timestamp}{ext}&quot;</span>
-        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name_dict</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">namespace</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">namespace</span> <span class="o">=</span> <span class="n">files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">namespace</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">scratch</span><span class="o">.</span><span class="n">namespace</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">scratch</span><span class="o">.</span><span class="n">namespace</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">namespace</span>
+    <span class="c1"># Format output file names</span>
+    <span class="n">formatter</span> <span class="o">=</span> <span class="n">naming</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;</span><span class="si">{UUID}</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">{UUID}</span><span class="s2"> should go in merging.method.outputs, not output.name&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">formatter</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">output</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Formatting output </span><span class="si">%d</span><span class="s2"> name: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">missing_field</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;</span><span class="si">{NAME}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{UUID}</span><span class="s1">&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Output </span><span class="si">%d</span><span class="s2"> name must contain &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+                <span class="n">missing_field</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">missing_field</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">formatter</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">defer_uuid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span>
         <span class="s2">&quot;Output file name</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span>
-        <span class="p">[</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">merging</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]],</span>
+        <span class="p">[</span><span class="n">output</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">],</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span>
-    <span class="p">)</span></div>
+    <span class="p">)</span>
+    <span class="c1"># Format any other strings in the config that may use metadata keys</span>
+    <span class="k">while</span> <span class="n">config_keys</span><span class="o">.</span><span class="n">string_keys</span><span class="p">:</span>
+        <span class="n">key_name</span> <span class="o">=</span> <span class="n">config_keys</span><span class="o">.</span><span class="n">string_keys</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;method.cmd&#39;</span><span class="p">,</span> <span class="s1">&#39;standard_methods&#39;</span><span class="p">,</span> <span class="s1">&#39;naming&#39;</span><span class="p">,</span> <span class="s1">&#39;metadata&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
+                <span class="n">skip</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">skip</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_key</span><span class="p">(</span><span class="n">key_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">formatter</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="c1"># Check output file metadata for validity</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">output</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Skipping output </span><span class="si">%d</span><span class="s2"> metadata validation (no metadata)&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Validating output </span><span class="si">%d</span><span class="s2"> metadata (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="n">out_meta</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">out_meta</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">validate</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;output </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">out_meta</span><span class="p">,</span> <span class="n">requirements</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Output </span><span class="si">%d</span><span class="s2"> metadata is invalid, cannot continue!&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2"> metadata is invalid&quot;</span><span class="p">)</span></div>
 
 </pre></div>
 

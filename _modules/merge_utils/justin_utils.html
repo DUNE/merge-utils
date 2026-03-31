@@ -36,29 +36,63 @@
           <div class="body" role="main">
             
   <h1>Source code for merge_utils.justin_utils</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Utilities for running justin jobs&quot;&quot;&quot;</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+<span></span><span class="sd">&quot;&quot;&quot;Utility functions for interacting with the JustIN web API.&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">csv</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 
-<span class="n">SITES_STORAGES_URL</span> <span class="o">=</span> <span class="s2">&quot;https://justin-ui-fnal.dune.hep.ac.uk/api/info/sites_storages.csv&quot;</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
 
-<div class="viewcode-block" id="get_distances">
-<a class="viewcode-back" href="../../justin_utils.html#merge_utils.justin_utils.get_distances">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_distances</span><span class="p">(</span><span class="n">sites</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">rses</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the distances between sites and storage elements&quot;&quot;&quot;</span>
-    <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">,</span> <span class="s1">&#39;rse&#39;</span><span class="p">,</span> <span class="s1">&#39;dist&#39;</span><span class="p">,</span> <span class="s1">&#39;site_enabled&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_read&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_write&#39;</span><span class="p">]</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">SITE_STORAGE_URL</span> <span class="o">=</span> <span class="s2">&quot;/api/info/sites_storages.csv&quot;</span>
+
+<div class="viewcode-block" id="get_site_rse_distances">
+<a class="viewcode-back" href="../../justin_utils.html#merge_utils.justin_utils.get_site_rse_distances">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_site_rse_distances</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieve site-RSE distances from the JustIN web API.</span>
+<span class="sd">    Adds site distance offsets from the config</span>
+<span class="sd">    Does NOT add RSE distance offsets, since those are already accounted for by the PathFinder</span>
+
+<span class="sd">    :return: dictionary of {rse: {site: distance}} for all reachable site-RSE pairs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Query JustIN for site-RSE distances</span>
+    <span class="n">full_url</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">justin_url</span><span class="p">)</span> <span class="o">+</span> <span class="n">SITE_STORAGE_URL</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">full_url</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+        <span class="n">connected</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">ok</span>
+    <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">ConnectionError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;JustIN connection error: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+        <span class="n">connected</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">connected</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="c1"># Parse the CSV response</span>
     <span class="n">distances</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SITES_STORAGES_URL</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-    <span class="n">text</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">iter_lines</span><span class="p">(</span><span class="n">decode_unicode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">iter_lines</span><span class="p">(</span><span class="n">decode_unicode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">,</span> <span class="s1">&#39;rse&#39;</span><span class="p">,</span> <span class="s1">&#39;dist&#39;</span><span class="p">,</span> <span class="s1">&#39;site_enabled&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_read&#39;</span><span class="p">,</span> <span class="s1">&#39;rse_write&#39;</span><span class="p">]</span>
     <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">fields</span><span class="p">)</span>
+    <span class="n">default_dist</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">site_distances</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site_enabled&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse_read&#39;</span><span class="p">]:</span>
+        <span class="c1"># Skip disabled sites and RSEs with no read/write access</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site_enabled&#39;</span><span class="p">]:</span>
             <span class="k">continue</span>
-        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sites</span> <span class="ow">or</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rses</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse_read&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse_write&#39;</span><span class="p">]:</span>
             <span class="k">continue</span>
-        <span class="n">distances</span><span class="p">[(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">])]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dist&#39;</span><span class="p">])</span>
+        <span class="c1"># Get site distance offset</span>
+        <span class="n">site</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
+        <span class="n">site_dist</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">site_distances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="n">default_dist</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">site_dist</span> <span class="o">&gt;</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">max_distance</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="c1"># Get total distance</span>
+        <span class="n">distance</span> <span class="o">=</span> <span class="mi">100</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dist&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="n">site_dist</span>
+        <span class="n">rse</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">rse</span> <span class="ow">in</span> <span class="n">distances</span><span class="p">:</span>
+            <span class="n">distances</span><span class="p">[</span><span class="n">rse</span><span class="p">][</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">distance</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">distances</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">site</span><span class="p">:</span> <span class="n">distance</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">distances</span></div>
 
 </pre></div>

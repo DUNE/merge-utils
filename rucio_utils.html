@@ -43,8 +43,70 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="rucio-utils">
-<h1>rucio_utils<a class="headerlink" href="#rucio-utils" title="Link to this heading">¶</a></h1>
+  <section id="module-merge_utils.rucio_utils">
+<span id="rucio-utils"></span><h1>rucio_utils<a class="headerlink" href="#module-merge_utils.rucio_utils" title="Link to this heading">¶</a></h1>
+<p>Utility functions for interacting with the Rucio web API.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RucioWrapper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.rucio_utils.</span></span><span class="sig-name descname"><span class="pre">RucioWrapper</span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RucioWrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RucioWrapper" title="Link to this definition">¶</a></dt>
+<dd><p>Class for sending asynchronous requests to the Rucio web API.</p>
+<p>Initialize the RucioWrapper.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RucioWrapper.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RucioWrapper.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RucioWrapper.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Connect to the Rucio web API</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RucioWrapper.disconnect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">disconnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RucioWrapper.disconnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RucioWrapper.disconnect" title="Link to this definition">¶</a></dt>
+<dd><p>No need to explicitly disconnect from Rucio?</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RucioWrapper.get_replicas">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_replicas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RucioWrapper.get_replicas"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RucioWrapper.get_replicas" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve replicas for a specific batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>files</strong> – list of files to retrieve paths for</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file path dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RucioWrapper.get_rse">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_rse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RucioWrapper.get_rse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RucioWrapper.get_rse" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve information for a specific RSEfrom Rucio.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> – name of the RSE to retrieve</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dictionary of RSE attributes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.rucio_utils.RucioWrapper.get_rses">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_rses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">detailed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AsyncGenerator</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/merge_utils/rucio_utils.html#RucioWrapper.get_rses"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.rucio_utils.RucioWrapper.get_rses" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve information for all RSEs from Rucio.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>detailed</strong> – whether to include detailed RSE information</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dictionary of RSE attributes for each RSE</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
 
@@ -54,6 +116,23 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">rucio_utils</a><ul>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RucioWrapper"><code class="docutils literal notranslate"><span class="pre">RucioWrapper</span></code></a><ul>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RucioWrapper.connect"><code class="docutils literal notranslate"><span class="pre">RucioWrapper.connect()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RucioWrapper.disconnect"><code class="docutils literal notranslate"><span class="pre">RucioWrapper.disconnect()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RucioWrapper.get_replicas"><code class="docutils literal notranslate"><span class="pre">RucioWrapper.get_replicas()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RucioWrapper.get_rse"><code class="docutils literal notranslate"><span class="pre">RucioWrapper.get_rse()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.rucio_utils.RucioWrapper.get_rses"><code class="docutils literal notranslate"><span class="pre">RucioWrapper.get_rses()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="retriever.html"

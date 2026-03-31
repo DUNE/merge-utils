@@ -41,121 +41,167 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">fnmatch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span>
-
-<span class="n">DEFAULT_CONFIG</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;defaults/metadata.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;defaults/defaults.yaml&quot;</span><span class="p">]</span>
-
-<span class="c1"># Configuration dictionaries</span>
-<span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">output</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">validation</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">sites</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">merging</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">timestamp</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">T%H%M%S&quot;</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">__version__</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.config_keys</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigKey</span><span class="p">,</span> <span class="n">ConfigDict</span><span class="p">,</span> <span class="n">ConfigMap</span><span class="p">,</span> <span class="n">ConfigList</span><span class="p">,</span> <span class="n">type_defs</span><span class="p">,</span> <span class="n">key_defs</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
+<span class="n">DEFAULT_CONFIG</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;defaults/metadata.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;defaults/defaults.yaml&quot;</span><span class="p">]</span>
+
+<span class="n">OInt</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+<span class="n">OStr</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<span class="n">OList</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span>
+
+<span class="c1"># Configuration dictionary</span>
+<span class="n">cfg_dict</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">()</span>
+
+<span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+<div class="viewcode-block" id="get_key">
+<a class="viewcode-back" href="../config.html#config.get_key">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_key</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConfigKey</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a config key by name&quot;&quot;&quot;</span>
+    <span class="n">remaining</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;.</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">obj</span> <span class="o">=</span> <span class="n">cfg_dict</span>
+    <span class="k">while</span> <span class="n">remaining</span><span class="p">:</span>
+        <span class="n">obj_name</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">_name</span> <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">_name</span> <span class="k">else</span> <span class="s2">&quot;root&quot;</span> <span class="c1"># pylint: disable=protected-access</span>
+        <span class="k">if</span> <span class="n">remaining</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">):</span>
+            <span class="n">dot_idx</span> <span class="o">=</span> <span class="n">remaining</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dot_idx</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">dot_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">remaining</span><span class="p">)</span>
+            <span class="n">sub_idx</span> <span class="o">=</span> <span class="n">remaining</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;[&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sub_idx</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">sub_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">remaining</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">dot_idx</span><span class="p">,</span> <span class="n">sub_idx</span><span class="p">)</span>
+            <span class="n">attr</span> <span class="o">=</span> <span class="n">remaining</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">remaining</span> <span class="o">=</span> <span class="n">remaining</span><span class="p">[</span><span class="n">idx</span><span class="p">:]</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Config key &#39;</span><span class="si">{</span><span class="n">obj_name</span><span class="si">}</span><span class="s2">&#39; has no member named &#39;</span><span class="si">{</span><span class="n">attr</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">remaining</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;]&#39;</span><span class="p">)</span>
+            <span class="n">attr</span> <span class="o">=</span> <span class="n">remaining</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">remaining</span> <span class="o">=</span> <span class="n">remaining</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ConfigMap</span><span class="p">):</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ConfigList</span><span class="p">):</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">attr</span><span class="p">)]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Config key &#39;</span><span class="si">{</span><span class="n">obj_name</span><span class="si">}</span><span class="s2">&#39; is not a collection and cannot be indexed&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">obj</span></div>
+
+
+<div class="viewcode-block" id="update">
+<a class="viewcode-back" href="../config.html#config.update">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Update the global configuration with values from the provided dictionary.</span>
+<span class="sd">    </span>
+<span class="sd">    :param file_name: Name of the configuration file.</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">read_config_file</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Check version compatibility</span>
+    <span class="n">ver</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;version&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ver</span> <span class="ow">and</span> <span class="n">ver</span> <span class="o">!=</span> <span class="n">__version__</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to load config file </span><span class="si">%s</span><span class="s2">: version mismatch (file: </span><span class="si">%s</span><span class="s2">, package: </span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
+                      <span class="n">file_name</span><span class="p">,</span> <span class="n">ver</span><span class="p">,</span> <span class="n">__version__</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;version&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span> <span class="c1"># pylint: disable=protected-access</span>
+        <span class="n">cfg_dict</span><span class="o">.</span><span class="n">_update</span><span class="p">({</span><span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="n">__version__</span><span class="p">})</span> <span class="c1"># pylint: disable=protected-access</span>
+    <span class="c1"># Update schema if provided</span>
+    <span class="n">schema</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;schema&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">schema</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">_locked</span><span class="p">:</span> <span class="c1"># pylint: disable=protected-access</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;User configuration files cannot change the config schema!&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">type_defs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type_defs&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+            <span class="n">key_defs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;key_defs&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+    <span class="c1"># Update configuration</span>
+    <span class="n">errors</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">_update</span><span class="p">(</span><span class="n">cfg</span><span class="p">))</span> <span class="c1"># pylint: disable=protected-access</span>
+    <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to load config file </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">,</span>
+                          <span class="n">errors</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="uuid">
 <a class="viewcode-back" href="../config.html#config.uuid">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">uuid</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a unique identifier based on the job tag and timestamp.&quot;&quot;&quot;</span>
-    <span class="n">tag</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;tag&#39;</span><span class="p">)</span>
-    <span class="n">skip</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;skip&#39;</span><span class="p">)</span>
-    <span class="n">limit</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;limit&#39;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">uuid</span><span class="p">(</span><span class="n">skip</span><span class="p">:</span> <span class="n">OInt</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="n">OInt</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">chunk</span><span class="p">:</span> <span class="n">OList</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a unique identifier based on the job tag and timestamp.</span>
+<span class="sd">    </span>
+<span class="sd">    :param skip: Number of initial entries to skip.</span>
+<span class="sd">    :param limit: Maximum number of entries to process.</span>
+<span class="sd">    :param chunk: Optional chunk id list to include in the UUID.</span>
+<span class="sd">    :return: Unique identifier string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">timestamp</span>
+    <span class="n">tag</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">tag</span>
+    <span class="k">if</span> <span class="n">skip</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">skip</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">skip</span>
+    <span class="k">if</span> <span class="n">limit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">limit</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">limit</span>
     <span class="n">pad</span> <span class="o">=</span> <span class="mi">6</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">timestamp</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="n">chunk</span><span class="p">:</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;c</span><span class="si">{</span><span class="s1">&#39;-&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="n">chunk</span><span class="p">))</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">out</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="k">if</span> <span class="n">limit</span><span class="p">:</span>
         <span class="n">out</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;l</span><span class="si">{</span><span class="n">limit</span><span class="si">:</span><span class="s2">0</span><span class="si">{</span><span class="n">pad</span><span class="si">}</span><span class="s2">d</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">out</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="k">if</span> <span class="n">skip</span><span class="p">:</span>
         <span class="n">out</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;s</span><span class="si">{</span><span class="n">skip</span><span class="si">:</span><span class="s2">0</span><span class="si">{</span><span class="n">pad</span><span class="si">}</span><span class="s2">d</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">out</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
         <span class="n">out</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">out</span><span class="si">}</span><span class="s2">&quot;</span>
+
     <span class="k">return</span> <span class="n">out</span></div>
 
 
-<div class="viewcode-block" id="update_list">
-<a class="viewcode-back" href="../config.html#config.update_list">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">update_list</span><span class="p">(</span><span class="n">old_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">new_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="set_host">
+<a class="viewcode-back" href="../config.html#config.set_host">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_host</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Append values from new_list to old_list.</span>
-<span class="sd">    Strings beginning with &#39;~&#39; are removed from old_list instead.</span>
-<span class="sd">    </span>
-<span class="sd">    :param old_list: List to be updated.</span>
-<span class="sd">    :param new_list: List with new values.</span>
+<span class="sd">    Set the host name in the configuration.</span>
+
 <span class="sd">    :return: None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Ensure new_list is a list</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-        <span class="n">new_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_list</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">new_list</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;~&quot;</span><span class="p">):</span>
-            <span class="c1"># Remove the value if it starts with &#39;~&#39;</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>  <span class="c1"># Remove the &#39;~&#39; prefix</span>
-            <span class="k">if</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">old_list</span><span class="p">:</span>
-                <span class="n">old_list</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">old_list</span><span class="p">:</span>
-            <span class="c1"># Add the value if it is not already in the old list</span>
-            <span class="n">old_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="update_dict">
-<a class="viewcode-back" href="../config.html#config.update_dict">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">update_dict</span><span class="p">(</span><span class="n">old_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">new_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Add key value pairs from new_dict to old_dict.</span>
-<span class="sd">    If a key in new_dict does not exist in old_dict, it is added.</span>
-<span class="sd">    If the value is a dict or list, the values are merged recursively.</span>
-<span class="sd">    If a key in new_dict starts with &#39;~&#39;, it overrides the value in old_dict instead.</span>
-<span class="sd">    If the value is None, the key is removed from old_dict instead.</span>
-<span class="sd">    </span>
-<span class="sd">    :param old_dict: Dictionary to be updated.</span>
-<span class="sd">    :param new_dict: Dictionary with new values.</span>
-<span class="sd">    :return: None</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">new_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">old_dict</span><span class="p">:</span>
-            <span class="c1"># If the value is None, remove the key from the old dictionary</span>
-            <span class="k">del</span> <span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="c1"># Match hostname against patterns in config, using longest pattern first</span>
+    <span class="n">hostname</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
+    <span class="n">hosts</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">hosts</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">pattern</span><span class="p">):</span>
             <span class="k">continue</span>
-        <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;~&quot;</span><span class="p">):</span>
-            <span class="c1"># If the key starts with &#39;~&#39;, override the value in old_dict</span>
-            <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>  <span class="c1"># Remove the &#39;~&#39; prefix</span>
-            <span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
-            <span class="k">continue</span>
-        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">old_dict</span><span class="p">:</span>
-            <span class="c1"># If the key does not exist in the old dictionary, add it</span>
-            <span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
-            <span class="k">continue</span>
-        <span class="n">old_val</span> <span class="o">=</span> <span class="n">old_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">old_val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-            <span class="c1"># If both are dictionaries, recursively update</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                <span class="n">update_dict</span><span class="p">(</span><span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">val</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">old_val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="c1"># If the old value is a list, extend it with the new value</span>
-            <span class="n">update_list</span><span class="p">(</span><span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">val</span><span class="p">)</span>
+        <span class="c1"># We have a match</span>
+        <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span><span class="p">:</span>
+            <span class="c1"># If a local site is already configured, check for agreement</span>
+            <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span> <span class="o">!=</span> <span class="n">site</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">match</span> <span class="o">=</span> <span class="n">site</span>
+                <span class="k">continue</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Configured local site </span><span class="si">%s</span><span class="s2"> matches host &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">hostname</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">old_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span></div>
-
-
-<div class="viewcode-block" id="update">
-<a class="viewcode-back" href="../config.html#config.update">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Update the global configuration with values from the provided dictionary.</span>
-<span class="sd">    </span>
-<span class="sd">    :param cfg: Dictionary containing new configuration values.</span>
-<span class="sd">    :return: None</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">update_dict</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{}))</span>
-    <span class="n">update_dict</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;inputs&quot;</span><span class="p">,</span> <span class="p">{}))</span>
-    <span class="n">update_dict</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output&quot;</span><span class="p">,</span> <span class="p">{}))</span>
-    <span class="n">update_dict</span><span class="p">(</span><span class="n">validation</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;validation&quot;</span><span class="p">,</span> <span class="p">{}))</span>
-    <span class="n">update_dict</span><span class="p">(</span><span class="n">sites</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sites&quot;</span><span class="p">,</span> <span class="p">{}))</span>
-    <span class="n">update_dict</span><span class="p">(</span><span class="n">merging</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;merging&quot;</span><span class="p">,</span> <span class="p">{}))</span></div>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Selected local site &#39;</span><span class="si">%s</span><span class="s2">&#39; based on host &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">hostname</span><span class="p">)</span>
+            <span class="n">cfg_dict</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">site</span>
+        <span class="k">return</span>
+    <span class="c1"># See if we have a match that doesn&#39;t agree with the configured local site</span>
+    <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Configured local site </span><span class="si">%s</span><span class="s2"> does not match site </span><span class="si">%s</span><span class="s2"> for host &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span>
+                     <span class="n">cfg_dict</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span><span class="p">,</span> <span class="n">match</span><span class="p">,</span> <span class="n">hostname</span><span class="p">)</span>
+    <span class="c1"># If we have a configured local site but no match, warn about potential misconfiguration</span>
+    <span class="k">elif</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Configured local site </span><span class="si">%s</span><span class="s2"> does not match unknown host &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span>
+                       <span class="n">cfg_dict</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span><span class="p">,</span> <span class="n">hostname</span><span class="p">)</span>
+    <span class="c1"># No match found</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No local site available for unknown host &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">hostname</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="check_environment">
@@ -166,47 +212,238 @@
 
 <span class="sd">    :return: None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="s1">&#39;dune_version&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">merging</span> <span class="ow">or</span> <span class="n">merging</span><span class="p">[</span><span class="s1">&#39;dune_version&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">merging</span><span class="p">[</span><span class="s1">&#39;dune_version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;DUNE_VERSION&#39;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="s1">&#39;dune_qualifier&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">merging</span> <span class="ow">or</span> <span class="n">merging</span><span class="p">[</span><span class="s1">&#39;dune_qualifier&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">merging</span><span class="p">[</span><span class="s1">&#39;dune_qualifier&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;DUNE_QUALIFIER&#39;</span><span class="p">)</span></div>
+    <span class="c1"># Get DUNE SW version</span>
+    <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">dunesw_version</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using DUNE SW version: </span><span class="si">%s</span><span class="s2"> (from cfg)&quot;</span><span class="p">,</span>
+                    <span class="n">cfg_dict</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">dunesw_version</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ver</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;DUNESW_VERSION&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ver</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;DUNE_VERSION&#39;</span><span class="p">)</span>
+        <span class="n">cfg_dict</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">dunesw_version</span> <span class="o">=</span> <span class="n">ver</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using DUNE SW version: </span><span class="si">%s</span><span class="s2"> (from env)&quot;</span><span class="p">,</span> <span class="n">ver</span><span class="p">)</span>
+    <span class="c1"># Get DUNE SW qualifier</span>
+    <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">dunesw_qualifier</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using DUNE qualifier: </span><span class="si">%s</span><span class="s2"> (from cfg)&quot;</span><span class="p">,</span>
+                    <span class="n">cfg_dict</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">dunesw_qualifier</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">qual</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;DUNE_QUALIFIER&#39;</span><span class="p">)</span>
+        <span class="n">cfg_dict</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">dunesw_qualifier</span> <span class="o">=</span> <span class="n">qual</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using DUNE qualifier: </span><span class="si">%s</span><span class="s2"> (from env)&quot;</span><span class="p">,</span> <span class="n">qual</span><span class="p">)</span>
+    <span class="c1"># Get any additional environment variables specified in the config</span>
+    <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">vars</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">val</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using env var </span><span class="si">%s</span><span class="s2">=</span><span class="si">%s</span><span class="s2"> (from cfg)&quot;</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Missing required environment variable: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">cfg_dict</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">vars</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using env var </span><span class="si">%s</span><span class="s2">=</span><span class="si">%s</span><span class="s2"> (from env)&quot;</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="set_error_handling">
+<a class="viewcode-back" href="../config.html#config.set_error_handling">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_error_handling</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply default error handling settings to any errors set to &#39;default&#39; in the configuration.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">default</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">default</span>
+    <span class="k">for</span> <span class="n">err</span><span class="p">,</span> <span class="n">handling</span> <span class="ow">in</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># Don&#39;t try to apply default error handling to itself</span>
+        <span class="k">if</span> <span class="n">err</span> <span class="o">==</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="c1"># Skip errors that aren&#39;t defaultable</span>
+        <span class="k">if</span> <span class="s1">&#39;default&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">handling</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">handling</span> <span class="o">==</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span>
+            <span class="n">cfg_dict</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="p">[</span><span class="n">err</span><span class="p">]</span> <span class="o">=</span> <span class="n">default</span></div>
+
+
+<div class="viewcode-block" id="custom_serializer">
+<a class="viewcode-back" href="../config.html#config.custom_serializer">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">custom_serializer</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Custom JSON serializer for ConfigKey objects.</span>
+<span class="sd">    </span>
+<span class="sd">    :param obj: Object to serialize.</span>
+<span class="sd">    :return: JSON-serializable representation of the object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ConfigKey</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">_json</span><span class="p">()</span> <span class="c1"># pylint: disable=protected-access</span>
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Object of type </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is not JSON serializable&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="dump">
+<a class="viewcode-back" href="../config.html#config.dump">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dump</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Dump the current configuration to the tmp directory or stdout.</span>
+
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dest</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span>
+    <span class="n">json_dump</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">cfg_dict</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">custom_serializer</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dest</span><span class="p">:</span>
+        <span class="n">dest</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">dest</span><span class="p">),</span> <span class="s1">&#39;config.json&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Config written to:</span><span class="se">\n</span><span class="s2">  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json_dump</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Config:</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">json_dump</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="override">
+<a class="viewcode-back" href="../config.html#config.override">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">override</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">arg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">option</span><span class="p">:</span> <span class="n">ConfigKey</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">OStr</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OStr</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Override a configuration option with a new value.</span>
+
+<span class="sd">    :param args: Dictionary of command-line arguments.</span>
+<span class="sd">    :param arg: Name of the command-line argument.</span>
+<span class="sd">    :param option: Configuration option to override.</span>
+<span class="sd">    :param name: Optional name for logging purposes.</span>
+<span class="sd">    :return: Resulting value of the configuration option.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">arg</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">option</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Overriding </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+        <span class="n">option</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="c1"># pylint: disable=protected-access</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">option</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">option</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="set_cmd_opts">
+<a class="viewcode-back" href="../config.html#config.set_cmd_opts">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_cmd_opts</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Override configuration settings with command-line arguments.</span>
+
+<span class="sd">    :param args: Dictionary of command-line arguments.</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Override configuration with command line arguments</span>
+    <span class="c1"># I/O modes</span>
+    <span class="n">override</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;input_mode&quot;</span><span class="p">,</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+    <span class="n">out_mode</span> <span class="o">=</span> <span class="n">override</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;output_mode&quot;</span><span class="p">,</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+    <span class="n">local</span> <span class="o">=</span> <span class="n">override</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">local</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">local</span> <span class="ow">and</span> <span class="n">out_mode</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;validate&#39;</span><span class="p">,</span> <span class="s1">&#39;dids&#39;</span><span class="p">]:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Option --local has no effect in output mode &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">out_mode</span><span class="p">)</span>
+
+    <span class="c1"># Job settings</span>
+    <span class="n">override</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;tag&quot;</span><span class="p">,</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">tag</span><span class="p">)</span>
+    <span class="n">override</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;comment&quot;</span><span class="p">,</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">comment</span><span class="p">)</span>
+    <span class="n">skip</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;skip&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">skip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">skip</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">skip</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">skip</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">skip</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Overriding skip: none&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Overriding skip: </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">skip</span><span class="p">)</span>
+        <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">skip</span> <span class="o">=</span> <span class="n">skip</span>
+    <span class="n">limit</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;limit&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">limit</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">limit</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">limit</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">limit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Overriding limit: none&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Overriding limit: </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+        <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">limit</span> <span class="o">=</span> <span class="n">limit</span>
+
+    <span class="c1"># Already-done handling</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;retry&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">tag</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Cannot use --retry without a job tag specified!&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">cfg_dict</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">already_done</span> <span class="o">=</span> <span class="s1">&#39;gap&#39;</span>
+    <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">already_done</span> <span class="o">!=</span> <span class="s1">&#39;include&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">tag</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Already-done checking is disabled without a job tag specified!&quot;</span><span class="p">)</span>
+        <span class="n">cfg_dict</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">handling</span><span class="o">.</span><span class="n">already_done</span> <span class="o">=</span> <span class="s1">&#39;include&#39;</span>
+
+    <span class="c1"># Output settings</span>
+    <span class="n">override</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;output name&quot;</span><span class="p">)</span>
+    <span class="n">override</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;namespace&quot;</span><span class="p">,</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">namespace</span><span class="p">,</span> <span class="s2">&quot;output namespace&quot;</span><span class="p">)</span>
+    <span class="n">override</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">method_name</span><span class="p">,</span> <span class="s2">&quot;merge method&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="load">
 <a class="viewcode-back" href="../config.html#config.load">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Load the specified configuration files.</span>
 <span class="sd">    Missing keys will be filled in with the defaults in DEFAULT_CONFIG.</span>
 <span class="sd">    </span>
-<span class="sd">    :param files: List of configuration files.</span>
+<span class="sd">    :param args: List of configuration files.</span>
 <span class="sd">    :return: None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Add the default configuration file to the beginning of the list</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">files</span><span class="p">:</span>
-        <span class="n">files</span> <span class="o">=</span> <span class="n">DEFAULT_CONFIG</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="n">files</span> <span class="o">=</span> <span class="n">DEFAULT_CONFIG</span> <span class="o">+</span> <span class="p">[</span><span class="n">files</span><span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">files</span> <span class="o">=</span> <span class="n">DEFAULT_CONFIG</span> <span class="o">+</span> <span class="n">files</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="s2">&quot;Loading configuration...&quot;</span><span class="p">)</span>
+    <span class="c1"># Load default configuration files first</span>
+    <span class="n">defaults_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">pkg_dir</span><span class="p">(),</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span> <span class="s1">&#39;defaults&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">cfg_file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">defaults_dir</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">defaults_dir</span><span class="p">,</span> <span class="n">cfg_file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">update</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">cfg_dict</span><span class="o">.</span><span class="n">_lock</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loaded default configuration files.&quot;</span><span class="p">)</span>
 
-    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
-        <span class="n">cfg</span> <span class="o">=</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">read_config_file</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loaded configuration file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
-        <span class="n">update</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
 
+    <span class="c1"># Load user configuration files</span>
+    <span class="n">user_cfgs</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="k">for</span> <span class="n">cfg_file</span> <span class="ow">in</span> <span class="n">user_cfgs</span><span class="p">:</span>
+        <span class="n">update</span><span class="p">(</span><span class="n">cfg_file</span><span class="p">)</span>
+        <span class="n">cfg_dict</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">config_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cfg_file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">user_cfgs</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loaded user configuration files.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Load command line overrides and environment variables</span>
+    <span class="n">set_cmd_opts</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">set_host</span><span class="p">()</span>
+    <span class="n">set_error_handling</span><span class="p">()</span>
     <span class="n">check_environment</span><span class="p">()</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loaded command line overrides and environment variables.&quot;</span><span class="p">)</span>
 
-    <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;Final merged configuration:&quot;</span><span class="p">,</span>
-        <span class="sa">f</span><span class="s2">&quot;metadata: </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="sa">f</span><span class="s2">&quot;inputs: </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="sa">f</span><span class="s2">&quot;output: </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">output</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="sa">f</span><span class="s2">&quot;validation: </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">validation</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="sa">f</span><span class="s2">&quot;sites: </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">sites</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="sa">f</span><span class="s2">&quot;merging: </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">merging</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="p">]</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span></div>
+    <span class="c1"># Set unique job identifier and create tmp directory</span>
+    <span class="n">cfg_dict</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">T%H%M%S&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="resume">
+<a class="viewcode-back" href="../config.html#config.resume">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resume</span><span class="p">(</span><span class="n">job_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reload the configuration for an existing job</span>
+<span class="sd">    </span>
+<span class="sd">    :param job_dir: Directory of the existing job.</span>
+<span class="sd">    :param args: Command-line arguments to override configuration settings.</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="s2">&quot;Reloading old configuration...&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">job_dir</span><span class="p">):</span>
+        <span class="n">job_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">job_dir</span><span class="p">)</span>
+    <span class="n">cfg_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">job_dir</span><span class="p">,</span> <span class="s1">&#39;config.json&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">cfg_file</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Could not find config file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">cfg_file</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Clear existing config and load from file</span>
+    <span class="n">cfg_dict</span><span class="o">.</span><span class="n">_clear</span><span class="p">()</span> <span class="c1"># pylint: disable=protected-access</span>
+    <span class="n">update</span><span class="p">(</span><span class="n">cfg_file</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loaded old configuration file.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Override output mode</span>
+    <span class="n">out_mode</span> <span class="o">=</span> <span class="n">override</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;output_mode&quot;</span><span class="p">,</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+    <span class="n">local</span> <span class="o">=</span> <span class="n">override</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">local</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">local</span> <span class="ow">and</span> <span class="n">out_mode</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;validate&#39;</span><span class="p">,</span> <span class="s1">&#39;dids&#39;</span><span class="p">]:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Option --local has no effect in output mode &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">out_mode</span><span class="p">)</span></div>
 
 </pre></div>
 

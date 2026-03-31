@@ -43,8 +43,294 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="scheduler">
-<h1>scheduler<a class="headerlink" href="#scheduler" title="Link to this heading">¶</a></h1>
+  <section id="module-scheduler">
+<span id="scheduler"></span><h1>scheduler<a class="headerlink" href="#module-scheduler" title="Link to this heading">¶</a></h1>
+<p>JobScheduler classes</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="scheduler.JobScheduler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scheduler.</span></span><span class="sig-name descname"><span class="pre">JobScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathFinder</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#JobScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for scheduling a merge job</p>
+<p>Initialize the JobScheduler with a source of files to merge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>source</strong> – PathFinder object to provide input files</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.assign_site">
+<span class="sig-name descname"><span class="pre">assign_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chunk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk" title="merge_utils.merge_set.MergeChunk"><span class="pre">MergeChunk</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.assign_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.assign_site" title="Link to this definition">¶</a></dt>
+<dd><p>Assign a merging site for a chunk of files, and select the best replica for each file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>chunk</strong> – MergeChunk object to assign a site for</p></li>
+<li><p><strong>site</strong> – Site assignment</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.chunk_distances">
+<span class="sig-name descname"><span class="pre">chunk_distances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chunk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk" title="merge_utils.merge_set.MergeChunk"><span class="pre">MergeChunk</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.chunk_distances"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.chunk_distances" title="Link to this definition">¶</a></dt>
+<dd><p>Get the distances from a chunk to potential merging sites, based on the file distances.
+If any file is unreachable from a site, the chunk is also unreachable from that site.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>chunk</strong> – MergeChunk object to get distances for</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary mapping site names to distances</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Connect to the file source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.disconnect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">disconnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.disconnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.disconnect" title="Link to this definition">¶</a></dt>
+<dd><p>Disconnect from the file source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.file_distances">
+<span class="sig-name descname"><span class="pre">file_distances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeFile" title="merge_utils.merge_set.MergeFile"><span class="pre">MergeFile</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.file_distances"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.file_distances" title="Link to this definition">¶</a></dt>
+<dd><p>Get the distances from a file to potential merging sites, based on its replicas.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file</strong> – MergeFile object to get distances for</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary mapping site names to distances</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.files">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">files</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet" title="merge_utils.merge_set.MergeSet"><span class="pre">MergeSet</span></a></em><a class="headerlink" href="#scheduler.JobScheduler.files" title="Link to this definition">¶</a></dt>
+<dd><p>Return the set of files from the source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.input_batches">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_batches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AsyncGenerator</span><span class="p"><span class="pre">[</span></span><span class="pre">InputBatch</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.input_batches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.input_batches" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously check RSE-site distances for batches of input files</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>InputBatch object containing skip index and list of MergeFile objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.replica_distances">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">replica_distances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Replica</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.replica_distances"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.replica_distances" title="Link to this definition">¶</a></dt>
+<dd><p>Get the distances from a replica to potential merging sites.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>replica</strong> – Replica object to get distances for</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary mapping site names to distances</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.run" title="Link to this definition">¶</a></dt>
+<dd><p>Run the Job scheduler.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.run_loop">
+<span class="sig-name descname"><span class="pre">run_loop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.run_loop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.run_loop" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve metadata for all files.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.schedule">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chunk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk" title="merge_utils.merge_set.MergeChunk"><span class="pre">MergeChunk</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.schedule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.schedule" title="Link to this definition">¶</a></dt>
+<dd><p>Schedule a chunk for merging, subdividing and assigning to sites as necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>chunk</strong> – MergeChunk object to schedule</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.split_files">
+<span class="sig-name descname"><span class="pre">split_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.split_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.split_files" title="Link to this definition">¶</a></dt>
+<dd><p>Split a list of files into groups for merging, based on the configured chunk size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>files</strong> – List of MergeFile objects to split</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of lists of MergeFile objects, where each sublist is a group for merging</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.write_script">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">write_script</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.write_script"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.write_script" title="Link to this definition">¶</a></dt>
+<dd><p>Write the job script</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of the generated script file name(s)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JobScheduler.write_specs">
+<span class="sig-name descname"><span class="pre">write_specs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chunk</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JobScheduler.write_specs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JobScheduler.write_specs" title="Link to this definition">¶</a></dt>
+<dd><p>Write merge specs for a chunk to JSON dictionary files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>chunk</strong> – MergeChunk object to write</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scheduler.JustinScheduler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scheduler.</span></span><span class="sig-name descname"><span class="pre">JustinScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathFinder</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler" title="Link to this definition">¶</a></dt>
+<dd><p>Job scheduler for JustIN merge jobs</p>
+<p>Initialize the JustinScheduler with a source of files to merge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>source</strong> – PathFinder object to provide input files</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JustinScheduler.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Connect to the file source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JustinScheduler.justin_cmd">
+<span class="sig-name descname"><span class="pre">justin_cmd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">site</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler.justin_cmd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler.justin_cmd" title="Link to this definition">¶</a></dt>
+<dd><p>Create the JustIN command for submitting a merge job.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tier</strong> – Merge pass number (0-indexed!)</p></li>
+<li><p><strong>site</strong> – Site to run the job</p></li>
+<li><p><strong>cvmfs_dir</strong> – CVMFS directory where config files are located</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>JustIN command string</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JustinScheduler.schedule">
+<span class="sig-name descname"><span class="pre">schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chunk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk" title="merge_utils.merge_set.MergeChunk"><span class="pre">MergeChunk</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler.schedule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler.schedule" title="Link to this definition">¶</a></dt>
+<dd><p>Schedule a chunk for merging, subdividing and assigning to sites as necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>chunk</strong> – MergeChunk object to schedule</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JustinScheduler.upload_cfg">
+<span class="sig-name descname"><span class="pre">upload_cfg</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler.upload_cfg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler.upload_cfg" title="Link to this definition">¶</a></dt>
+<dd><p>Make a tarball of the configuration files and upload them to cvmfs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Path to the uploaded configuration directory</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.JustinScheduler.write_script">
+<span class="sig-name descname"><span class="pre">write_script</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/scheduler.html#JustinScheduler.write_script"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.JustinScheduler.write_script" title="Link to this definition">¶</a></dt>
+<dd><p>Write the job scripts for submitting JustIN merge jobs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Name of the generated script file(s)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scheduler.LocalScheduler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scheduler.</span></span><span class="sig-name descname"><span class="pre">LocalScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler" title="Link to this definition">¶</a></dt>
+<dd><p>Job scheduler for local merge jobs</p>
+<p>Initialize the JobScheduler with a source of files to merge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>source</strong> – PathFinder object to provide input files</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.LocalScheduler.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Connect to the file source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.LocalScheduler.replica_distances">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">replica_distances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replica</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Replica</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler.replica_distances"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler.replica_distances" title="Link to this definition">¶</a></dt>
+<dd><p>Get the distances from a replica to potential merging sites.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>replica</strong> – Replica object to get distances for</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary mapping site names to distances</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.LocalScheduler.schedule">
+<span class="sig-name descname"><span class="pre">schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chunk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeChunk" title="merge_utils.merge_set.MergeChunk"><span class="pre">MergeChunk</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler.schedule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler.schedule" title="Link to this definition">¶</a></dt>
+<dd><p>Schedule a chunk for merging, clearing any site assignment and subdividing as necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>chunk</strong> – MergeChunk object to schedule</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scheduler.LocalScheduler.write_script">
+<span class="sig-name descname"><span class="pre">write_script</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/scheduler.html#LocalScheduler.write_script"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scheduler.LocalScheduler.write_script" title="Link to this definition">¶</a></dt>
+<dd><p>Write the job script for running local merge jobs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Name of the generated script file</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
 
@@ -54,6 +340,47 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">scheduler</a><ul>
+<li><a class="reference internal" href="#scheduler.JobScheduler"><code class="docutils literal notranslate"><span class="pre">JobScheduler</span></code></a><ul>
+<li><a class="reference internal" href="#scheduler.JobScheduler.assign_site"><code class="docutils literal notranslate"><span class="pre">JobScheduler.assign_site()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.chunk_distances"><code class="docutils literal notranslate"><span class="pre">JobScheduler.chunk_distances()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.connect"><code class="docutils literal notranslate"><span class="pre">JobScheduler.connect()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.disconnect"><code class="docutils literal notranslate"><span class="pre">JobScheduler.disconnect()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.file_distances"><code class="docutils literal notranslate"><span class="pre">JobScheduler.file_distances()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.files"><code class="docutils literal notranslate"><span class="pre">JobScheduler.files</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.input_batches"><code class="docutils literal notranslate"><span class="pre">JobScheduler.input_batches()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.replica_distances"><code class="docutils literal notranslate"><span class="pre">JobScheduler.replica_distances()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.run"><code class="docutils literal notranslate"><span class="pre">JobScheduler.run()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.run_loop"><code class="docutils literal notranslate"><span class="pre">JobScheduler.run_loop()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.schedule"><code class="docutils literal notranslate"><span class="pre">JobScheduler.schedule()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.split_files"><code class="docutils literal notranslate"><span class="pre">JobScheduler.split_files()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.write_script"><code class="docutils literal notranslate"><span class="pre">JobScheduler.write_script()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JobScheduler.write_specs"><code class="docutils literal notranslate"><span class="pre">JobScheduler.write_specs()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scheduler.JustinScheduler"><code class="docutils literal notranslate"><span class="pre">JustinScheduler</span></code></a><ul>
+<li><a class="reference internal" href="#scheduler.JustinScheduler.connect"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.connect()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JustinScheduler.justin_cmd"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.justin_cmd()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JustinScheduler.schedule"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.schedule()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JustinScheduler.upload_cfg"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.upload_cfg()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.JustinScheduler.write_script"><code class="docutils literal notranslate"><span class="pre">JustinScheduler.write_script()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scheduler.LocalScheduler"><code class="docutils literal notranslate"><span class="pre">LocalScheduler</span></code></a><ul>
+<li><a class="reference internal" href="#scheduler.LocalScheduler.connect"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.connect()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.LocalScheduler.replica_distances"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.replica_distances()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.LocalScheduler.schedule"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.schedule()</span></code></a></li>
+<li><a class="reference internal" href="#scheduler.LocalScheduler.write_script"><code class="docutils literal notranslate"><span class="pre">LocalScheduler.write_script()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="rucio_utils.html"

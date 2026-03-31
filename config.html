@@ -58,66 +58,125 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="config.custom_serializer">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">custom_serializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/config.html#custom_serializer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.custom_serializer" title="Link to this definition">¶</a></dt>
+<dd><p>Custom JSON serializer for ConfigKey objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>obj</strong> – Object to serialize.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>JSON-serializable representation of the object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config.dump">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">dump</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#dump"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.dump" title="Link to this definition">¶</a></dt>
+<dd><p>Dump the current configuration to the tmp directory or stdout.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config.get_key">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">get_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ConfigKey</span></span></span><a class="reference internal" href="_modules/config.html#get_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.get_key" title="Link to this definition">¶</a></dt>
+<dd><p>Get a config key by name</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="config.load">
-<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.load" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.load" title="Link to this definition">¶</a></dt>
 <dd><p>Load the specified configuration files.
 Missing keys will be filled in with the defaults in DEFAULT_CONFIG.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>files</strong> – List of configuration files.</p>
+<dd class="field-odd"><p><strong>args</strong> – List of configuration files.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config.override">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">override</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ConfigKey</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#override"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.override" title="Link to this definition">¶</a></dt>
+<dd><p>Override a configuration option with a new value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> – Dictionary of command-line arguments.</p></li>
+<li><p><strong>arg</strong> – Name of the command-line argument.</p></li>
+<li><p><strong>option</strong> – Configuration option to override.</p></li>
+<li><p><strong>name</strong> – Optional name for logging purposes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Resulting value of the configuration option.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config.resume">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">resume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#resume"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.resume" title="Link to this definition">¶</a></dt>
+<dd><p>Reload the configuration for an existing job</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>job_dir</strong> – Directory of the existing job.</p></li>
+<li><p><strong>args</strong> – Command-line arguments to override configuration settings.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config.set_cmd_opts">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">set_cmd_opts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#set_cmd_opts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.set_cmd_opts" title="Link to this definition">¶</a></dt>
+<dd><p>Override configuration settings with command-line arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>args</strong> – Dictionary of command-line arguments.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config.set_error_handling">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">set_error_handling</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#set_error_handling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.set_error_handling" title="Link to this definition">¶</a></dt>
+<dd><p>Apply default error handling settings to any errors set to ‘default’ in the configuration.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="config.set_host">
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">set_host</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#set_host"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.set_host" title="Link to this definition">¶</a></dt>
+<dd><p>Set the host name in the configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="config.update">
-<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.update" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.update" title="Link to this definition">¶</a></dt>
 <dd><p>Update the global configuration with values from the provided dictionary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>cfg</strong> – Dictionary containing new configuration values.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>None</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="config.update_dict">
-<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">update_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#update_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.update_dict" title="Link to this definition">¶</a></dt>
-<dd><p>Add key value pairs from new_dict to old_dict.
-If a key in new_dict does not exist in old_dict, it is added.
-If the value is a dict or list, the values are merged recursively.
-If a key in new_dict starts with ‘~’, it overrides the value in old_dict instead.
-If the value is None, the key is removed from old_dict instead.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>old_dict</strong> – Dictionary to be updated.</p></li>
-<li><p><strong>new_dict</strong> – Dictionary with new values.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>None</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="config.update_list">
-<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">update_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/config.html#update_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.update_list" title="Link to this definition">¶</a></dt>
-<dd><p>Append values from new_list to old_list.
-Strings beginning with ‘~’ are removed from old_list instead.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>old_list</strong> – List to be updated.</p></li>
-<li><p><strong>new_list</strong> – List with new values.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>file_name</strong> – Name of the configuration file.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>None</p>
@@ -127,8 +186,20 @@ Strings beginning with ‘~’ are removed from old_list instead.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="config.uuid">
-<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">uuid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/config.html#uuid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.uuid" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">config.</span></span><span class="sig-name descname"><span class="pre">uuid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">skip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/config.html#uuid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#config.uuid" title="Link to this definition">¶</a></dt>
 <dd><p>Generate a unique identifier based on the job tag and timestamp.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>skip</strong> – Number of initial entries to skip.</p></li>
+<li><p><strong>limit</strong> – Maximum number of entries to process.</p></li>
+<li><p><strong>chunk</strong> – Optional chunk id list to include in the UUID.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Unique identifier string.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -145,10 +216,16 @@ Strings beginning with ‘~’ are removed from old_list instead.</p>
     <ul>
 <li><a class="reference internal" href="#">config</a><ul>
 <li><a class="reference internal" href="#config.check_environment"><code class="docutils literal notranslate"><span class="pre">check_environment()</span></code></a></li>
+<li><a class="reference internal" href="#config.custom_serializer"><code class="docutils literal notranslate"><span class="pre">custom_serializer()</span></code></a></li>
+<li><a class="reference internal" href="#config.dump"><code class="docutils literal notranslate"><span class="pre">dump()</span></code></a></li>
+<li><a class="reference internal" href="#config.get_key"><code class="docutils literal notranslate"><span class="pre">get_key()</span></code></a></li>
 <li><a class="reference internal" href="#config.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
+<li><a class="reference internal" href="#config.override"><code class="docutils literal notranslate"><span class="pre">override()</span></code></a></li>
+<li><a class="reference internal" href="#config.resume"><code class="docutils literal notranslate"><span class="pre">resume()</span></code></a></li>
+<li><a class="reference internal" href="#config.set_cmd_opts"><code class="docutils literal notranslate"><span class="pre">set_cmd_opts()</span></code></a></li>
+<li><a class="reference internal" href="#config.set_error_handling"><code class="docutils literal notranslate"><span class="pre">set_error_handling()</span></code></a></li>
+<li><a class="reference internal" href="#config.set_host"><code class="docutils literal notranslate"><span class="pre">set_host()</span></code></a></li>
 <li><a class="reference internal" href="#config.update"><code class="docutils literal notranslate"><span class="pre">update()</span></code></a></li>
-<li><a class="reference internal" href="#config.update_dict"><code class="docutils literal notranslate"><span class="pre">update_dict()</span></code></a></li>
-<li><a class="reference internal" href="#config.update_list"><code class="docutils literal notranslate"><span class="pre">update_list()</span></code></a></li>
 <li><a class="reference internal" href="#config.uuid"><code class="docutils literal notranslate"><span class="pre">uuid()</span></code></a></li>
 </ul>
 </li>

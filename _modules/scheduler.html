@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>scheduler &#8212; merge-utils 0.8 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
+    <script src="../_static/documentation_options.js?v=a0e24af7"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://dune.github.io/merge-utils/_modules/scheduler.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">scheduler</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for scheduler</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;JobScheduler classes&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tarfile</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">justin_utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeFileError</span><span class="p">,</span> <span class="n">MergeSet</span><span class="p">,</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">MergeChunk</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">InputBatch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.replicas</span><span class="w"> </span><span class="kn">import</span> <span class="n">Replica</span><span class="p">,</span> <span class="n">PathFinder</span><span class="p">,</span> <span class="n">GenericRSE</span><span class="p">,</span> <span class="n">RucioRSE</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">STD_ENV_VARS</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span>
+    <span class="s1">&#39;MERGE_CONFIG&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;CONFIG_DIR&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;DUNE_VERSION&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;DUNE_QUALIFIER&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;EXTRA_PRODUCTS&#39;</span>
+<span class="p">])</span>
+
+<div class="viewcode-block" id="JobScheduler">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">JobScheduler</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for scheduling a merge job&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">PathFinder</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the JobScheduler with a source of files to merge.</span>
+<span class="sd">        </span>
+<span class="sd">        :param source: PathFinder object to provide input files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">source</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span><span class="p">),</span> <span class="s1">&#39;merge&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distances</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># Cache of RSE-site distances</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeSet</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the set of files from the source&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">files</span>
+
+<div class="viewcode-block" id="JobScheduler.connect">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.connect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Connect to the file source&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.disconnect">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.disconnect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Disconnect from the file source&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.replica_distances">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.replica_distances">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">replica_distances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replica</span><span class="p">:</span> <span class="n">Replica</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the distances from a replica to potential merging sites.</span>
+
+<span class="sd">        :param replica: Replica object to get distances for</span>
+<span class="sd">        :return: Dictionary mapping site names to distances</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rse</span> <span class="o">=</span> <span class="n">replica</span><span class="o">.</span><span class="n">rse</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">rse</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">distances</span><span class="p">:</span>
+            <span class="n">distances</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">distances</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.file_distances">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.file_distances">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">file_distances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">MergeFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the distances from a file to potential merging sites, based on its replicas.</span>
+
+<span class="sd">        :param file: MergeFile object to get distances for</span>
+<span class="sd">        :return: Dictionary mapping site names to distances</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">site_dists</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">replica</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">replicas</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">replica</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">good</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">rse_dists</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">replica</span><span class="o">.</span><span class="n">rse</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">site</span><span class="p">,</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">rse_dists</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">site_dists</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">site_dists</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)),</span> <span class="n">dist</span> <span class="o">+</span> <span class="n">replica</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">site_dists</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="si">}</span><span class="s2"> has no available replicas&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">site_dists</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.chunk_distances">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.chunk_distances">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">chunk_distances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">:</span> <span class="n">MergeChunk</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the distances from a chunk to potential merging sites, based on the file distances.</span>
+<span class="sd">        If any file is unreachable from a site, the chunk is also unreachable from that site.</span>
+
+<span class="sd">        :param chunk: MergeChunk object to get distances for</span>
+<span class="sd">        :return: Dictionary mapping site names to distances</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">site_dists</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_distances</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">chunk</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">file_dists</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_distances</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">site</span><span class="p">,</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">file_dists</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">site_dists</span><span class="p">:</span>
+                    <span class="n">site_dists</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">+=</span> <span class="n">dist</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">site_dists</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">site_dists</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">site</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_dists</span><span class="p">:</span>
+                    <span class="n">site_dists</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">site_dists</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.input_batches">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.input_batches">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_batches</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">InputBatch</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously check RSE-site distances for batches of input files</span>
+
+<span class="sd">        :return: InputBatch object containing skip index and list of MergeFile objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">input_batches</span><span class="p">():</span>
+            <span class="n">unreachable</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="c1"># Get minimum distance from the file replicas to any merging site</span>
+                <span class="n">min_dist</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">replica</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">replicas</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">replica</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">good</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">replica_dists</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">replica_distances</span><span class="p">(</span><span class="n">replica</span><span class="p">)</span>
+                    <span class="n">dist</span> <span class="o">=</span> <span class="n">replica</span><span class="o">.</span><span class="n">distance</span> <span class="o">+</span> <span class="nb">min</span><span class="p">(</span><span class="n">replica_dists</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                    <span class="n">min_dist</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">min_dist</span><span class="p">,</span> <span class="n">dist</span><span class="p">)</span>
+                <span class="c1"># File is unreachable no RSE-site distance was below threshold</span>
+                <span class="k">if</span> <span class="n">min_dist</span> <span class="o">&gt;</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">max_distance</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> has no replicas within max distance&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+                    <span class="n">unreachable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+            <span class="c1"># Set unreachable flag for bad files</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">set_error</span><span class="p">(</span><span class="n">unreachable</span><span class="p">,</span> <span class="s1">&#39;UNREACHABLE&#39;</span><span class="p">)</span>
+            <span class="c1"># Output batch with reachable files</span>
+            <span class="n">good_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">batch</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">errors</span><span class="p">]</span>
+            <span class="k">yield</span> <span class="n">InputBatch</span><span class="p">(</span><span class="n">skip</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">skip</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">good_files</span><span class="p">)</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Repeatedly get input_batches until all files are retrieved.&quot;&quot;&quot;</span>
+        <span class="c1"># Connect to source</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="c1"># Loop over batches</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_batches</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">check_errors</span><span class="p">()</span>
+        <span class="c1"># Close connections</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+
+<div class="viewcode-block" id="JobScheduler.run_loop">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.run_loop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve metadata for all files.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="p">())</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">check_errors</span><span class="p">(</span><span class="n">final</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.assign_site">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.assign_site">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">assign_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">:</span> <span class="n">MergeChunk</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Assign a merging site for a chunk of files, and select the best replica for each file</span>
+
+<span class="sd">        :param chunk: MergeChunk object to assign a site for</span>
+<span class="sd">        :param site: Site assignment</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">chunk</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">site</span>   <span class="c1"># Local jobs should not have a site assigned</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">chunk</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+            <span class="n">best_replica</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">min_dist</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">replica</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">replicas</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">replica</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">good</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">dist</span> <span class="o">=</span> <span class="n">replica</span><span class="o">.</span><span class="n">distance</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">replica</span><span class="o">.</span><span class="n">rse</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">min_dist</span><span class="p">:</span>
+                    <span class="n">min_dist</span> <span class="o">=</span> <span class="n">dist</span>
+                    <span class="n">best_replica</span> <span class="o">=</span> <span class="n">replica</span>
+            <span class="k">if</span> <span class="n">best_replica</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="si">}</span><span class="s2"> has no good replicas for site </span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">file</span><span class="o">.</span><span class="n">replicas</span> <span class="o">=</span> <span class="p">[</span><span class="n">best_replica</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.split_files">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.split_files">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">split_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Split a list of files into groups for merging, based on the configured chunk size.</span>
+<span class="sd">        </span>
+<span class="sd">        :param files: List of MergeFile objects to split</span>
+<span class="sd">        :return: List of lists of MergeFile objects, where each sublist is a group for merging</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">files</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">chunk_max</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">chunks</span><span class="o">.</span><span class="n">max_count</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">chunk_max</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">files</span><span class="p">]</span>
+        <span class="n">n_chunks</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">/</span> <span class="n">chunk_max</span><span class="p">)</span>
+        <span class="n">target_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_chunks</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">files</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">target_size</span><span class="p">):</span><span class="nb">int</span><span class="p">((</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">target_size</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_chunks</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.schedule">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.schedule">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">schedule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">:</span> <span class="n">MergeChunk</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Schedule a chunk for merging, subdividing and assigning to sites as necessary.</span>
+<span class="sd">        </span>
+<span class="sd">        :param chunk: MergeChunk object to schedule</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.write_specs">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.write_specs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_specs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write merge specs for a chunk to JSON dictionary files.</span>
+<span class="sd">        </span>
+<span class="sd">        :param chunk: MergeChunk object to write</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Recursively write specs for child chunks, if any</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">chunk</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_specs</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+        <span class="c1"># Get site job list for this tier, creating it if necessary</span>
+        <span class="n">tier</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">tier</span>
+        <span class="k">if</span> <span class="n">tier</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">))</span>
+        <span class="n">site_jobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="n">tier</span><span class="p">][</span><span class="n">chunk</span><span class="o">.</span><span class="n">site</span><span class="p">]</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;pass</span><span class="si">{</span><span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">chunk</span><span class="o">.</span><span class="n">site</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">chunk</span><span class="o">.</span><span class="n">site</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="c1"># Write a JSON file for each output spec from the chunk</span>
+        <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">chunk</span><span class="o">.</span><span class="n">specs</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">site_jobs</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="si">:</span><span class="s2">&gt;06</span><span class="si">}</span><span class="s2">.json&quot;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fjson</span><span class="p">:</span>
+                <span class="n">fjson</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">site_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">chunk</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.write_script">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.write_script">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write the job script</span>
+
+<span class="sd">        :return: List of the generated script file name(s)</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="JobScheduler.run">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JobScheduler.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the Job scheduler.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_loop</span><span class="p">()</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">groups</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_specs</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;No files to merge&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Writing job config files to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Merge jobs:&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">[</span><span class="s2">&quot;Pass 1 merge jobs:&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">site</span><span class="p">,</span> <span class="n">site_jobs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">site</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">site</span> <span class="o">=</span> <span class="s2">&quot;local&quot;</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">site_jobs</span><span class="p">)</span><span class="si">}</span><span class="s2"> merges&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">tier</span><span class="p">,</span> <span class="n">tier_jobs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">start</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pass </span><span class="si">{</span><span class="n">tier</span><span class="si">}</span><span class="s2"> merge jobs:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">site</span><span class="p">,</span> <span class="n">site_jobs</span> <span class="ow">in</span> <span class="n">tier_jobs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">site</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">site</span> <span class="o">=</span> <span class="s2">&quot;local&quot;</span>
+                <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">site_jobs</span><span class="p">)</span><span class="si">}</span><span class="s2"> merges&quot;</span><span class="p">)</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span>
+
+        <span class="n">script</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_script</span><span class="p">()</span>
+
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Files will be merged using </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">method_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Execute the merge by running:&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">script</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span></div>
+</div>
+
+
+<div class="viewcode-block" id="LocalScheduler">
+<a class="viewcode-back" href="../scheduler.html#scheduler.LocalScheduler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LocalScheduler</span><span class="p">(</span><span class="n">JobScheduler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Job scheduler for local merge jobs&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">justin</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="LocalScheduler.connect">
+<a class="viewcode-back" href="../scheduler.html#scheduler.LocalScheduler.connect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Connect to the file source&quot;&quot;&quot;</span>
+        <span class="c1"># Connect to source</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="c1"># If we have a local site name, try to get distances from JustIN</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span><span class="p">:</span>
+            <span class="n">local_site</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span><span class="p">)</span>
+            <span class="n">justin_dists</span> <span class="o">=</span> <span class="k">await</span> <span class="n">justin_utils</span><span class="o">.</span><span class="n">get_site_rse_distances</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">justin_dists</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">justin</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">rse</span><span class="p">,</span> <span class="n">dists</span> <span class="ow">in</span> <span class="n">justin_dists</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">dist</span> <span class="o">=</span> <span class="n">dists</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">local_site</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">[</span><span class="n">rse</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="kc">None</span><span class="p">:</span> <span class="n">dist</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="LocalScheduler.replica_distances">
+<a class="viewcode-back" href="../scheduler.html#scheduler.LocalScheduler.replica_distances">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">replica_distances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replica</span><span class="p">:</span> <span class="n">Replica</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the distances from a replica to potential merging sites.</span>
+
+<span class="sd">        :param replica: Replica object to get distances for</span>
+<span class="sd">        :return: Dictionary mapping site names to distances</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rse</span> <span class="o">=</span> <span class="n">replica</span><span class="o">.</span><span class="n">rse</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">rse</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">distances</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">justin</span><span class="p">:</span>
+                <span class="n">distances</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">replica</span><span class="o">.</span><span class="n">rse</span><span class="p">,</span> <span class="n">RucioRSE</span><span class="p">):</span>
+                <span class="n">distances</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">replica</span><span class="o">.</span><span class="n">rse</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">distances</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">distances</span></div>
+
+
+<div class="viewcode-block" id="LocalScheduler.schedule">
+<a class="viewcode-back" href="../scheduler.html#scheduler.LocalScheduler.schedule">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">schedule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">:</span> <span class="n">MergeChunk</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Schedule a chunk for merging, clearing any site assignment and subdividing as necessary.</span>
+<span class="sd">        </span>
+<span class="sd">        :param chunk: MergeChunk object to schedule</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Just set site to None for local jobs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assign_site</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">site</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># Split into subchunks if there are too many files</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">chunks</span><span class="o">.</span><span class="n">max_count</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">subchunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_files</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">files</span><span class="p">):</span>
+                <span class="n">chunk</span><span class="o">.</span><span class="n">make_child</span><span class="p">(</span><span class="n">subchunk</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LocalScheduler.write_script">
+<a class="viewcode-back" href="../scheduler.html#scheduler.LocalScheduler.write_script">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write the job script for running local merge jobs.</span>
+
+<span class="sd">        :return: Name of the generated script file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">out_dir</span> <span class="o">=</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">expand_path</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">out_dir</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">out_dir</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Output directory &#39;</span><span class="si">%s</span><span class="s2">&#39; created&quot;</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Failed to create output directory &#39;</span><span class="si">%s</span><span class="s2">&#39;: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">dependencies</span><span class="p">:</span>
+            <span class="n">file_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Adding </span><span class="si">%s</span><span class="s2"> to job directory&quot;</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span> <span class="n">file_name</span><span class="p">))</span>
+
+        <span class="n">script_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span><span class="p">),</span> <span class="s2">&quot;run.sh&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">script_name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;#!/bin/bash</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;# This script will run the merge jobs locally</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">tier</span><span class="p">,</span> <span class="n">jobs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;echo &#39;Creating merged files&#39;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">pass_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;pass </span><span class="si">{</span><span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="k">if</span> <span class="n">tier</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;echo &#39;Creating final merged files (</span><span class="si">{</span><span class="n">pass_msg</span><span class="si">}</span><span class="s2">)&#39;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;echo &#39;Creating intermediate merged files (</span><span class="si">{</span><span class="n">pass_msg</span><span class="si">}</span><span class="s2">)&#39;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+                    <span class="c1">#cmd = [&quot;LD_PRELOAD=$XROOTD_LIB/libXrdPosixPreload.so&quot;, &quot;python3&quot;,</span>
+                    <span class="c1">#       io_utils.find_runner(&quot;do_merge.py&quot;), job[0], out_dir]</span>
+                    <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;python3&quot;</span><span class="p">,</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">find_runner</span><span class="p">(</span><span class="s2">&quot;do_merge.py&quot;</span><span class="p">),</span> <span class="n">job</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out_dir</span><span class="p">]</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;chmod&#39;</span><span class="p">,</span> <span class="s1">&#39;+x&#39;</span><span class="p">,</span> <span class="n">script_name</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">script_name</span><span class="p">]</span></div>
+</div>
+
+
+<div class="viewcode-block" id="JustinScheduler">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">JustinScheduler</span><span class="p">(</span><span class="n">JobScheduler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Job scheduler for JustIN merge jobs&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">PathFinder</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the JustinScheduler with a source of files to merge.</span>
+<span class="sd">        </span>
+<span class="sd">        :param source: PathFinder object to provide input files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cvmfs_dir</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="JustinScheduler.connect">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler.connect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Connect to the file source&quot;&quot;&quot;</span>
+        <span class="c1"># Connect to source</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="c1"># Get site-rse distances from JustIN</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distances</span> <span class="o">=</span> <span class="k">await</span> <span class="n">justin_utils</span><span class="o">.</span><span class="n">get_site_rse_distances</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">distances</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Cannot run batch jobs without JustIN connection!&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="JustinScheduler.schedule">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler.schedule">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">schedule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">:</span> <span class="n">MergeChunk</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Schedule a chunk for merging, subdividing and assigning to sites as necessary.</span>
+<span class="sd">        </span>
+<span class="sd">        :param chunk: MergeChunk object to schedule</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Try to do merge as one chunk if possible</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">files</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">chunks</span><span class="o">.</span><span class="n">max_count</span><span class="p">:</span>
+            <span class="n">site</span><span class="p">,</span> <span class="n">dist</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chunk_distances</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">assign_site</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">site</span><span class="o">=</span><span class="n">site</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="c1"># Oherwise, group files by the best merging site</span>
+        <span class="n">best_sites</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">chunk</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+            <span class="n">dists</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_distances</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+            <span class="n">best_site</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">dists</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">best_sites</span><span class="p">[</span><span class="n">best_site</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+        <span class="n">best_sites</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">best_sites</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># If all files are at the same site, just assign the chunk there and split if needed</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">best_sites</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assign_site</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">site</span><span class="o">=</span><span class="n">best_sites</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="c1"># Split into subchunks if there are too many files</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">chunks</span><span class="o">.</span><span class="n">max_count</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">subchunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_files</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">files</span><span class="p">):</span>
+                    <span class="n">chunk</span><span class="o">.</span><span class="n">make_child</span><span class="p">(</span><span class="n">subchunk</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="c1"># Try to remove sites with small groups of files</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">best_sites</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">files</span> <span class="o">=</span> <span class="n">best_sites</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">chunks</span><span class="o">.</span><span class="n">min_count</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="c1"># Find the next best site for each file in the small group</span>
+            <span class="n">new_sites</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+            <span class="n">new_dists</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">f_idx</span><span class="p">,</span> <span class="n">file</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">files</span><span class="p">):</span>
+                <span class="n">dists</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_distances</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">new_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">new_site</span><span class="p">,</span> <span class="n">new_files</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">best_sites</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">new_idx</span> <span class="o">==</span> <span class="n">idx</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">dist</span> <span class="o">=</span> <span class="n">dists</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">new_site</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">new_dists</span><span class="p">[</span><span class="n">f_idx</span><span class="p">]:</span>
+                        <span class="n">new_sites</span><span class="p">[</span><span class="n">f_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_idx</span>
+                        <span class="n">new_dists</span><span class="p">[</span><span class="n">f_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">dist</span>
+            <span class="c1"># If every file has a valid new site, move them there and clear the small group</span>
+            <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">new_idx</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">new_idx</span> <span class="ow">in</span> <span class="n">new_sites</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">f_idx</span><span class="p">,</span> <span class="n">file</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">files</span><span class="p">):</span>
+                    <span class="n">best_sites</span><span class="p">[</span><span class="n">new_sites</span><span class="p">[</span><span class="n">f_idx</span><span class="p">]][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+                <span class="n">best_sites</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># Split by best site and schedule separately</span>
+        <span class="k">for</span> <span class="n">site</span><span class="p">,</span> <span class="n">site_files</span> <span class="ow">in</span> <span class="n">best_sites</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">subchunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_files</span><span class="p">(</span><span class="n">site_files</span><span class="p">):</span>
+                <span class="n">child</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">make_child</span><span class="p">(</span><span class="n">subchunk</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">assign_site</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">site</span><span class="o">=</span><span class="n">site</span><span class="p">)</span>
+        <span class="c1"># Use default site for parent chunk</span>
+        <span class="n">chunk</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">default</span></div>
+
+
+<div class="viewcode-block" id="JustinScheduler.upload_cfg">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler.upload_cfg">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">upload_cfg</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make a tarball of the configuration files and upload them to cvmfs</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Path to the uploaded configuration directory</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">add_file</span><span class="p">(</span><span class="n">tar</span><span class="p">,</span> <span class="n">file_path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">file_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">file_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Adding </span><span class="si">%s</span><span class="s2"> to config tarball&quot;</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+            <span class="n">tar</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="s2">&quot;Uploading configuration files to cvmfs...&quot;</span><span class="p">)</span>
+        <span class="n">cfg_base</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span><span class="p">),</span> <span class="s2">&quot;config.tar&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">cfg_base</span><span class="p">,</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tar</span><span class="p">:</span>
+            <span class="n">add_file</span><span class="p">(</span><span class="n">tar</span><span class="p">,</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">find_runner</span><span class="p">(</span><span class="s2">&quot;do_merge.py&quot;</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">dependencies</span><span class="p">:</span>
+                <span class="n">add_file</span><span class="p">(</span><span class="n">tar</span><span class="p">,</span> <span class="n">dep</span><span class="p">)</span>
+
+        <span class="n">cfg_pass1</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span><span class="p">),</span> <span class="s2">&quot;config_pass1.tar&quot;</span><span class="p">)</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">cfg_base</span><span class="p">,</span> <span class="n">cfg_pass1</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">cfg_pass1</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tar</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">site_jobs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">site_jobs</span><span class="p">:</span>
+                    <span class="n">add_file</span><span class="p">(</span><span class="n">tar</span><span class="p">,</span> <span class="n">job</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="n">proc</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;justin-cvmfs-upload&#39;</span><span class="p">,</span> <span class="n">cfg_pass1</span><span class="p">],</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to upload configuration files: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">proc</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Failed to upload configuration files&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cvmfs_dir</span> <span class="o">=</span> <span class="n">proc</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Uploaded configuration files to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cvmfs_dir</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="JustinScheduler.justin_cmd">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler.justin_cmd">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">justin_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create the JustIN command for submitting a merge job.</span>
+<span class="sd">        </span>
+<span class="sd">        :param tier: Merge pass number (0-indexed!)</span>
+<span class="sd">        :param site: Site to run the job</span>
+<span class="sd">        :param cvmfs_dir: CVMFS directory where config files are located</span>
+<span class="sd">        :return: JustIN command string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">site</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;No site for pass </span><span class="si">%d</span><span class="s2"> job!&quot;</span><span class="p">,</span> <span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">cvmfs_dir</span> <span class="o">=</span> <span class="s2">&quot;$cvmfs_dir&quot;</span> <span class="k">if</span> <span class="n">tier</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">cvmfs_dir</span>
+        <span class="c1">#TODO: Make sure this works if different outputs need different numbers of passes</span>
+        <span class="k">if</span> <span class="n">tier</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Using output namespace and lifetime for pass </span><span class="si">%d</span><span class="s2"> jobs&quot;</span><span class="p">,</span> <span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">namespace</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">namespace</span>
+            <span class="n">lifetime</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">batch</span><span class="o">.</span><span class="n">lifetime</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Using scratch namespace and lifetime for pass </span><span class="si">%d</span><span class="s2"> jobs&quot;</span><span class="p">,</span> <span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">namespace</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">scratch</span><span class="o">.</span><span class="n">namespace</span>
+            <span class="n">lifetime</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">scratch</span><span class="o">.</span><span class="n">lifetime</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;justin&#39;</span><span class="p">,</span> <span class="s1">&#39;simple-workflow&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;--description&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;&quot;Merge </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">uuid</span><span class="p">()</span><span class="si">}</span><span class="s1"> p</span><span class="si">{</span><span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;--monte-carlo&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="n">tier</span><span class="p">][</span><span class="n">site</span><span class="p">])),</span>
+            <span class="s1">&#39;--jobscript&#39;</span><span class="p">,</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">find_runner</span><span class="p">(</span><span class="s2">&quot;merge.jobscript&quot;</span><span class="p">),</span>
+            <span class="s1">&#39;--site&#39;</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span>
+            <span class="s1">&#39;--scope&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">namespace</span><span class="p">),</span>
+            <span class="s1">&#39;--lifetime-days&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">lifetime</span><span class="p">),</span>
+            <span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;MERGE_CONFIG=&quot;pass</span><span class="si">{</span><span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;CONFIG_DIR=&quot;</span><span class="si">{</span><span class="n">cvmfs_dir</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">dunesw_version</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;DUNE_VERSION=&quot;</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">dunesw_version</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">dunesw_qualifier</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;DUNE_QUALIFIER=&quot;</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">dunesw_qualifier</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">vars</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">STD_ENV_VARS</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot override reserved environment variable: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s1">=&quot;</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+            <span class="n">products</span> <span class="o">=</span> <span class="s1">&#39;:&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">products</span><span class="p">])</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;EXTRA_PRODUCTS=&quot;</span><span class="si">{</span><span class="n">products</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--output-pattern&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">UUID</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">batch</span><span class="o">.</span><span class="n">rse</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;--output-rse&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">batch</span><span class="o">.</span><span class="n">rse</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="JustinScheduler.write_script">
+<a class="viewcode-back" href="../scheduler.html#scheduler.JustinScheduler.write_script">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write the job scripts for submitting JustIN merge jobs.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Name of the generated script file(s)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">upload_cfg</span><span class="p">()</span>
+
+        <span class="c1"># Pass 1 submission script</span>
+        <span class="n">script_name</span> <span class="o">=</span> <span class="s2">&quot;submit.sh&quot;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;submit_pass1.sh&quot;</span>
+        <span class="n">script_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span><span class="p">),</span> <span class="n">script_name</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">script_name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;#!/bin/bash</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">pass_msg</span> <span class="o">=</span> <span class="s2">&quot; for pass 1&quot;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;# This script will submit the JustIN jobs</span><span class="si">{</span><span class="n">pass_msg</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">justin_cmd</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">site</span><span class="p">))</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;chmod&#39;</span><span class="p">,</span> <span class="s1">&#39;+x&#39;</span><span class="p">,</span> <span class="n">script_name</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">scripts</span> <span class="o">=</span> <span class="p">[</span><span class="n">script_name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">scripts</span>
+
+        <span class="c1"># Pass 2+</span>
+        <span class="k">for</span> <span class="n">tier</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">)):</span>
+            <span class="n">justin</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;pass</span><span class="si">{</span><span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">_justin.sh&quot;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">justin</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="s2">&quot;#!/bin/bash&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;# This script will submit the JustIN jobs for pass </span><span class="si">{</span><span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;# Use submit_pass</span><span class="si">{</span><span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">.sh to generate the cvmfs directory first!&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;cvmfs_dir=$1&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;if [ -z </span><span class="se">\&quot;</span><span class="s2">$cvmfs_dir</span><span class="se">\&quot;</span><span class="s2"> ]; then&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;  echo &#39;Use submit_pass</span><span class="si">{</span><span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">.sh instead of calling this script directly!&#39;&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;  exit 1&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;fi&quot;</span>
+                <span class="p">]</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">justin_cmd</span><span class="p">(</span><span class="n">tier</span><span class="p">,</span> <span class="n">site</span><span class="p">))</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;chmod&#39;</span><span class="p">,</span> <span class="s1">&#39;+x&#39;</span><span class="p">,</span> <span class="n">justin</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="c1"># Pass 2 submission script</span>
+            <span class="n">script_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;submit_pass</span><span class="si">{</span><span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">.sh&quot;</span><span class="p">)</span>
+            <span class="n">pass_cfgs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">site_jobs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jobs</span><span class="p">[</span><span class="n">tier</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="n">pass_cfgs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">job</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">site_jobs</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">script_name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;#!/bin/bash</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;# This script will update the cfg files for pass </span><span class="si">{</span><span class="n">tier</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">pass2_fix</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">io_utils</span><span class="o">.</span><span class="n">src_dir</span><span class="p">(),</span> <span class="s1">&#39;pass2_fix.py&#39;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;python3 </span><span class="si">{</span><span class="n">pass2_fix</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dir</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pass_cfgs</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;chmod&#39;</span><span class="p">,</span> <span class="s1">&#39;+x&#39;</span><span class="p">,</span> <span class="n">script_name</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">scripts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">script_name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">scripts</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">scheduler</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>

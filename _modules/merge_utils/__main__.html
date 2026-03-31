@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>merge_utils.__main__ &#8212; merge-utils 0.8 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=fd3f3429" />
+    <script src="../../_static/documentation_options.js?v=a0e24af7"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://dune.github.io/merge-utils/_modules/merge_utils/__main__.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">merge_utils.__main__</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for merge_utils.__main__</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Command line interface for merge_utils.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="n">naming</span><span class="p">,</span> <span class="n">retriever</span><span class="p">,</span> <span class="n">replicas</span><span class="p">,</span> <span class="n">scheduler</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="get_parser">
+<a class="viewcode-back" href="../../scripts.html#merge_utils.__main__.get_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up the command line argument parser.&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Command line interface for merge_utils&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;--config&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;append&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;CFG&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;a configuration file&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-t&#39;</span><span class="p">,</span> <span class="s1">&#39;--tag&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;tag to help identify this run&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-r&#39;</span><span class="p">,</span> <span class="s1">&#39;--retry&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;retry a failed workflow requires tag&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-r&#39;</span><span class="p">,</span> <span class="s1">&#39;--retry&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;retry a failed workflow requires tag&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--comment&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;a comment describing the workflow&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-v&#39;</span><span class="p">,</span> <span class="s1">&#39;--verbose&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;count&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;print more verbose output (e.g. -vvv for debug output)&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--log&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;specify a custom log file path&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--retry&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;enable checking for already-merged files&#39;</span><span class="p">)</span>
+
+    <span class="n">in_group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;input arguments&#39;</span><span class="p">)</span>
+    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;input_mode&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;?&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;MODE&#39;</span><span class="p">,</span>
+                          <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;query&#39;</span><span class="p">,</span> <span class="s1">&#39;dataset&#39;</span><span class="p">,</span> <span class="s1">&#39;dids&#39;</span><span class="p">,</span> <span class="s1">&#39;files&#39;</span><span class="p">,</span> <span class="s1">&#39;resume&#39;</span><span class="p">],</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;input mode (query, dataset, dids, files), or resume a partial job&#39;</span><span class="p">)</span>
+    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-f&#39;</span><span class="p">,</span> <span class="s1">&#39;--file&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;append&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;a text file with a list of input files&#39;</span><span class="p">)</span>
+    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--dir&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;append&#39;</span><span class="p">,</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;a directory to add to search locations&#39;</span><span class="p">)</span>
+    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--skip&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;skip a number of files before processing the remainder&#39;</span><span class="p">)</span>
+    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--limit&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;maximum number of files to process (after skip)&#39;</span><span class="p">)</span>
+    <span class="c1">#in_group.add_argument(&#39;inputs&#39;, nargs=argparse.REMAINDER, help=&#39;remaining command line inputs&#39;)</span>
+    <span class="n">in_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;inputs&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;remaining command line inputs&#39;</span><span class="p">)</span>
+
+    <span class="n">out_group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;output arguments&#39;</span><span class="p">)</span>
+    <span class="n">out_mode</span> <span class="o">=</span> <span class="n">out_group</span><span class="o">.</span><span class="n">add_mutually_exclusive_group</span><span class="p">()</span>
+    <span class="n">out_mode</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--merge&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;output_mode&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_const&#39;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="s1">&#39;merge&#39;</span><span class="p">,</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;generate a merge job (default)&#39;</span><span class="p">)</span>
+    <span class="n">out_mode</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--validate&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;output_mode&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_const&#39;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="s1">&#39;validate&#39;</span><span class="p">,</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;only validate metadata instead of merging&#39;</span><span class="p">)</span>
+    <span class="n">out_mode</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--list&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s1">&#39;output_mode&#39;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;OPT&#39;</span><span class="p">,</span>
+                          <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">,</span> <span class="s1">&#39;dids&#39;</span><span class="p">,</span> <span class="s1">&#39;replicas&#39;</span><span class="p">,</span> <span class="s1">&#39;pfns&#39;</span><span class="p">,</span> <span class="s1">&#39;rses&#39;</span><span class="p">],</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s1">&#39;list (metadata, dids, replicas, pfns, rses) instead of merging&#39;</span><span class="p">)</span>
+    <span class="n">out_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-l&#39;</span><span class="p">,</span> <span class="s1">&#39;--local&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span>
+                           <span class="n">help</span><span class="o">=</span><span class="s1">&#39;run merge locally instead of submitting to JustIN&#39;</span><span class="p">)</span>
+    <span class="n">out_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="s1">&#39;--name&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;override the base name for output files&#39;</span><span class="p">)</span>
+    <span class="n">out_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-s&#39;</span><span class="p">,</span> <span class="s1">&#39;--namespace&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;NS&#39;</span><span class="p">,</span>
+                           <span class="n">help</span><span class="o">=</span><span class="s1">&#39;override the namespace for output files&#39;</span><span class="p">)</span>
+    <span class="n">out_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-m&#39;</span><span class="p">,</span> <span class="s1">&#39;--method&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;MTD&#39;</span><span class="p">,</span>
+                           <span class="n">help</span><span class="o">=</span><span class="s1">&#39;explicitly specify the merging method&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+<div class="viewcode-block" id="get_inputs">
+<a class="viewcode-back" href="../../scripts.html#merge_utils.__main__.get_inputs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_inputs</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Collect the list of inputs from the command line, from standard input, or from files.</span>
+<span class="sd">    If multiple sources are provided, this will give an error since it&#39;s likely a mistake.</span>
+<span class="sd">    If a single source is provided, it will override the config.</span>
+<span class="sd">    Inputs from the config file(s) will be used if no other sources are provided.</span>
+<span class="sd">    </span>
+<span class="sd">    :param args: command line arguments</span>
+<span class="sd">    :return: None (updates config.input.inputs in place)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Command line arguments</span>
+    <span class="n">cmd_inputs</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;inputs&quot;</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> input</span><span class="si">{s}</span><span class="s2"> from command line&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cmd_inputs</span><span class="p">))</span>
+    <span class="c1"># Inputs piped to standard input</span>
+    <span class="n">pipe_inputs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">isatty</span><span class="p">():</span>
+        <span class="n">pipe_inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">readlines</span><span class="p">()]</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> input</span><span class="si">{s}</span><span class="s2"> from standard input&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe_inputs</span><span class="p">))</span>
+    <span class="c1"># Inputs from file lists</span>
+    <span class="n">file_inputs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">filelists</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;file&quot;</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="k">for</span> <span class="n">filelist</span> <span class="ow">in</span> <span class="n">filelists</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filelist</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Input file list &#39;</span><span class="si">%s</span><span class="s2">&#39; does not exist.&quot;</span><span class="p">,</span> <span class="n">filelist</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filelist</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">entries</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> input</span><span class="si">{s}</span><span class="s2"> in file </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">filelist</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">entries</span><span class="p">))</span>
+        <span class="n">file_inputs</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">entries</span><span class="p">])</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> total input</span><span class="si">{s}</span><span class="s2"> from file lists&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_inputs</span><span class="p">))</span>
+    <span class="c1"># Inputs from the merge config</span>
+    <span class="n">cfg_inputs</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">inputs</span>
+    <span class="c1"># Give an error if we have mixed input sources, since this is likely a mistake</span>
+    <span class="n">sources</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="n">cmd_inputs</span><span class="p">,</span> <span class="n">pipe_inputs</span><span class="p">,</span> <span class="n">file_inputs</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">sources</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Multiple input sources detected, please only provide one!&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># If we have a single source, override the config inputs with that source</span>
+    <span class="k">if</span> <span class="n">cmd_inputs</span><span class="p">:</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Overriding </span><span class="si">{n}</span><span class="s2"> default config input</span><span class="si">{s}</span><span class="s2"> with command line inputs&quot;</span><span class="p">,</span>
+                             <span class="nb">len</span><span class="p">(</span><span class="n">cfg_inputs</span><span class="p">))</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">inputs</span> <span class="o">=</span> <span class="n">cmd_inputs</span>
+    <span class="k">elif</span> <span class="n">pipe_inputs</span><span class="p">:</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Overriding </span><span class="si">{n}</span><span class="s2"> default config input</span><span class="si">{s}</span><span class="s2"> with piped inputs&quot;</span><span class="p">,</span>
+                             <span class="nb">len</span><span class="p">(</span><span class="n">cfg_inputs</span><span class="p">))</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">inputs</span> <span class="o">=</span> <span class="n">pipe_inputs</span>
+    <span class="k">elif</span> <span class="n">file_inputs</span><span class="p">:</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Overriding </span><span class="si">{n}</span><span class="s2"> default config input</span><span class="si">{s}</span><span class="s2"> with file list inputs&quot;</span><span class="p">,</span>
+                             <span class="nb">len</span><span class="p">(</span><span class="n">cfg_inputs</span><span class="p">))</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">inputs</span> <span class="o">=</span> <span class="n">file_inputs</span>
+    <span class="c1"># If we have no other sources, use the config inputs (if any)</span>
+    <span class="k">elif</span> <span class="n">cfg_inputs</span><span class="p">:</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Using </span><span class="si">{n}</span><span class="s2"> default input</span><span class="si">{s}</span><span class="s2"> from config&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cfg_inputs</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;No input provided, exiting.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="start_job">
+<a class="viewcode-back" href="../../scripts.html#merge_utils.__main__.start_job">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">start_job</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Start a new merge job with the given command line arguments.&quot;&quot;&quot;</span>
+    <span class="c1"># Load configuration</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">formatter</span> <span class="o">=</span> <span class="n">naming</span><span class="o">.</span><span class="n">Formatter</span><span class="p">()</span>
+    <span class="n">formatter</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">tmp_dir</span><span class="p">)</span>
+    <span class="n">job_uuid</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">uuid</span><span class="p">()</span>
+    <span class="n">job_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">tmp_dir</span><span class="p">),</span> <span class="n">job_uuid</span><span class="p">)</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span> <span class="o">=</span> <span class="n">job_dir</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">setup_job_dir</span><span class="p">(</span><span class="n">job_dir</span><span class="p">)</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sa">f</span><span class="s2">&quot;Starting merge job </span><span class="si">{</span><span class="n">job_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Dir: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Input mode: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Output mode: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">]</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span>
+
+    <span class="c1"># Collect inputs</span>
+    <span class="n">get_inputs</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="c1"># Collect file search directories</span>
+    <span class="n">dirs</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">search_dirs</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> search location</span><span class="si">{s}</span><span class="s2"> from config files&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dirs</span><span class="p">))</span>
+    <span class="n">cmd_dirs</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;dir&quot;</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="k">if</span> <span class="n">cmd_dirs</span><span class="p">:</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_nonzero</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> search location</span><span class="si">{s}</span><span class="s2"> from command line&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cmd_dirs</span><span class="p">))</span>
+        <span class="n">dirs</span> <span class="o">|=</span> <span class="n">cmd_dirs</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_list</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{n}</span><span class="s2"> total search location</span><span class="si">{s}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+    <span class="c1"># Dump final configuration</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">dump</span><span class="p">()</span>
+
+    <span class="c1"># Quit if we have any unprocessed command line arguments</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">bad_args</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Some command line arguments were not processed: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">bad_args</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="resume_job">
+<a class="viewcode-back" href="../../scripts.html#merge_utils.__main__.resume_job">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resume_job</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resume a previously started merge job with the given command line arguments.&quot;&quot;&quot;</span>
+    <span class="c1"># Load default configuration</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;inputs&quot;</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Please provide a job directory to resume.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Multiple job directories provided, please only provide one.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">job_dir</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+    <span class="n">formatter</span> <span class="o">=</span> <span class="n">naming</span><span class="o">.</span><span class="n">Formatter</span><span class="p">()</span>
+    <span class="n">formatter</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">tmp_dir</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">job_dir</span><span class="p">):</span>
+        <span class="n">job_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">tmp_dir</span><span class="p">),</span> <span class="n">job_dir</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">job_dir</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Job directory &#39;</span><span class="si">%s</span><span class="s2">&#39; does not exist.&quot;</span><span class="p">,</span> <span class="n">job_dir</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">resume</span><span class="p">(</span><span class="n">job_dir</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+    <span class="c1"># Quit if we have any unprocessed command line arguments</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">bad_args</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Invalid command line arguments for resuming a job: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">bad_args</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">setup_job_dir</span><span class="p">(</span><span class="n">job_dir</span><span class="p">)</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sa">f</span><span class="s2">&quot;Restarting merge job </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">uuid</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Dir: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Input mode: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Output mode: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">]</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="print_metadata">
+<a class="viewcode-back" href="../../scripts.html#merge_utils.__main__.print_metadata">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">print_metadata</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Print info about the metadata for a list of files.&quot;&quot;&quot;</span>
+    <span class="n">metadata</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="n">good_files</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">good_files</span>
+    <span class="n">ngood</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">good_files</span><span class="p">)</span>
+    <span class="n">nerrs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">files</span><span class="p">)</span> <span class="o">-</span> <span class="n">ngood</span>
+    <span class="c1"># In DID mode, list all valid DIDs and exit</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;dids&#39;</span><span class="p">:</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="n">ngood</span><span class="si">}</span><span class="s2"> valid input files:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">good_files</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nerrs</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;An additional </span><span class="si">%d</span><span class="s2"> files failed validation!&quot;</span><span class="p">,</span> <span class="n">nerrs</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="c1"># Otherwise, print summary of validation results</span>
+    <span class="k">if</span> <span class="n">nerrs</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2"> input files passed validation, but </span><span class="si">%d</span><span class="s2"> files failed!&quot;</span><span class="p">,</span> <span class="n">ngood</span><span class="p">,</span> <span class="n">nerrs</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;All </span><span class="si">{</span><span class="n">ngood</span><span class="si">}</span><span class="s2"> input files passed validation!&quot;</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+    <span class="c1"># Check the metadata for the output files</span>
+    <span class="n">meta</span><span class="o">.</span><span class="n">make_names</span><span class="p">(</span><span class="n">good_files</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;validate&#39;</span><span class="p">:</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="s2">&quot;All input and output metadata passed validation!&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="c1"># In metadata mode, also print the combined output metadata</span>
+    <span class="n">merged_metadata</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">merged_keys</span><span class="p">(</span><span class="n">good_files</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Combined metadata:</span><span class="se">\n</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">merged_metadata</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">output</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">outputs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">overrides</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">io_utils</span><span class="o">.</span><span class="n">log_print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Additional metadata overrides for output </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">:</span><span class="se">\n</span><span class="si">{</span><span class="n">overrides</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="print_replicas">
+<a class="viewcode-back" href="../../scripts.html#merge_utils.__main__.print_replicas">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">print_replicas</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Print info about the replicas for a list of files.&quot;&quot;&quot;</span>
+    <span class="n">paths</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;replicas&#39;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;File replicas:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">good_files</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">replica</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">replicas</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">replica</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;pfns&#39;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;File PFNs:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">good_files</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">replica</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">replicas</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">replica</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">good</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;rses&#39;</span><span class="p">:</span>
+        <span class="n">rses</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">good_files</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">good_files</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">good_files</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">replica</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">replicas</span><span class="p">:</span>
+                <span class="n">rse_name</span> <span class="o">=</span> <span class="n">replica</span><span class="o">.</span><span class="n">rse</span><span class="o">.</span><span class="n">name</span>
+                <span class="k">if</span> <span class="n">rse_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rses</span><span class="p">:</span>
+                    <span class="n">rses</span><span class="p">[</span><span class="n">rse_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+                <span class="n">rses</span><span class="p">[</span><span class="n">rse_name</span><span class="p">][</span><span class="n">replica</span><span class="o">.</span><span class="n">status</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">good_files</span><span class="p">)</span><span class="si">}</span><span class="s2"> valid input files with replicas at </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">rses</span><span class="p">)</span><span class="si">}</span><span class="s2"> RSEs:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">rse_name</span><span class="p">,</span> <span class="n">statuses</span> <span class="ow">in</span> <span class="n">rses</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rse_name</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">status</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">statuses</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">status</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> replicas: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../scripts.html#merge_utils.__main__.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a merge job&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span>
+    <span class="n">arguments</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># Convert command line arguments to a dict and remove any None values</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">}</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;main arguments are:&quot;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+    <span class="c1"># Set up logging</span>
+    <span class="n">io_utils</span><span class="o">.</span><span class="n">setup_log</span><span class="p">(</span><span class="n">log_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">verbosity</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">arguments</span><span class="o">.</span><span class="n">input_mode</span> <span class="o">==</span> <span class="s1">&#39;resume&#39;</span><span class="p">:</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;input_mode&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">resume_job</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">start_job</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="c1"># Set up metadata retriever</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="n">retriever</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+    <span class="c1"># If we&#39;re only validating or listing DIDs, we can skip the rest of the setup</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">mode</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;validate&#39;</span><span class="p">,</span> <span class="s1">&#39;metadata&#39;</span><span class="p">,</span> <span class="s1">&#39;dids&#39;</span><span class="p">]:</span>
+        <span class="n">print_metadata</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Set up physical path finder</span>
+    <span class="n">paths</span> <span class="o">=</span> <span class="n">replicas</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+
+    <span class="c1"># Process the other list options</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">mode</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;replicas&#39;</span><span class="p">,</span> <span class="s1">&#39;pfns&#39;</span><span class="p">,</span> <span class="s1">&#39;rses&#39;</span><span class="p">]:</span>
+        <span class="n">print_replicas</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Process merging</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;merge&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">local</span><span class="p">:</span>
+            <span class="n">sched</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">LocalScheduler</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sched</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">JustinScheduler</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+        <span class="n">sched</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+        <span class="k">return</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Unknown output mode: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">merge_utils.__main__</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>

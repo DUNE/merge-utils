@@ -43,8 +43,64 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="metacat-utils">
-<h1>metacat_utils<a class="headerlink" href="#metacat-utils" title="Link to this heading">¶</a></h1>
+  <section id="module-merge_utils.metacat_utils">
+<span id="metacat-utils"></span><h1>metacat_utils<a class="headerlink" href="#module-merge_utils.metacat_utils" title="Link to this heading">¶</a></h1>
+<p>Utility functions for interacting with the MetaCat web API.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="merge_utils.metacat_utils.MetaCatWrapper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.metacat_utils.</span></span><span class="sig-name descname"><span class="pre">MetaCatWrapper</span></span><a class="reference internal" href="_modules/merge_utils/metacat_utils.html#MetaCatWrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.metacat_utils.MetaCatWrapper" title="Link to this definition">¶</a></dt>
+<dd><p>Class for sending asynchronous requests to the MetaCat web API.</p>
+<p>Initialize the MetaCatWrapper.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.metacat_utils.MetaCatWrapper.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/metacat_utils.html#MetaCatWrapper.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.metacat_utils.MetaCatWrapper.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Connect to the MetaCat web API</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.metacat_utils.MetaCatWrapper.disconnect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">disconnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/metacat_utils.html#MetaCatWrapper.disconnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.metacat_utils.MetaCatWrapper.disconnect" title="Link to this definition">¶</a></dt>
+<dd><p>No need to explicitly disconnect from MetaCat?</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.metacat_utils.MetaCatWrapper.files">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/merge_utils/metacat_utils.html#MetaCatWrapper.files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.metacat_utils.MetaCatWrapper.files" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously request a list of DIDs from MetaCat</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>files</strong> – list of file dicts, with either ‘fid’, ‘did’, or ‘namespace’ &amp; ‘name’ keys</p></li>
+<li><p><strong>metadata</strong> – whether to include metadata in the results</p></li>
+<li><p><strong>provenance</strong> – whether to include provenance in the results</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file metadata dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="merge_utils.metacat_utils.MetaCatWrapper.query">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/merge_utils/metacat_utils.html#MetaCatWrapper.query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.metacat_utils.MetaCatWrapper.query" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously query MetaCat.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> – MQL query to execute</p></li>
+<li><p><strong>metadata</strong> – whether to include metadata in the results</p></li>
+<li><p><strong>provenance</strong> – whether to include provenance in the results</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file metadata dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
 
@@ -54,6 +110,22 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">metacat_utils</a><ul>
+<li><a class="reference internal" href="#merge_utils.metacat_utils.MetaCatWrapper"><code class="docutils literal notranslate"><span class="pre">MetaCatWrapper</span></code></a><ul>
+<li><a class="reference internal" href="#merge_utils.metacat_utils.MetaCatWrapper.connect"><code class="docutils literal notranslate"><span class="pre">MetaCatWrapper.connect()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.metacat_utils.MetaCatWrapper.disconnect"><code class="docutils literal notranslate"><span class="pre">MetaCatWrapper.disconnect()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.metacat_utils.MetaCatWrapper.files"><code class="docutils literal notranslate"><span class="pre">MetaCatWrapper.files()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.metacat_utils.MetaCatWrapper.query"><code class="docutils literal notranslate"><span class="pre">MetaCatWrapper.query()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="meta.html"

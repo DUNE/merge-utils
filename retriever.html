@@ -43,8 +43,283 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="retriever">
-<h1>retriever<a class="headerlink" href="#retriever" title="Link to this heading">¶</a></h1>
+  <section id="module-retriever">
+<span id="retriever"></span><h1>retriever<a class="headerlink" href="#module-retriever" title="Link to this heading">¶</a></h1>
+<p>FileRetriever classes</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="retriever.DidRetriever">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">retriever.</span></span><span class="sig-name descname"><span class="pre">DidRetriever</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dupes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/retriever.html#DidRetriever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.DidRetriever" title="Link to this definition">¶</a></dt>
+<dd><p>Class for retrieving metadata from MetaCat using a list of DIDs.</p>
+<p>Initialize the DidRetriever with a list of DIDs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dids</strong> – list of file DIDs to find</p></li>
+<li><p><strong>dupes</strong> – set of indices of duplicate DIDs</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.DidRetriever.check_duplicates">
+<span class="sig-name descname"><span class="pre">check_duplicates</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span></span></span><a class="reference internal" href="_modules/retriever.html#DidRetriever.check_duplicates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.DidRetriever.check_duplicates" title="Link to this definition">¶</a></dt>
+<dd><p>Check DID list for duplicate entries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>set of indices of duplicate DIDs</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.DidRetriever.check_namespaces">
+<span class="sig-name descname"><span class="pre">check_namespaces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/retriever.html#DidRetriever.check_namespaces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.DidRetriever.check_namespaces" title="Link to this definition">¶</a></dt>
+<dd><p>Check DID list for namespace issues.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.DidRetriever.get_metadata">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#retriever.InputBatch" title="retriever.InputBatch"><span class="pre">InputBatch</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/retriever.html#DidRetriever.get_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.DidRetriever.get_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously request a batch of DIDs from MetaCat</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> – InputBatch object with skip index set</p></li>
+<li><p><strong>limit</strong> – maximum number of files to retrieve</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file metadata dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="retriever.InputBatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">retriever.</span></span><span class="sig-name descname"><span class="pre">InputBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">skip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/retriever.html#InputBatch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.InputBatch" title="Link to this definition">¶</a></dt>
+<dd><p>Class representing a batch of input file data, starting at a specific skip index.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="retriever.LocalMetaRetriever">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">retriever.</span></span><span class="sig-name descname"><span class="pre">LocalMetaRetriever</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/retriever.html#LocalMetaRetriever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.LocalMetaRetriever" title="Link to this definition">¶</a></dt>
+<dd><p>MetaRetriever for local files</p>
+<p>Initialize the LocalMetaRetriever with a list of json files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>paths</strong> – list of metadata file paths</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.LocalMetaRetriever.get_metadata">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#retriever.InputBatch" title="retriever.InputBatch"><span class="pre">InputBatch</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/retriever.html#LocalMetaRetriever.get_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.LocalMetaRetriever.get_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve metadata for a specific batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> – InputBatch object containing skip index and list of file names</p></li>
+<li><p><strong>limit</strong> – maximum number of files to retrieve</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file metadata dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="retriever.MetaRetriever">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">retriever.</span></span><span class="sig-name descname"><span class="pre">MetaRetriever</span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for retrieving metadata from a source</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.check_existence">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_existence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever.check_existence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever.check_existence" title="Link to this definition">¶</a></dt>
+<dd><p>Check that MetaCat records exist for a batch of input files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>files</strong> – list of file metadata dictionaries to check</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.check_parents">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_parents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever.check_parents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever.check_parents" title="Link to this definition">¶</a></dt>
+<dd><p>Check that MetaCat records exist for the parents of a batch of input files.
+Also get the siblings if we need them for the already merged check.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>files</strong> – list of file metadata dictionaries to check</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Connect to the MetaCat web API</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.disconnect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">disconnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever.disconnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever.disconnect" title="Link to this definition">¶</a></dt>
+<dd><p>Disconnect from the MetaCat web API</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.files">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">files</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="merge_set.html#merge_utils.merge_set.MergeSet" title="merge_utils.merge_set.MergeSet"><span class="pre">MergeSet</span></a></em><a class="headerlink" href="#retriever.MetaRetriever.files" title="Link to this definition">¶</a></dt>
+<dd><p>Return the set of files from the source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.get_batch">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">getter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#retriever.InputBatch" title="retriever.InputBatch"><span class="pre">InputBatch</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#retriever.InputBatch" title="retriever.InputBatch"><span class="pre">InputBatch</span></a></span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever.get_batch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever.get_batch" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve a batch of input data, with caching.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>getter</strong> – function to call to retrieve inputs</p></li>
+<li><p><strong>batch</strong> – InputBatch object to retrieve data for</p></li>
+<li><p><strong>kwargs</strong> – additional arguments to pass to getter</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.get_done">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_done</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever.get_done"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever.get_done" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously query MetaCat for merged files with the same tag as this job</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.get_files">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever.get_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever.get_files" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve file metadata for a specific list of DIDs.
+Also gets the siblings if we need them for the already merged check.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>query</strong> – list of dictionaries with ‘did’ keys to retrieve</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file metadata dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.get_metadata">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#retriever.InputBatch" title="retriever.InputBatch"><span class="pre">InputBatch</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever.get_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever.get_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve metadata for a specific batch of files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> – empty InputBatch object with the skip index set</p></li>
+<li><p><strong>limit</strong> – maximum number of files to retrieve</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file metadata dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.get_siblings">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_siblings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever.get_siblings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever.get_siblings" title="Link to this definition">¶</a></dt>
+<dd><p>We check for already merged files by looking at the children of the input files.
+But in grandparents mode, we actually want the children of the input file parents instead.
+We don’t need the original children in that case, so just replace them with the siblings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>files</strong> – list of file metadata dictionaries to check</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.input_batches">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_batches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AsyncGenerator</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#retriever.InputBatch" title="retriever.InputBatch"><span class="pre">InputBatch</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever.input_batches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever.input_batches" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously retrieve input file metadata in batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>InputBatch object containing skip index and list of MergeFile objects</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.namespace">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">namespace</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#retriever.MetaRetriever.namespace" title="Link to this definition">¶</a></dt>
+<dd><p>Return the default namespace for files without an explicit namespace.
+Checks the config for input.namespace, then output.namespace, then defaults to ‘usertests’.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.MetaRetriever.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/retriever.html#MetaRetriever.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.MetaRetriever.run" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve metadata for all files.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="retriever.QueryRetriever">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">retriever.</span></span><span class="sig-name descname"><span class="pre">QueryRetriever</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/retriever.html#QueryRetriever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.QueryRetriever" title="Link to this definition">¶</a></dt>
+<dd><p>Class for retrieving metadata from MetaCat using an MQL query.</p>
+<p>Initialize the QueryRetriever with an MQL query.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>query</strong> – MQL query to find files</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="retriever.QueryRetriever.get_metadata">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#retriever.InputBatch" title="retriever.InputBatch"><span class="pre">InputBatch</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/retriever.html#QueryRetriever.get_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.QueryRetriever.get_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously query MetaCat for a specific batch of files</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> – InputBatch object with skip index set</p></li>
+<li><p><strong>limit</strong> – maximum number of files to retrieve</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of file metadata dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="retriever.file_serializer">
+<span class="sig-prename descclassname"><span class="pre">retriever.</span></span><span class="sig-name descname"><span class="pre">file_serializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/retriever.html#file_serializer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.file_serializer" title="Link to this definition">¶</a></dt>
+<dd><p>Custom JSON serializer for MergeFileError objects</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="retriever.get">
+<span class="sig-prename descclassname"><span class="pre">retriever.</span></span><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#retriever.MetaRetriever" title="retriever.MetaRetriever"><span class="pre">MetaRetriever</span></a></span></span><a class="reference internal" href="_modules/retriever.html#get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#retriever.get" title="Link to this definition">¶</a></dt>
+<dd><p>Create and return a metadata retriever based on input mode:
+files: LocalMetaRetriever if any metadata files were provided, otherwise DidRetriever
+dids: DidRetriever
+query: QueryRetriever
+dataset: QueryRetriever with query for files in the specified dataset</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MetaRetriever object for retrieving file metadata</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -54,6 +329,48 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">retriever</a><ul>
+<li><a class="reference internal" href="#retriever.DidRetriever"><code class="docutils literal notranslate"><span class="pre">DidRetriever</span></code></a><ul>
+<li><a class="reference internal" href="#retriever.DidRetriever.check_duplicates"><code class="docutils literal notranslate"><span class="pre">DidRetriever.check_duplicates()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.DidRetriever.check_namespaces"><code class="docutils literal notranslate"><span class="pre">DidRetriever.check_namespaces()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.DidRetriever.get_metadata"><code class="docutils literal notranslate"><span class="pre">DidRetriever.get_metadata()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#retriever.InputBatch"><code class="docutils literal notranslate"><span class="pre">InputBatch</span></code></a></li>
+<li><a class="reference internal" href="#retriever.LocalMetaRetriever"><code class="docutils literal notranslate"><span class="pre">LocalMetaRetriever</span></code></a><ul>
+<li><a class="reference internal" href="#retriever.LocalMetaRetriever.get_metadata"><code class="docutils literal notranslate"><span class="pre">LocalMetaRetriever.get_metadata()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#retriever.MetaRetriever"><code class="docutils literal notranslate"><span class="pre">MetaRetriever</span></code></a><ul>
+<li><a class="reference internal" href="#retriever.MetaRetriever.check_existence"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.check_existence()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.check_parents"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.check_parents()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.connect"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.connect()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.disconnect"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.disconnect()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.files"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.files</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.get_batch"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.get_batch()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.get_done"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.get_done()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.get_files"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.get_files()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.get_metadata"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.get_metadata()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.get_siblings"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.get_siblings()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.input_batches"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.input_batches()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.namespace"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.namespace</span></code></a></li>
+<li><a class="reference internal" href="#retriever.MetaRetriever.run"><code class="docutils literal notranslate"><span class="pre">MetaRetriever.run()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#retriever.QueryRetriever"><code class="docutils literal notranslate"><span class="pre">QueryRetriever</span></code></a><ul>
+<li><a class="reference internal" href="#retriever.QueryRetriever.get_metadata"><code class="docutils literal notranslate"><span class="pre">QueryRetriever.get_metadata()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#retriever.file_serializer"><code class="docutils literal notranslate"><span class="pre">file_serializer()</span></code></a></li>
+<li><a class="reference internal" href="#retriever.get"><code class="docutils literal notranslate"><span class="pre">get()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="replicas.html"

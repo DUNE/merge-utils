@@ -45,11 +45,18 @@
             
   <section id="module-merge_utils.justin_utils">
 <span id="justin-utils"></span><h1>justin_utils<a class="headerlink" href="#module-merge_utils.justin_utils" title="Link to this heading">¶</a></h1>
-<p>Utilities for running justin jobs</p>
+<p>Utility functions for interacting with the JustIN web API.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="merge_utils.justin_utils.get_distances">
-<span class="sig-prename descclassname"><span class="pre">merge_utils.justin_utils.</span></span><span class="sig-name descname"><span class="pre">get_distances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sites</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/justin_utils.html#get_distances"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.justin_utils.get_distances" title="Link to this definition">¶</a></dt>
-<dd><p>Get the distances between sites and storage elements</p>
+<dt class="sig sig-object py" id="merge_utils.justin_utils.get_site_rse_distances">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">merge_utils.justin_utils.</span></span><span class="sig-name descname"><span class="pre">get_site_rse_distances</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/merge_utils/justin_utils.html#get_site_rse_distances"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.justin_utils.get_site_rse_distances" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve site-RSE distances from the JustIN web API.
+Adds site distance offsets from the config
+Does NOT add RSE distance offsets, since those are already accounted for by the PathFinder</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dictionary of {rse: {site: distance}} for all reachable site-RSE pairs</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -65,7 +72,7 @@
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">justin_utils</a><ul>
-<li><a class="reference internal" href="#merge_utils.justin_utils.get_distances"><code class="docutils literal notranslate"><span class="pre">get_distances()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.justin_utils.get_site_rse_distances"><code class="docutils literal notranslate"><span class="pre">get_site_rse_distances()</span></code></a></li>
 </ul>
 </li>
 </ul>

@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>replicas &#8212; merge-utils 0.8 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
+    <script src="../_static/documentation_options.js?v=a0e24af7"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://dune.github.io/merge-utils/_modules/replicas.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">replicas</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for replicas</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Tools for working with paths and xrootd URLs.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">enum</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">io_utils</span><span class="p">,</span> <span class="n">config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.merge_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">MergeSet</span><span class="p">,</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">MergeFileError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.retriever</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaRetriever</span><span class="p">,</span> <span class="n">InputBatch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">merge_utils.rucio_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">RucioWrapper</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Utility functions for extracting components from URLs</span>
+
+<div class="viewcode-block" id="get_protocol">
+<a class="viewcode-back" href="../replicas.html#replicas.get_protocol">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_protocol</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract the protocol from a URL or local file path</span>
+<span class="sd">    </span>
+<span class="sd">    :param url: URL of the form &#39;protocol://host:port/path&#39;, or a local file path</span>
+<span class="sd">    :return: protocol from URL, or &#39;file&#39; if it is a local file path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;://&quot;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;://&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="s2">&quot;file&quot;</span></div>
+
+
+<div class="viewcode-block" id="get_host">
+<a class="viewcode-back" href="../replicas.html#replicas.get_host">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_host</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract the host from a URL or local file path</span>
+<span class="sd">    </span>
+<span class="sd">    :param url: URL of the form &#39;protocol://host:port/path&#39;, or a local file path</span>
+<span class="sd">    :return: host from URL, or &#39;local&#39; if it is a local file path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;://&quot;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="s2">&quot;local&quot;</span></div>
+
+
+<div class="viewcode-block" id="get_port">
+<a class="viewcode-back" href="../replicas.html#replicas.get_port">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_port</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract the port from a URL or local file path</span>
+<span class="sd">    </span>
+<span class="sd">    :param url: URL of the form &#39;protocol://host:port/path&#39;, or a local file path</span>
+<span class="sd">    :return: port from URL, or None if it is a local file path or no port is specified</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;://&quot;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="get_path">
+<a class="viewcode-back" href="../replicas.html#replicas.get_path">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_path</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract the path from a URL or local file path</span>
+<span class="sd">    </span>
+<span class="sd">    :param url: URL of the form &#39;protocol://host:port/path&#39;, or a local file path</span>
+<span class="sd">    :return: path from URL, or the original string if it is a local file path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;://&quot;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">url</span></div>
+
+
+<span class="c1"># Utility functions for converting between local paths and xrootd URLs</span>
+
+<div class="viewcode-block" id="path_to_xrootd">
+<a class="viewcode-back" href="../replicas.html#replicas.path_to_xrootd">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">path_to_xrootd</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a local file path to an xrootd URL</span>
+
+<span class="sd">    :param path: local file path</span>
+<span class="sd">    :return: xrootd URL corresponding to the local file path, or None if conversion fails</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">urls</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">xrootd</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">url_prefix</span><span class="p">,</span> <span class="n">path_prefix</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">urls</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">path_prefix</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path_prefix</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">path_prefix</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">path_prefix</span><span class="p">,</span> <span class="n">url_prefix</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="xrootd_to_path">
+<a class="viewcode-back" href="../replicas.html#replicas.xrootd_to_path">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">xrootd_to_path</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert an xrootd URL to a local file path</span>
+
+<span class="sd">    :param url: xrootd URL</span>
+<span class="sd">    :return: local file path corresponding to the xrootd URL, or None if conversion fails</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">urls</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">xrootd</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">site</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">url_prefix</span><span class="p">,</span> <span class="n">path_prefix</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">urls</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">path_prefix</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path_prefix</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">url_prefix</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">url</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">url_prefix</span><span class="p">,</span> <span class="n">path_prefix</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<span class="c1"># Classes for representing file replicas and their statuses</span>
+
+<div class="viewcode-block" id="StatusMeta">
+<a class="viewcode-back" href="../replicas.html#replicas.StatusMeta">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StatusMeta</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">EnumMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Metaclass for Status enum to allow special handling of &#39;ONLINE AND NEARLINE&#39; status.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="c1"># Special case for ONLINE AND NEARLINE, which should be treated as ONLINE</span>
+        <span class="k">if</span> <span class="s1">&#39;ONLINE&#39;</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ONLINE</span>
+        <span class="c1"># Otherwise, get the value normally</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown file status: </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span></div>
+
+
+<div class="viewcode-block" id="Status">
+<a class="viewcode-back" href="../replicas.html#replicas.Status">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Status</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">StatusMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enumeration of possible file statuses&quot;&quot;&quot;</span>
+    <span class="n">ONLINE</span>          <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+    <span class="n">NEARLINE</span>        <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+    <span class="n">OFFLINE</span>         <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+    <span class="n">UNKNOWN</span>         <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+    <span class="n">UNREACHABLE</span>     <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+    <span class="n">MISSING</span>         <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+    <span class="n">BAD_SIZE</span>        <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+    <span class="n">BAD_CHECKSUM</span>    <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+    <span class="n">BAD_PROTOCOL</span>    <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">good</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return True if this status indicates a good file replica&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="p">{</span><span class="n">Status</span><span class="o">.</span><span class="n">ONLINE</span><span class="p">,</span> <span class="n">Status</span><span class="o">.</span><span class="n">NEARLINE</span><span class="p">}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bad</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return True if this status indicates a bad file replica&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">good</span></div>
+
+
+<div class="viewcode-block" id="Replica">
+<a class="viewcode-back" href="../replicas.html#replicas.Replica">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Replica</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class representing a file replica, including its path and status.&quot;&quot;&quot;</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">rse</span><span class="p">:</span> <span class="s1">&#39;BaseRSE&#39;</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">status</span><span class="p">:</span> <span class="n">Status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">UNREACHABLE</span> <span class="c1"># Assume unreachable until we can check otherwise</span>
+    <span class="n">distance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">protocol</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the protocol of the replica&#39;s path&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_protocol</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;Replica&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sort replicas based on their status and distance&quot;&quot;&quot;</span>
+        <span class="c1"># First sort by good vs bad status</span>
+        <span class="n">self_good</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">good</span>
+        <span class="n">other_good</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">good</span>
+        <span class="k">if</span> <span class="n">self_good</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">other_good</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">other_good</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">self_good</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="c1"># Bad statuses are roughly ordered by severity</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">self_good</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">other_good</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">status</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span>
+        <span class="c1"># If both replicas have the same status, sort by distance</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">distance</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">distance</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">path</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">rse</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">rse</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (d = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+
+
+<span class="c1"># Classes for representing RSEs and checking the status of replicas on those RSEs</span>
+
+<div class="viewcode-block" id="BaseRSE">
+<a class="viewcode-back" href="../replicas.html#replicas.BaseRSE">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseRSE</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for an RSE, which can be used to check the status of file replicas&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">urls</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">staging</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="BaseRSE.ping">
+<a class="viewcode-back" href="../replicas.html#replicas.BaseRSE.ping">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the ping time to the RSE in ms&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No URLs found for RSE </span><span class="si">%s</span><span class="s2">, cannot ping&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;file&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> is local, skipping ping&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="c1"># Try pinging the URLs</span>
+        <span class="n">best_ping</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="n">hosts</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">get_host</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ping&#39;</span><span class="p">,</span> <span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="n">host</span><span class="p">]</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ret</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Failed to ping </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">host</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">ping</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="c1"># min ping time</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Pinged </span><span class="si">%s</span><span class="s2">, t = </span><span class="si">%.1f</span><span class="s2"> ms&quot;</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">ping</span><span class="p">)</span>
+            <span class="n">best_ping</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">best_ping</span><span class="p">,</span> <span class="n">ping</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">best_ping</span> <span class="o">!=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Best ping to RSE </span><span class="si">%s</span><span class="s2"> is </span><span class="si">%.1f</span><span class="s2"> ms&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">best_ping</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">best_ping</span>
+        <span class="c1"># If we get here, all pings failed</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Failed to ping any URLs for RSE </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseRSE.xrdfs">
+<a class="viewcode-back" href="../replicas.html#replicas.BaseRSE.xrdfs">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">xrdfs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replica</span><span class="p">:</span> <span class="n">Replica</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run an xrdfs command on a replica and return the output</span>
+<span class="sd">        In case of failure, set the replica status accordingly and return None</span>
+
+<span class="sd">        :param replica: Replica object to check</span>
+<span class="sd">        :param cmd: xrdfs command to run (e.g. &#39;ls -l&#39;)</span>
+<span class="sd">        :param timeout: timeout for the xrdfs command in seconds</span>
+<span class="sd">        :return: stdout of the xrdfs command, or None if it failed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">protocol</span> <span class="o">=</span> <span class="n">replica</span><span class="o">.</span><span class="n">protocol</span>
+        <span class="k">if</span> <span class="n">protocol</span> <span class="o">!=</span> <span class="s1">&#39;root&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported protocol for xrdfs: </span><span class="si">{</span><span class="n">protocol</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="n">get_host</span><span class="p">(</span><span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">port</span> <span class="o">=</span> <span class="n">get_port</span><span class="p">(</span><span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">get_path</span><span class="p">(</span><span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">protocol</span><span class="si">}</span><span class="s2">://</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">full_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;xrdfs&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">]</span> <span class="o">+</span> <span class="n">cmd</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">path</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="n">full_cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                          <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Timeout accessing xrootd server </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">host</span><span class="p">)</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">UNREACHABLE</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">ret</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">UNREACHABLE</span>
+            <span class="k">if</span> <span class="n">ret</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">51</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Invalid xrootd server </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">host</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">ret</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">52</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Auth failed for xrootd server </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">host</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">ret</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">54</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No such file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+                <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">MISSING</span>
+            <span class="k">elif</span> <span class="n">ret</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Failed to access </span><span class="si">%s</span><span class="se">\n</span><span class="s2">  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">ret</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">ret</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="BaseRSE.checksum_xrootd">
+<a class="viewcode-back" href="../replicas.html#replicas.BaseRSE.checksum_xrootd">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">checksum_xrootd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replica</span><span class="p">:</span> <span class="n">Replica</span><span class="p">,</span> <span class="n">cksums</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the checksums of a remote file against expected values</span>
+<span class="sd">        </span>
+<span class="sd">        :param replica: Replica object to check</span>
+<span class="sd">        :param cksums: dict of {algorithm: expected_checksum} pairs to check against</span>
+<span class="sd">        :return: True if any matching checksums are found, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> Checking xrootd checksums for file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">xrdfs_cksums</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">xrdfs</span><span class="p">(</span><span class="n">replica</span><span class="p">,</span> <span class="s1">&#39;query checksum&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">xrdfs_cksums</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Failed to get checksums for file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">unknown_algos</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">xrdfs_cksums</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+            <span class="n">algo</span><span class="p">,</span> <span class="n">cksum</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">algo</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cksums</span><span class="p">:</span>
+                <span class="n">unknown_algos</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">algo</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">cksum</span> <span class="o">==</span> <span class="n">cksums</span><span class="p">[</span><span class="n">algo</span><span class="p">]:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Checksum </span><span class="si">%s</span><span class="s2"> matches for file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> has bad </span><span class="si">%s</span><span class="s2"> checksum: </span><span class="si">%s</span><span class="s2"> != </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">cksum</span><span class="p">,</span> <span class="n">cksums</span><span class="p">[</span><span class="n">algo</span><span class="p">])</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">unknown_algos</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> has checksums for unknown algorithms: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">unknown_algos</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Checksum failed for file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="BaseRSE.checksum_local">
+<a class="viewcode-back" href="../replicas.html#replicas.BaseRSE.checksum_local">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">checksum_local</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cksums</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the checksums of a local file against expected values</span>
+<span class="sd">        </span>
+<span class="sd">        :param path: path to the local file</span>
+<span class="sd">        :param cksums: dict of {algorithm: expected_checksum} pairs to check against</span>
+<span class="sd">        :return: True if any matching checksums are found, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> Checking local checksums for file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">algorithms</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s1">&#39;adler32&#39;</span><span class="p">,</span> <span class="s1">&#39;xrdadler32&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;md5&#39;</span><span class="p">,</span> <span class="s1">&#39;md5sum&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;sha256&#39;</span><span class="p">,</span> <span class="s1">&#39;sha256sum&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;sha512&#39;</span><span class="p">,</span> <span class="s1">&#39;sha512sum&#39;</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="c1"># Check known algorithms</span>
+        <span class="k">for</span> <span class="n">algo</span><span class="p">,</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">algorithms</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">algo</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cksums</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">expected</span> <span class="o">=</span> <span class="n">cksums</span><span class="p">[</span><span class="n">algo</span><span class="p">]</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="p">[</span><span class="n">cmd</span><span class="p">,</span> <span class="n">path</span><span class="p">],</span>
+                                            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ret</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Failed to run </span><span class="si">%s</span><span class="s2"> for file </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">ret</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="k">continue</span>
+            <span class="n">actual</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">actual</span> <span class="o">==</span> <span class="n">expected</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> has bad </span><span class="si">%s</span><span class="s2"> checksum: </span><span class="si">%s</span><span class="s2"> != </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">path</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">actual</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="c1"># Failed to verify any checksums</span>
+        <span class="n">checked</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">algorithms</span><span class="p">)</span>
+        <span class="n">unchecked</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">cksums</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="n">checked</span>
+        <span class="k">if</span> <span class="n">unchecked</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Missing commands for checksum algorithms: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unchecked</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Checksum failed for file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="BaseRSE.cache_xrootd">
+<a class="viewcode-back" href="../replicas.html#replicas.BaseRSE.cache_xrootd">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cache_xrootd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replica</span><span class="p">:</span> <span class="n">Replica</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if a replica is online or nearline by using gfal-xattr to query user.status</span>
+
+<span class="sd">        :param replica: Replica object to check</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> Checking xrootd cache status for file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="c1"># Skip cache check if the distance is already too high</span>
+        <span class="k">if</span> <span class="n">replica</span><span class="o">.</span><span class="n">distance</span> <span class="o">&gt;</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">max_distance</span><span class="p">:</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">UNREACHABLE</span>
+            <span class="k">return</span>
+        <span class="c1"># Assume nearline unless we can confirm it is online</span>
+        <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">NEARLINE</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gfal-xattr&#39;</span><span class="p">,</span> <span class="s1">&#39;-t&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">timeout</span><span class="p">),</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;user.status&#39;</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                          <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Timeout running gfal-xattr on </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">ret</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># code 110 is timeout</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Failed to run gfal-xattr on </span><span class="si">%s</span><span class="se">\n</span><span class="s2">  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">ret</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">return</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;UNKNOWN&#39;</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Got UNKNOWN status for </span><span class="si">%s</span><span class="s2">, assuming NEARLINE&quot;</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="c1"># If we got a valid status, set it on the replica</span>
+        <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="p">[</span><span class="n">status</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="BaseRSE.cache_local">
+<a class="viewcode-back" href="../replicas.html#replicas.BaseRSE.cache_local">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cache_local</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replica</span><span class="p">:</span> <span class="n">Replica</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if a replica is online or nearline by reading the locality stat file</span>
+
+<span class="sd">        :param replica: Replica object to check</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> Checking local cache status for file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">directory</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">stat_file</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">directory</span><span class="si">}</span><span class="s2">/.(get)(</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">)(locality)&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">stat_file</span><span class="p">):</span>
+            <span class="c1"># normal file not in DCACHE?</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">ONLINE</span>
+            <span class="k">return</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">stat_file</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">stats</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="p">[</span><span class="n">status</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="BaseRSE.check_cache">
+<a class="viewcode-back" href="../replicas.html#replicas.BaseRSE.check_cache">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replica</span><span class="p">:</span> <span class="n">Replica</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if a replica is online or nearline using the appropriate method</span>
+
+<span class="sd">        :param replica: Replica object to check</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> Checking cache status for file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="c1"># For non-dcache RSEs, set status to ONLINE or NEARLINE depending on tape vs disk type</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">staging</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">ONLINE</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="k">else</span> <span class="n">Status</span><span class="o">.</span><span class="n">NEARLINE</span>
+            <span class="k">return</span>
+        <span class="c1"># For dcache RSEs, skip the cache check if there is no staging penalty</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">staging</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">ONLINE</span>
+            <span class="k">return</span>
+        <span class="c1"># Check the cache status of the file</span>
+        <span class="k">if</span> <span class="n">replica</span><span class="o">.</span><span class="n">protocol</span> <span class="o">==</span> <span class="s1">&#39;file&#39;</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> checking local cache for file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_local</span><span class="p">,</span> <span class="n">replica</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> checking xrootd cache for file </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_xrootd</span><span class="p">(</span><span class="n">replica</span><span class="p">)</span>
+        <span class="c1"># If the file is not online, add the staging penalty to the distance</span>
+        <span class="k">if</span> <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="n">Status</span><span class="o">.</span><span class="n">ONLINE</span><span class="p">:</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">distance</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">staging</span></div>
+
+
+<div class="viewcode-block" id="BaseRSE.check_local">
+<a class="viewcode-back" href="../replicas.html#replicas.BaseRSE.check_local">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_local</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replica</span><span class="p">:</span> <span class="n">Replica</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cksums</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the status of a local file replica</span>
+
+<span class="sd">        :param replica: Replica object to check</span>
+<span class="sd">        :param size: optionally check the file size against an expected value</span>
+<span class="sd">        :param cksums: optionally check the file checksums against a dict of {algorithm: checksum}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Make sure the file exists and is readable</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">MISSING</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">access</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">R_OK</span><span class="p">):</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">OFFLINE</span>
+            <span class="k">return</span>
+        <span class="c1"># Check file size and checksums if we have expected values</span>
+        <span class="k">if</span> <span class="n">size</span> <span class="ow">and</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="o">!=</span> <span class="n">size</span><span class="p">:</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">BAD_SIZE</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">cksums</span> <span class="ow">and</span> <span class="ow">not</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">checksum_local</span><span class="p">(</span><span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">cksums</span><span class="p">):</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">BAD_CHECKSUM</span>
+            <span class="k">return</span>
+        <span class="c1"># Check the cache status of the file</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_cache</span><span class="p">(</span><span class="n">replica</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseRSE.check_xrootd">
+<a class="viewcode-back" href="../replicas.html#replicas.BaseRSE.check_xrootd">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_xrootd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replica</span><span class="p">:</span> <span class="n">Replica</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cksums</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the status of a remote file replica accessed via xrootd</span>
+
+<span class="sd">        :param replica: Replica object to check</span>
+<span class="sd">        :param size: optionally check the file size against an expected value</span>
+<span class="sd">        :param cksums: optionally check the file checksums against a dict of {algorithm: checksum}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If we have an expected size, make sure the file exists and matches that size</span>
+        <span class="k">if</span> <span class="n">size</span><span class="p">:</span>
+            <span class="n">ls</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">xrdfs</span><span class="p">(</span><span class="n">replica</span><span class="p">,</span> <span class="s1">&#39;ls -l&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">ls_perm</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">ls_size</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">ls</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="c1"># permissions, date, time, size, name</span>
+            <span class="c1"># Make sure the file is readable</span>
+            <span class="k">if</span> <span class="n">ls_perm</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;r&#39;</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">%s</span><span class="s2"> is not readable&quot;</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="c1"># Check the size</span>
+            <span class="k">if</span> <span class="n">ls_size</span> <span class="o">!=</span> <span class="n">size</span><span class="p">:</span>
+                <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">BAD_SIZE</span>
+                <span class="k">return</span>
+            <span class="c1"># Check the checksums, if we have expected values</span>
+            <span class="k">if</span> <span class="n">cksums</span> <span class="ow">and</span> <span class="ow">not</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">checksum_xrootd</span><span class="p">(</span><span class="n">replica</span><span class="p">,</span> <span class="n">cksums</span><span class="p">):</span>
+                <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">BAD_CHECKSUM</span>
+                <span class="k">return</span>
+        <span class="c1"># Check the cache status of the file</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_cache</span><span class="p">(</span><span class="n">replica</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseRSE.check">
+<a class="viewcode-back" href="../replicas.html#replicas.BaseRSE.check">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replica</span><span class="p">:</span> <span class="n">Replica</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cksums</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the status of a file replica on the RSE</span>
+
+<span class="sd">        :param replica: Replica object to check</span>
+<span class="sd">        :param size: optionally check the file size against an expected value</span>
+<span class="sd">        :param cksums: optionally check the file checksums against a dict of {algorithm: checksum}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> checking replica </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">replica</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span>
+        <span class="c1"># Don&#39;t bother checking bad RSEs</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">&gt;</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">max_distance</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> is too far away (d = </span><span class="si">%d</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">UNREACHABLE</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> is not readable&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">OFFLINE</span>
+            <span class="k">return</span>
+        <span class="c1"># Check replica using the appropriate method based on the protocol</span>
+        <span class="n">protocol</span> <span class="o">=</span> <span class="n">replica</span><span class="o">.</span><span class="n">protocol</span>
+        <span class="c1"># For local files, check directly but try to convert to xrootd URL if possible</span>
+        <span class="k">if</span> <span class="n">protocol</span> <span class="o">==</span> <span class="s1">&#39;file&#39;</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> checking local replica </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_local</span><span class="p">(</span><span class="n">replica</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">cksums</span><span class="o">=</span><span class="n">cksums</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;finished local check&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;xrootd&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">:</span>
+                <span class="n">replica</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="s1">&#39;file&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="s1">&#39;xrootd&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="c1"># For local RSEs, get local path and check directly</span>
+        <span class="k">if</span> <span class="s1">&#39;file&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="n">protocol</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="s1">&#39;file&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> converting to local path </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_local</span><span class="p">(</span><span class="n">replica</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">cksums</span><span class="o">=</span><span class="n">cksums</span><span class="p">)</span>
+            <span class="n">replica</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">url</span>
+            <span class="k">return</span>
+        <span class="c1"># For xrootd files, check using xrdfs and gfal-xattr</span>
+        <span class="k">if</span> <span class="n">protocol</span> <span class="o">==</span> <span class="s1">&#39;root&#39;</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> checking xrootd replica </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_xrootd</span><span class="p">(</span><span class="n">replica</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">cksums</span><span class="o">=</span><span class="n">cksums</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="c1"># If we get here, we don&#39;t know how to check this replica</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Unsupported protocol </span><span class="si">%s</span><span class="s2"> for replica </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">protocol</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">replica</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">BAD_PROTOCOL</span>
+        <span class="k">return</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="GenericRSE">
+<a class="viewcode-back" href="../replicas.html#replicas.GenericRSE">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GenericRSE</span><span class="p">(</span><span class="n">BaseRSE</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to store information about an unknown RSE&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="c1"># If we have a name, check config for info about the RSE</span>
+        <span class="k">if</span> <span class="n">name</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">dcache</span><span class="p">:</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">dcache</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s1">&#39;url&#39;</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">staging</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">dcache</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s1">&#39;staging&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">url</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No URL found for RSE </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> in config&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must provide either a name or url for the RSE&quot;</span><span class="p">)</span>
+        <span class="c1"># Otherwise, use URL host name for the RSE</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="n">get_host</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">host</span>
+        <span class="c1"># Set url</span>
+        <span class="n">protocol</span> <span class="o">=</span> <span class="n">get_protocol</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="n">protocol</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
+        <span class="c1"># Try to convert file paths to xrootd URLs and vice versa</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">protocol</span> <span class="o">==</span> <span class="s1">&#39;file&#39;</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">url</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">path_to_xrootd</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">url</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="s1">&#39;root&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
+                <span class="n">host</span> <span class="o">=</span> <span class="n">get_host</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">host</span>
+        <span class="k">elif</span> <span class="n">protocol</span> <span class="o">==</span> <span class="s1">&#39;root&#39;</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">xrootd_to_path</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">path</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="s1">&#39;file&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Creating RSE </span><span class="si">%s</span><span class="s2"> with unknown protocol </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">protocol</span><span class="p">)</span>
+        <span class="c1"># Check for distance based on RSE name, full URL, then host name</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found distance for RSE </span><span class="si">%s</span><span class="s2"> based on name: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">[</span><span class="n">url</span><span class="p">])</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found distance for RSE </span><span class="si">%s</span><span class="s2"> based on URL: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">[</span><span class="n">host</span><span class="p">])</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found distance for RSE </span><span class="si">%s</span><span class="s2"> based on host: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span>
+        <span class="c1"># If we don&#39;t have a distance, using staging penalty to represent tape vs disk</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Using default distances for RSE </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">[</span><span class="s1">&#39;disk&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">staging</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">staging</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">[</span><span class="s1">&#39;tape&#39;</span><span class="p">])</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span>
+        <span class="c1"># Add ping time to the distance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="RucioRSE">
+<a class="viewcode-back" href="../replicas.html#replicas.RucioRSE">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RucioRSE</span><span class="p">(</span><span class="n">BaseRSE</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to store information about a Rucio RSE&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Initializing Rucio RSE </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;availability_read&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;deleted&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;availability_write&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;deleted&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">dcache</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">staging</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">dcache</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s1">&#39;staging&#39;</span><span class="p">])</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> is dcache with staging penalty </span><span class="si">%.0f</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">staging</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;rse_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;DISK&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;rse_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;TAPE&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> has unknown type </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;rse_type&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_distance</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_urls</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;protocols&#39;</span><span class="p">])</span>
+
+<div class="viewcode-block" id="RucioRSE.set_distance">
+<a class="viewcode-back" href="../replicas.html#replicas.RucioRSE.set_distance">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the distance offset for this RSE from the config&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">[</span><span class="s1">&#39;disk&#39;</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">disk</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="p">[</span><span class="s1">&#39;tape&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Set distance for RSE </span><span class="si">%s</span><span class="s2"> to </span><span class="si">%.0f</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RucioRSE.set_urls">
+<a class="viewcode-back" href="../replicas.html#replicas.RucioRSE.set_urls">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_urls</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">protocols</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the URL prefixes for this RSE from the protocols list</span>
+
+<span class="sd">        :param protocols: list of protocol dictionaries from Rucio</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">proto</span> <span class="ow">in</span> <span class="n">protocols</span><span class="p">:</span>
+            <span class="n">scheme</span> <span class="o">=</span> <span class="n">proto</span><span class="p">[</span><span class="s1">&#39;scheme&#39;</span><span class="p">]</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">://</span><span class="si">{</span><span class="n">proto</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">proto</span><span class="p">[</span><span class="s1">&#39;port&#39;</span><span class="p">]</span><span class="si">}{</span><span class="n">proto</span><span class="p">[</span><span class="s1">&#39;prefix&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="n">scheme</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
+            <span class="c1"># Try converting xrootd URLs to local paths</span>
+            <span class="k">if</span> <span class="n">scheme</span> <span class="o">==</span> <span class="s1">&#39;root&#39;</span><span class="p">:</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">xrootd_to_path</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">path</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="s1">&#39;file&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">path</span></div>
+</div>
+
+
+<span class="c1"># PathFinder classes</span>
+
+<div class="viewcode-block" id="PathFinder">
+<a class="viewcode-back" href="../replicas.html#replicas.PathFinder">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PathFinder</span><span class="p">(</span><span class="n">MetaRetriever</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for finding paths to files&quot;&quot;&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;replicas&quot;</span>
+    <span class="n">file_owner</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="n">MetaRetriever</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">RucioWrapper</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rses</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replica_queue</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">workers</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeSet</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the set of files from the source&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">files</span>
+
+<div class="viewcode-block" id="PathFinder.replica_checker">
+<a class="viewcode-back" href="../replicas.html#replicas.PathFinder.replica_checker">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">replica_checker</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Asynchronous worker method to check the status of replicas from the replica queue&quot;&quot;&quot;</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># Wait for a replica to check from the queue</span>
+            <span class="n">job</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">replica_queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="c1"># If we get a None job, it means we should stop the checker</span>
+            <span class="k">if</span> <span class="n">job</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">replica_queue</span><span class="o">.</span><span class="n">task_done</span><span class="p">()</span>
+                <span class="k">break</span>
+            <span class="c1"># Check the replica and mark the job as done</span>
+            <span class="k">await</span> <span class="n">job</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">rse</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="n">job</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="n">job</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cksums</span><span class="o">=</span><span class="n">job</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">replica_queue</span><span class="o">.</span><span class="n">task_done</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="PathFinder.check_replica">
+<a class="viewcode-back" href="../replicas.html#replicas.PathFinder.check_replica">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_replica</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replica</span><span class="p">:</span> <span class="n">Replica</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cksums</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a replica to the replica queue for asynchronous checking</span>
+
+<span class="sd">        :param replica: Replica object to check</span>
+<span class="sd">        :param size: optionally check the file size against an expected value</span>
+<span class="sd">        :param cksums: optionally check the file checksums against a dict of {algorithm: checksum}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Queueing replica </span><span class="si">%s</span><span class="s2"> on RSE </span><span class="si">%s</span><span class="s2"> for checking&quot;</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">replica</span><span class="o">.</span><span class="n">rse</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">replica_queue</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">replica</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">cksums</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="PathFinder.connect">
+<a class="viewcode-back" href="../replicas.html#replicas.PathFinder.connect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Connect to the file source and rucio&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">connect</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">connect</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replica_queue</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">concurrency</span><span class="p">)):</span>
+            <span class="n">worker</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">replica_checker</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">workers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">worker</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PathFinder.disconnect">
+<a class="viewcode-back" href="../replicas.html#replicas.PathFinder.disconnect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Disconnect from the file source and rucio, and stop the replica checkers&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">disconnect</span><span class="p">())</span>
+        <span class="c1"># Stop the replica checkers</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">workers</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">replica_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">workers</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PathFinder.get_metadata">
+<a class="viewcode-back" href="../replicas.html#replicas.PathFinder.get_metadata">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;PathFinder does not implement get_metadata&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PathFinder.add_replica">
+<a class="viewcode-back" href="../replicas.html#replicas.PathFinder.add_replica">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_replica</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">rse_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a replica to a MergeFile object, including its path and RSE information</span>
+
+<span class="sd">        :param file: MergeFile object to add the replica to</span>
+<span class="sd">        :param path: file path for the replica</span>
+<span class="sd">        :param rse_name: optional RSE name; if not provided, it will be inferred from the path</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PathFinder.get_paths">
+<a class="viewcode-back" href="../replicas.html#replicas.PathFinder.get_paths">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve paths for a specific batch of files.</span>
+
+<span class="sd">        :param batch: InputBatch object containing files to retrieve paths for</span>
+<span class="sd">        :return: list of file path dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+        <span class="c1"># retrieve paths for specific batch</span>
+
+<div class="viewcode-block" id="PathFinder.set_paths">
+<a class="viewcode-back" href="../replicas.html#replicas.PathFinder.set_paths">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously set paths for a specific batch of files.</span>
+<span class="sd">        </span>
+<span class="sd">        :param batch: InputBatch object containing files to process</span>
+<span class="sd">        :param paths: list of file path dictionaries to use for setting paths</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+        <span class="c1"># process files to find paths</span>
+
+<div class="viewcode-block" id="PathFinder.input_batches">
+<a class="viewcode-back" href="../replicas.html#replicas.PathFinder.input_batches">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_batches</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">InputBatch</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve paths for the next batch of files.</span>
+
+<span class="sd">        :return: InputBatch object containing skip index and list of MergeFile objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">new_batch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">input_batches</span><span class="p">():</span>
+            <span class="c1"># Get paths for previous batch, if we have a request in flight</span>
+            <span class="n">paths</span> <span class="o">=</span> <span class="k">await</span> <span class="n">task</span> <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="c1"># Start request for next batch</span>
+            <span class="k">if</span> <span class="n">new_batch</span><span class="p">:</span>
+                <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_batch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_paths</span><span class="p">,</span> <span class="n">new_batch</span><span class="p">))</span>
+            <span class="c1"># Process previous batch while we wait, if we have one</span>
+            <span class="k">if</span> <span class="n">batch</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Processing new </span><span class="si">%s</span><span class="s2"> input batch </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">skip</span><span class="p">)</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_paths</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">paths</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+                <span class="c1"># Wait for any pending path checks to finish before yielding the batch</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">replica_queue</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+                <span class="c1"># Check for replica errors</span>
+                <span class="n">good_files</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">no_replicas</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">unreachable</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">file</span><span class="o">.</span><span class="n">replicas</span><span class="p">:</span>
+                        <span class="n">no_replicas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="nb">all</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">bad</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">replicas</span><span class="p">):</span>
+                        <span class="n">unreachable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="ow">not</span> <span class="n">file</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
+                        <span class="n">good_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">set_error</span><span class="p">(</span><span class="n">no_replicas</span><span class="p">,</span> <span class="n">MergeFileError</span><span class="o">.</span><span class="n">NO_REPLICAS</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">set_error</span><span class="p">(</span><span class="n">unreachable</span><span class="p">,</span> <span class="n">MergeFileError</span><span class="o">.</span><span class="n">UNREACHABLE</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">good_files</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="n">InputBatch</span><span class="p">(</span><span class="n">skip</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">skip</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">good_files</span><span class="p">)</span>
+            <span class="c1"># Save new batch for processing in the next iteration</span>
+            <span class="n">batch</span> <span class="o">=</span> <span class="n">new_batch</span>
+        <span class="c1"># Yield empty batch to signal completion</span>
+        <span class="k">yield</span> <span class="n">InputBatch</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RucioFinder">
+<a class="viewcode-back" href="../replicas.html#replicas.RucioFinder">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RucioFinder</span> <span class="p">(</span><span class="n">PathFinder</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for managing asynchronous queries to the Rucio web API.&quot;&quot;&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rucio&quot;</span>
+
+<div class="viewcode-block" id="RucioFinder.connect">
+<a class="viewcode-back" href="../replicas.html#replicas.RucioFinder.connect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Connect to the file source and rucio&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Failed to connect to Rucio client&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RucioFinder.add_replica">
+<a class="viewcode-back" href="../replicas.html#replicas.RucioFinder.add_replica">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_replica</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">rse_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a replica to a MergeFile object</span>
+
+<span class="sd">        :param file: MergeFile object to add the replica to</span>
+<span class="sd">        :param path: file path for the replica</span>
+<span class="sd">        :param rse_name: RSE name for the replica</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rse_name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;RucioFinder requires an RSE name to add a replica&quot;</span><span class="p">)</span>
+        <span class="n">rse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rse_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rse</span><span class="p">:</span>
+            <span class="n">rse_info</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_rse</span><span class="p">(</span><span class="n">rse_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">rse_info</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> not found in Rucio, cannot add replica&quot;</span><span class="p">,</span> <span class="n">rse_name</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">rse</span> <span class="o">=</span> <span class="n">RucioRSE</span><span class="p">(</span><span class="n">rse_info</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="p">[</span><span class="n">rse_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">rse</span>
+        <span class="n">replica</span> <span class="o">=</span> <span class="n">Replica</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">rse</span><span class="o">=</span><span class="n">rse</span><span class="p">)</span>
+        <span class="n">file</span><span class="o">.</span><span class="n">replicas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">replica</span><span class="p">)</span>
+        <span class="c1"># Assume Rucio has already validated replica size and checksums</span>
+        <span class="c1">#await self.check_replica(replica, size=file.size, cksums=file.checksums)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_replica</span><span class="p">(</span><span class="n">replica</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RucioFinder.checksum">
+<a class="viewcode-back" href="../replicas.html#replicas.RucioFinder.checksum">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">rucio</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ensure file sizes and checksums from Rucio agree with the input metadata.</span>
+<span class="sd">        </span>
+<span class="sd">        :param file: MergeFile object to check</span>
+<span class="sd">        :param rucio: Rucio replicas dictionary</span>
+<span class="sd">        :return: True if files match, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check the file size</span>
+        <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">rucio</span><span class="p">[</span><span class="s1">&#39;bytes&#39;</span><span class="p">]:</span>
+            <span class="n">crit</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">error_handling</span><span class="o">.</span><span class="n">unreachable</span> <span class="o">==</span> <span class="s1">&#39;quit&#39;</span>
+            <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span> <span class="k">if</span> <span class="n">crit</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="s2">&quot;Size mismatch for </span><span class="si">%s</span><span class="s2">: </span><span class="si">%d</span><span class="s2"> != </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">rucio</span><span class="p">[</span><span class="s1">&#39;bytes&#39;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="c1"># See if we should skip the checksum check</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">checksums</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="c1"># Check the checksums</span>
+        <span class="k">for</span> <span class="n">algo</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">checksums</span><span class="p">:</span>
+            <span class="n">algo</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">algo</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">algo</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">checksums</span> <span class="ow">and</span> <span class="n">algo</span> <span class="ow">in</span> <span class="n">rucio</span><span class="p">:</span>
+                <span class="n">csum1</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">checksums</span><span class="p">[</span><span class="n">algo</span><span class="p">]</span>
+                <span class="n">csum2</span> <span class="o">=</span> <span class="n">rucio</span><span class="p">[</span><span class="n">algo</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">csum1</span> <span class="o">==</span> <span class="n">csum2</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found matching </span><span class="si">%s</span><span class="s2"> checksum for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+                <span class="n">crit</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">error_handling</span><span class="o">.</span><span class="n">unreachable</span> <span class="o">==</span> <span class="s1">&#39;quit&#39;</span>
+                <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span> <span class="k">if</span> <span class="n">crit</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> checksum err for </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2"> != </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">,</span> <span class="n">csum1</span><span class="p">,</span> <span class="n">csum2</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="n">algo</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">checksums</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;MetaCat missing </span><span class="si">%s</span><span class="s2"> checksum for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">algo</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rucio</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Rucio missing </span><span class="si">%s</span><span class="s2"> checksum for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">algo</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+        <span class="c1"># If we get here, we have no matching checksums</span>
+        <span class="n">crit</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">validation</span><span class="o">.</span><span class="n">error_handling</span><span class="o">.</span><span class="n">unreachable</span> <span class="o">==</span> <span class="s1">&#39;quit&#39;</span>
+        <span class="n">lvl</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span> <span class="k">if</span> <span class="n">crit</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="s2">&quot;No matching checksums for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="RucioFinder.get_paths">
+<a class="viewcode-back" href="../replicas.html#replicas.RucioFinder.get_paths">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve paths for a specific batch of files.</span>
+
+<span class="sd">        :param batch: InputBatch object containing files to retrieve paths for</span>
+<span class="sd">        :return: list of file path dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_replicas</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">files</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RucioFinder.set_paths">
+<a class="viewcode-back" href="../replicas.html#replicas.RucioFinder.set_paths">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously set paths for a specific batch of files.</span>
+<span class="sd">        </span>
+<span class="sd">        :param batch: InputBatch object containing files to process</span>
+<span class="sd">        :param paths: list of file path dictionaries from Rucio</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dids</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="n">did</span><span class="p">:</span> <span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">batch</span><span class="o">.</span><span class="n">files</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">replicas</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+            <span class="n">did</span> <span class="o">=</span> <span class="n">replicas</span><span class="p">[</span><span class="s1">&#39;scope&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="n">replicas</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+            <span class="n">pfns</span> <span class="o">=</span> <span class="n">replicas</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pfns&#39;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pfns</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">%d</span><span class="s2"> replicas for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">did</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">file</span> <span class="o">=</span> <span class="n">dids</span><span class="p">[</span><span class="n">did</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">checksum</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">replicas</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">pfn</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">pfns</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">rse</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_replica</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">pfn</span><span class="p">,</span> <span class="n">rse_name</span><span class="o">=</span><span class="n">rse</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PathListFinder">
+<a class="viewcode-back" href="../replicas.html#replicas.PathListFinder">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PathListFinder</span><span class="p">(</span><span class="n">PathFinder</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for finding paths from a list of explicit file paths&quot;&quot;&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;replica_list&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">MetaRetriever</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paths</span> <span class="o">=</span> <span class="n">paths</span> <span class="ow">or</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="PathListFinder.add_rse">
+<a class="viewcode-back" href="../replicas.html#replicas.PathListFinder.add_rse">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_rse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rse</span><span class="p">:</span> <span class="n">BaseRSE</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an RSE to the list of known RSEs&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">protocol</span><span class="p">,</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">rse</span><span class="o">.</span><span class="n">urls</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">rses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">rses</span><span class="p">[</span><span class="n">url</span><span class="p">]</span> <span class="o">=</span> <span class="n">rse</span></div>
+
+
+<div class="viewcode-block" id="PathListFinder.connect">
+<a class="viewcode-back" href="../replicas.html#replicas.PathListFinder.connect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Connect to the file source and rucio&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="c1"># If we have access to Rucio, get the list of RSEs</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">rse_info</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_rses</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_rse</span><span class="p">(</span><span class="n">RucioRSE</span><span class="p">(</span><span class="n">rse_info</span><span class="p">))</span>
+            <span class="k">return</span>
+        <span class="c1"># If this is a batch job, we need Rucio</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">local</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Failed to connect to Rucio client&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># For local jobs, fall back to generic RSEs for DCACHE locations</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">dcache</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_rse</span><span class="p">(</span><span class="n">GenericRSE</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">))</span>
+        <span class="c1"># Also check for path-like keys in the distance config to create generic RSEs for those</span>
+        <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">sites</span><span class="o">.</span><span class="n">rse_distances</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="s1">&#39;/&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_rse</span><span class="p">(</span><span class="n">GenericRSE</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="PathListFinder.add_replica">
+<a class="viewcode-back" href="../replicas.html#replicas.PathListFinder.add_replica">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_replica</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">MergeFile</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">rse_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a replica to a MergeFile object</span>
+
+<span class="sd">        :param file: MergeFile object to add the replica to</span>
+<span class="sd">        :param path: file path for the replica</span>
+<span class="sd">        :param rse_name: RSE name for the replica</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">protocol</span> <span class="o">=</span> <span class="n">get_protocol</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="c1"># Make sure local paths are absolute and expanded</span>
+        <span class="k">if</span> <span class="n">protocol</span> <span class="o">==</span> <span class="s1">&#39;file&#39;</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">expand_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="c1"># Try to find an existing RSE that matches the path prefix</span>
+        <span class="n">rses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">rse</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">rses</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
+                <span class="n">rse</span> <span class="o">=</span> <span class="n">candidate</span>
+                <span class="k">break</span>
+        <span class="c1"># Add a new RSE for this path if we don&#39;t have a match</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rse</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">protocol</span> <span class="o">==</span> <span class="s1">&#39;file&#39;</span><span class="p">:</span>
+                <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;/{path.split(&#39;/&#39;,2)[1]}/&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">protocol</span><span class="si">}</span><span class="s2">://</span><span class="si">{</span><span class="n">get_host</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">get_port</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">/&quot;</span>
+            <span class="n">rse</span> <span class="o">=</span> <span class="n">GenericRSE</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">prefix</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_rse</span><span class="p">(</span><span class="n">rse</span><span class="p">)</span>
+        <span class="c1"># Add the replica to the file</span>
+        <span class="n">replica</span> <span class="o">=</span> <span class="n">Replica</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">rse</span><span class="o">=</span><span class="n">rse</span><span class="p">)</span>
+        <span class="n">file</span><span class="o">.</span><span class="n">replicas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">replica</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_replica</span><span class="p">(</span><span class="n">replica</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">cksums</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">checksums</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PathListFinder.get_paths">
+<a class="viewcode-back" href="../replicas.html#replicas.PathListFinder.get_paths">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve paths for a specific batch of files.</span>
+
+<span class="sd">        :param batch: InputBatch object containing files to retrieve paths for</span>
+<span class="sd">        :return: list of file path dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">batch</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">name</span>
+            <span class="c1"># Get any explicit paths provided for this file</span>
+            <span class="n">file_paths</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[]))</span>
+            <span class="c1"># If we have search directories, look for a matching file in those as well</span>
+            <span class="k">for</span> <span class="n">search_dir</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">search_dirs</span><span class="p">:</span>
+                <span class="n">search_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">search_dir</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">search_path</span><span class="p">):</span>
+                    <span class="n">file_paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">search_path</span><span class="p">)</span>
+            <span class="c1"># If we have any paths for this file, add them to the list of paths to return</span>
+            <span class="k">if</span> <span class="n">file_paths</span><span class="p">:</span>
+                <span class="n">paths</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="n">name</span><span class="p">:</span> <span class="n">file_paths</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">paths</span></div>
+
+
+<div class="viewcode-block" id="PathListFinder.set_paths">
+<a class="viewcode-back" href="../replicas.html#replicas.PathListFinder.set_paths">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">InputBatch</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously set paths for a specific batch of files.</span>
+<span class="sd">        </span>
+<span class="sd">        :param batch: InputBatch object containing files to process</span>
+<span class="sd">        :param paths: list of file path dictionaries from Rucio</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Consolidate list of paths into single dictionary</span>
+        <span class="n">path_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+            <span class="n">path_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+
+        <span class="c1"># Assign paths to files</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">batch</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">replicas</span> <span class="o">=</span> <span class="n">path_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">replicas</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">%d</span><span class="s2"> replicas for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">file</span><span class="o">.</span><span class="n">did</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">replicas</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_replica</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="get">
+<a class="viewcode-back" href="../replicas.html#replicas.get">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="n">MetaRetriever</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PathFinder</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create and return a physical path finder:</span>
+<span class="sd">    PathListFinder if any data files were provided in files input mode</span>
+<span class="sd">    PathListFinder if any search directories were provided in other input modes</span>
+<span class="sd">    RucioFinder if no data files or search directories were provided</span>
+<span class="sd">    </span>
+<span class="sd">    :return: PathFinder object for finding file locations</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># First check for explicit file paths in files input mode</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;files&#39;</span><span class="p">:</span>
+        <span class="c1"># Group data file paths by name</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="c1"># If we have a JSON file, strip the extension and look for a matching data file</span>
+            <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.json&#39;</span><span class="p">):</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="p">[:</span><span class="o">-</span><span class="mi">5</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+                    <span class="k">continue</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">paths</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">paths</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">PathListFinder</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="n">paths</span><span class="p">)</span>
+    <span class="c1"># Also return a PathListFinder if we have local search directories</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">search_dirs</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">PathListFinder</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+    <span class="c1"># Otherwise, we need to query Rucio to find the file paths</span>
+    <span class="k">return</span> <span class="n">RucioFinder</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">replicas</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>

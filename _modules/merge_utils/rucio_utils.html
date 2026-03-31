@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>merge_utils.rucio_utils &#8212; merge-utils 0.8 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css?v=0f882399" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=fd3f3429" />
+    <script src="../../_static/documentation_options.js?v=a0e24af7"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="canonical" href="https://dune.github.io/merge-utils/_modules/merge_utils/rucio_utils.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">merge_utils.rucio_utils</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for merge_utils.rucio_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Utility functions for interacting with the Rucio web API.&quot;&quot;&quot;</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">rucio.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span> <span class="c1">#type: ignore pylint: disable=import-error</span>
+    <span class="c1">#from rucio.client.replicaclient import ReplicaClient #type: ignore pylint: disable=import-error</span>
+    <span class="c1">#from rucio.client.rseclient import RSEClient #type: ignore pylint: disable=import-error</span>
+    <span class="n">HAS_RUCIO</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Failed to import Rucio client, Rucio functionality will be unavailable!&quot;</span><span class="p">)</span>
+    <span class="n">HAS_RUCIO</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="c1">#from merge_utils import io_utils, config</span>
+
+<div class="viewcode-block" id="RucioWrapper">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioWrapper">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RucioWrapper</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for sending asynchronous requests to the Rucio web API.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the RucioWrapper.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rses</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__bool__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return True if the Rucio client is connected.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="RucioWrapper.connect">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioWrapper.connect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Connect to the Rucio web API&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HAS_RUCIO</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Rucio client is not available!&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Connecting to Rucio&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">Client</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Failed to connect to Rucio: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Already connected to Rucio&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RucioWrapper.disconnect">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioWrapper.disconnect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;No need to explicitly disconnect from Rucio?&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="RucioWrapper.get_rse">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioWrapper.get_rse">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_rse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve information for a specific RSEfrom Rucio.</span>
+
+<span class="sd">        :param name: name of the RSE to retrieve</span>
+<span class="sd">        :return: dictionary of RSE attributes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if we already have information about this RSE cached</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">rse</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_rse</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">rse</span><span class="p">[</span><span class="s1">&#39;attrs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">list_rse_attributes</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">rse</span>
+        <span class="k">return</span> <span class="n">rse</span></div>
+
+
+<div class="viewcode-block" id="RucioWrapper.get_rses">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioWrapper.get_rses">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_rses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detailed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve information for all RSEs from Rucio.</span>
+
+<span class="sd">        :param detailed: whether to include detailed RSE information</span>
+<span class="sd">        :return: dictionary of RSE attributes for each RSE</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">rse</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">list_rses</span><span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">rse</span><span class="p">[</span><span class="s1">&#39;rse&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">rse</span><span class="p">[</span><span class="s1">&#39;deleted&#39;</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">detailed</span><span class="p">:</span>
+                <span class="n">details</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_rse</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">details</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">rse</span> <span class="ow">and</span> <span class="n">rse</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">!=</span> <span class="n">value</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;RSE </span><span class="si">%s</span><span class="s2"> has conflicting values for </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2"> != </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                                    <span class="n">name</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">rse</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">value</span><span class="p">)</span>
+                    <span class="n">rse</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="n">rse</span><span class="p">[</span><span class="s1">&#39;attrs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">list_rse_attributes</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rses</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">rse</span>
+            <span class="k">yield</span> <span class="n">rse</span></div>
+
+
+<div class="viewcode-block" id="RucioWrapper.get_replicas">
+<a class="viewcode-back" href="../../rucio_utils.html#merge_utils.rucio_utils.RucioWrapper.get_replicas">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_replicas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve replicas for a specific batch of files.</span>
+
+<span class="sd">        :param files: list of files to retrieve paths for</span>
+<span class="sd">        :return: list of file path dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;scope&#39;</span><span class="p">:</span><span class="n">f</span><span class="o">.</span><span class="n">namespace</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">}</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">]</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">list_replicas</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span>
+                                      <span class="n">ignore_availability</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">res</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># Example RSE info from FNAL_DCACHE, as of February 2026</span>
+
+<span class="n">FNAL_DCACHE</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="s2">&quot;rse_type&quot;</span><span class="p">:</span> <span class="s2">&quot;TAPE&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;time_zone&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+  <span class="s2">&quot;availability_write&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+  <span class="s2">&quot;deterministic&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+  <span class="s2">&quot;ISP&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+  <span class="s2">&quot;availability_delete&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+  <span class="s2">&quot;volatile&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+  <span class="s2">&quot;ASN&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+  <span class="s2">&quot;qos_class&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+  <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;a9780baae23e48359e2a84d3b19261ae&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;staging_area&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+  <span class="s2">&quot;longitude&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+  <span class="s2">&quot;deleted&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+  <span class="s2">&quot;city&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+  <span class="s2">&quot;latitude&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+  <span class="s2">&quot;deleted_at&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+  <span class="s2">&quot;region_code&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+  <span class="s2">&quot;availability&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+  <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="s2">&quot;2018-08-07 18:23:04&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;vo&quot;</span><span class="p">:</span> <span class="s2">&quot;def&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;country_name&quot;</span><span class="p">:</span> <span class="s2">&quot;US&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;availability_read&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+  <span class="s2">&quot;updated_at&quot;</span><span class="p">:</span> <span class="s2">&quot;2025-05-08 12:59:30&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;continent&quot;</span><span class="p">:</span> <span class="kc">None</span>
+<span class="p">}</span>
+
+<span class="n">FNAL_DCACHE_DETAILS</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="s2">&quot;credentials&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+  <span class="s2">&quot;domain&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="s2">&quot;lan&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wan&quot;</span>
+  <span class="p">],</span>
+  <span class="s2">&quot;lfn2pfn_algorithm&quot;</span><span class="p">:</span> <span class="s2">&quot;DUNE&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;protocols&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;hostname&quot;</span><span class="p">:</span> <span class="s2">&quot;fndcadoor.fnal.gov&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;scheme&quot;</span><span class="p">:</span> <span class="s2">&quot;davs&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="mi">2880</span><span class="p">,</span>
+      <span class="s2">&quot;prefix&quot;</span><span class="p">:</span> <span class="s2">&quot;/dune/tape_backed/dunepro&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;impl&quot;</span><span class="p">:</span> <span class="s2">&quot;rucio.rse.protocols.gfal.Default&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;domains&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;lan&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s2">&quot;read&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+          <span class="s2">&quot;write&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+          <span class="s2">&quot;delete&quot;</span><span class="p">:</span> <span class="mi">1</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;wan&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s2">&quot;read&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+          <span class="s2">&quot;write&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+          <span class="s2">&quot;delete&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+          <span class="s2">&quot;third_party_copy_read&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+          <span class="s2">&quot;third_party_copy_write&quot;</span><span class="p">:</span> <span class="mi">1</span>
+        <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="s2">&quot;extended_attributes&quot;</span><span class="p">:</span> <span class="kc">None</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;hostname&quot;</span><span class="p">:</span> <span class="s2">&quot;fndcadoor.fnal.gov&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;scheme&quot;</span><span class="p">:</span> <span class="s2">&quot;root&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="mi">1094</span><span class="p">,</span>
+      <span class="s2">&quot;prefix&quot;</span><span class="p">:</span> <span class="s2">&quot;/pnfs/fnal.gov/usr/dune/tape_backed/dunepro&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;impl&quot;</span><span class="p">:</span> <span class="s2">&quot;rucio.rse.protocols.gfal.Default&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;domains&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;lan&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s2">&quot;read&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+          <span class="s2">&quot;write&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+          <span class="s2">&quot;delete&quot;</span><span class="p">:</span> <span class="mi">2</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;wan&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s2">&quot;read&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+          <span class="s2">&quot;write&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+          <span class="s2">&quot;delete&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+          <span class="s2">&quot;third_party_copy_read&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+          <span class="s2">&quot;third_party_copy_write&quot;</span><span class="p">:</span> <span class="mi">0</span>
+        <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="s2">&quot;extended_attributes&quot;</span><span class="p">:</span> <span class="kc">None</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="s2">&quot;sign_url&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+  <span class="s2">&quot;verify_checksum&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+  <span class="s2">&quot;read_protocol&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="s2">&quot;write_protocol&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="s2">&quot;delete_protocol&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="s2">&quot;third_party_copy_read_protocol&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="s2">&quot;third_party_copy_write_protocol&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">FNAL_DCACHE_ATTRIBUTES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;FNAL_DCACHE&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;US_SITES&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;country&#39;</span><span class="p">:</span> <span class="s1">&#39;US&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;country_name&#39;</span><span class="p">:</span> <span class="s1">&#39;US&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;fts&#39;</span><span class="p">:</span> <span class="s1">&#39;https://fts3-public.cern.ch:8446&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;istape&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;naming_convention&#39;</span><span class="p">:</span> <span class="s1">&#39;DUNE_metacat&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;site&#39;</span><span class="p">:</span> <span class="s1">&#39;US_FNAL-FermiGrid&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;srr_url&#39;</span><span class="p">:</span> <span class="s1">&#39;https://fndca.fnal.gov/FNAL-WLCG-tape-statistics.json&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;staging_buffer&#39;</span><span class="p">:</span> <span class="s1">&#39;FNAL_DCACHE_STAGING&#39;</span>
+<span class="p">}</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">merge_utils.rucio_utils</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2025, Fermi National Accelerator Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    </div>
+  </body>
+</html>

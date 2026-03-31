@@ -79,6 +79,60 @@
 <span class="o">-</span><span class="n">l</span><span class="p">,</span> <span class="o">--</span><span class="n">local</span>        <span class="n">run</span> <span class="n">merge</span> <span class="n">locally</span> <span class="n">instead</span> <span class="n">of</span> <span class="n">submitting</span> <span class="n">to</span> <span class="n">JustIN</span>
 </pre></div>
 </div>
+<p id="module-merge_utils.__main__">Command line interface for merge_utils.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.__main__.get_inputs">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">get_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/merge_utils/__main__.html#get_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.get_inputs" title="Link to this definition">¶</a></dt>
+<dd><p>Collect the list of inputs from the command line, from standard input, or from files.
+If multiple sources are provided, this will give an error since it’s likely a mistake.
+If a single source is provided, it will override the config.
+Inputs from the config file(s) will be used if no other sources are provided.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>args</strong> – command line arguments</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None (updates config.input.inputs in place)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.__main__.get_parser">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">get_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ArgumentParser</span></span></span><a class="reference internal" href="_modules/merge_utils/__main__.html#get_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.get_parser" title="Link to this definition">¶</a></dt>
+<dd><p>Set up the command line argument parser.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.__main__.main">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/__main__.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.main" title="Link to this definition">¶</a></dt>
+<dd><p>Run a merge job</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.__main__.print_metadata">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">print_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/__main__.html#print_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.print_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Print info about the metadata for a list of files.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.__main__.print_replicas">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">print_replicas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/__main__.html#print_replicas"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.print_replicas" title="Link to this definition">¶</a></dt>
+<dd><p>Print info about the replicas for a list of files.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.__main__.resume_job">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">resume_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/__main__.html#resume_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.resume_job" title="Link to this definition">¶</a></dt>
+<dd><p>Resume a previously started merge job with the given command line arguments.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="merge_utils.__main__.start_job">
+<span class="sig-prename descclassname"><span class="pre">merge_utils.__main__.</span></span><span class="sig-name descname"><span class="pre">start_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/merge_utils/__main__.html#start_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#merge_utils.__main__.start_job" title="Link to this definition">¶</a></dt>
+<dd><p>Start a new merge job with the given command line arguments.</p>
+</dd></dl>
+
 </section>
 
 
@@ -88,6 +142,22 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">merge</a><ul>
+<li><a class="reference internal" href="#merge_utils.__main__.get_inputs"><code class="docutils literal notranslate"><span class="pre">get_inputs()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.__main__.get_parser"><code class="docutils literal notranslate"><span class="pre">get_parser()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.__main__.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.__main__.print_metadata"><code class="docutils literal notranslate"><span class="pre">print_metadata()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.__main__.print_replicas"><code class="docutils literal notranslate"><span class="pre">print_replicas()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.__main__.resume_job"><code class="docutils literal notranslate"><span class="pre">resume_job()</span></code></a></li>
+<li><a class="reference internal" href="#merge_utils.__main__.start_job"><code class="docutils literal notranslate"><span class="pre">start_job()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="logging.html"
