@@ -1,6 +1,6 @@
 # Minimal setup for a transform job
 
-version: "0.8.3"        # Specify the merge-utils package version
+version: "1.0.0"        # Specify the merge-utils package version
 
 input:
     streaming: True     # Stream files from remote sites instead of making a local copy

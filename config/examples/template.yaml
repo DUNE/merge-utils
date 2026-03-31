@@ -1,6 +1,6 @@
 # Merge-Utils configuration template with most standard options
 
-version: "0.8.3" # Specify the merge-utils package version
+version: "1.0.0" # Specify the merge-utils package version
 
 input:
     mode: <opt(dids, files, dataset, query)>
