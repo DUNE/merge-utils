@@ -15,10 +15,18 @@ if [[ "$release" == "AlmaLinux" ]]; then
 
     source /cvmfs/dune.opensciencegrid.org/spack/setup-env.sh
     spack env activate dune-prototype
+    echo "Activated dune-prototype"
+
+    echo "load GCC and CMAKE so don't use system"
+    echo "GCC"
+    spack load gcc@12.5.0 arch=linux-almalinux9-x86_64_v2 
+    echo "CMAKE"
+    spack load cmake 
+
     #spack load root@6.28.06
     #spack load r-m-dd-config experiment=dune
     #spack load justin
-    #htgettoken -a htvaultprod.fnal.gov -i dune
+    htgettoken -a htvaultprod.fnal.gov -i dune
 
     spack load hdf5
     spack load py-h5py
