@@ -1,0 +1,53 @@
+version: "0.8.3"
+# this is for trigger primitive tuple generation
+# March 22, 2026 HMS
+input:
+    streaming: True 
+
+output:
+    mode: merge
+    name: "{dune_mc.gen_fcl_filename}__{dune.config_file}__{core.application.version}__{DUNESW_VERSION}__{merge.cfg}"
+    namespace: "usertests"
+    out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test/triggerAna"
+    batch:                # Settings for batch merging
+        lifetime: 1000 
+    scratch:                # Settings for scratch merging
+        lifetime: 300
+    grouping:
+        mode: count
+        target: 10
+        equalize: False
+
+
+validation:
+    #handling:
+     #   default: "skip" #WHAT DOES THIS MEAN?????
+      #  unreachable: "skip"
+       # already_done: "gap" #### WHAT IS THIS?
+    handling:             # How to handle files with errors
+        default: skip    # <opt(quit,skip,gap)>         # Default handling mode
+        duplicate: skip  # <opt(default,quit,skip,gap)> # Duplicated files
+        no_metadata: quit #<opt(default,quit,skip,gap)> # Files without metadata
+        undeclared: quit  #<opt(default,quit,skip,gap)> # Files without a MetaCat record
+        retired: skip    # <opt(default,quit,skip,gap)> # Retired files
+        invalid: quit   # <opt(default,quit,skip,gap)> # Metadata failed validation
+        no_replicas: skip #<opt(default,quit,skip,gap)> # Files without any replicas
+        unreachable: skip #<opt(default,quit,skip,gap)> # Replicas exist but exceed max distance
+        inconsistent: quit #<opt(default,quit,skip,gap)> # Metadata inconsistent with other files
+        already_done: skip # <opt(include,quit,skip,gap)> # Files that have been merged in a previous job
+
+
+
+method:
+    method_name: "lar"
+    cmd: "lar -c {cfg} -n -1 {inputs} -T {output} -o /dev/null"
+    cfg: "standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl"
+    outputs:
+      - name: "{NAME}__{UUID}__tps.root"
+        metadata: {"core.file_format": "root", "core.data_tier":"root-tuple"}
+    
+sites:
+    site_distances:                       # Distance offsets for merging sites
+        default: .inf                     # Do not allow merging except at specified sites
+        "US_FNAL-FermiGrid": -5.0         # Increase priority
+        "CERN": 0.0
