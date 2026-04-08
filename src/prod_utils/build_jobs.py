@@ -30,8 +30,8 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
     for row in reader:
         basedataset = row['DATASET']
         config = row['CONFIG']
-        # check the config for fcl
-        fcl = config.replace('.yaml','.fcl').replace('.json','.fcl')
+        fcl = row['FCL']
+        # check the config for fcl and lar, and if it has lar, make sure it also has fcl
         hasfcl = False
         haslar = False
         lines = open(config,'r').readlines()
@@ -62,7 +62,8 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
         print(newrow)
     
 with open(newlist,'w') as csvfile:
-    fieldnames = ['TAG','NFILES','SIZE_GB','BATCH','CONFIG', 'CAMPAIGN','NAMESPACE', 'DATASET' ] 
+    fieldnames = ['TAG','DUNESW','NFILES','SIZE_GB','BATCH',
+                  'FCL','CONFIG', 'CAMPAIGN','NAMESPACE', 'DATASET' ] 
     #fieldnames = reader.fieldnames + ['NFILES','SIZE_GB','NAMESPACE','CONFIG']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
