@@ -43,7 +43,7 @@ method:
     cmd: "lar -c {cfg} -n -1 {inputs} -T {output} -o /dev/null"
     cfg: "standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl"
     outputs:
-      - name: "{NAME}__{UUID}__tps.root"
+      - name: "{NAME}__{UUID}__caf.root"
         metadata: {"core.file_format": "root", "core.data_tier":"root-tuple"}
     
 sites:
