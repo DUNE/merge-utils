@@ -38,6 +38,16 @@
   <section id="campaigns">
 <h1>Campaigns<a class="headerlink" href="#campaigns" title="Link to this heading">¶</a></h1>
 <p>You can set up and run campaigns with multiple datasets/configurations using the <code class="docutils literal notranslate"><span class="pre">campaign</span></code> folders</p>
+<section id="setup">
+<h2>Setup<a class="headerlink" href="#setup" title="Link to this heading">¶</a></h2>
+<p>You need to set the <code class="docutils literal notranslate"><span class="pre">DUNE_VERSION</span></code> environmental to the code version you want to run.</p>
+<p>Then get the merge-utils and set it up.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export `DUNE_VERSION`
+git clone https://github.com/merge-utils
+source setup_fnal.sh
+</pre></div>
+</div>
+<p>Then you can set up a campaign</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cd $MERGE_UTILS_DIR
 cd campaigns
 mkdir &lt;campaign_name&gt;
@@ -46,23 +56,26 @@ cd &lt;campaign_name&gt;
 </pre></div>
 </div>
 <p>the directory name will be stored in <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN</span></code> and the full directory path will be in <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_DIR</span></code></p>
-<p>In that directory you need to make a csv file <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN.csv</span></code> that stores tagged rows for each dataset you want to run over.</p>
-<p><code class="docutils literal notranslate"><span class="pre">TAG,CONFIG,CAMPAIGN,NAMESPACE,BATCH,DATASET</span></code></p>
+<p>In that directory you need to make a csv file with the same name as the directory. <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN.csv</span></code> that stores tagged rows for each dataset you want to run over.</p>
+<p><code class="docutils literal notranslate"><span class="pre">TAG,FCL,CONFIG,CAMPAIGN,NAMESPACE,BATCH,DATASET</span></code></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">TAG</span></code> is a unique tag for this run - if you put <code class="docutils literal notranslate"><span class="pre">TEST</span></code> in the tag, jobs will run interactively.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">FCL</span></code> is the name of the fcl file you want to use.  A single campaign can have differenc fcls.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">CONFIG</span></code> is the merge yaml or json override of defaults. Should have the same name as the fcl file if using lar.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">CAMPAIGN</span></code> is the campaign</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">NAMESPACE</span></code> is the output namespace (‘usertests’)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">BATCH</span></code> is how many input files are sent to the merger at once - for production batches of 2000-5000 are good.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CAMPAIGN</span></code> is the campaign - same as directory and cvs vfile</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NAMESPACE</span></code> is the output namespace (default is ‘usertests’)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BATCH</span></code> is how many input files are sent to the merger at once - for large production batches of 2000-5000 are good.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">DATASET</span></code> the metacat dataset you want to run over. Generally should be official</p></li>
 </ul>
+</section>
 <section id="production-scripts">
 <h2>production scripts<a class="headerlink" href="#production-scripts" title="Link to this heading">¶</a></h2>
 <p>The production scripts are in <code class="docutils literal notranslate"><span class="pre">src/prod_utils</span></code></p>
 <p>when you run the <code class="docutils literal notranslate"><span class="pre">setup_campaign.sh</span></code> script it should be added to your path.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">build_jobs.py</span></code> this takes the original csv file, figures out how many files you will be running over and produces <code class="docutils literal notranslate"><span class="pre">&lt;jobs</span> <span class="pre">csv&gt;</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">make_pass1.py</span> <span class="pre">&lt;tag&gt;</span></code> makes a script that submits the pass1 jobs for <code class="docutils literal notranslate"><span class="pre">&lt;tag&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">make_pass1.py</span> <span class="pre">&lt;tag&gt;</span></code> makes a script that submits the pass1 jobs for <code class="docutils literal notranslate"><span class="pre">&lt;tag&gt;</span></code>
+If you run it without a tag, it lists the available tags.</p></li>
 </ul>
 <section id="utilities">
 <h3>utilities<a class="headerlink" href="#utilities" title="Link to this heading">¶</a></h3>
@@ -75,8 +88,8 @@ cd &lt;campaign_name&gt;
 </ul>
 </section>
 </section>
-<section id="sequence-of-actions">
-<h2>sequence of actions<a class="headerlink" href="#sequence-of-actions" title="Link to this heading">¶</a></h2>
+<section id="more-detailed-sequence-of-actions">
+<h2>More detailed sequence of actions<a class="headerlink" href="#more-detailed-sequence-of-actions" title="Link to this heading">¶</a></h2>
 <ol class="arabic simple" start="0">
 <li><p>Make your campaign directory</p></li>
 </ol>
@@ -102,7 +115,7 @@ cd &lt;campaign_name&gt;
 <p>will make a long list of potential merge submissions, each of which has length <code class="docutils literal notranslate"><span class="pre">--limit</span></code> and skips by <code class="docutils literal notranslate"><span class="pre">--skip</span></code></p>
 <p>those merge submission commands are stored in <code class="docutils literal notranslate"><span class="pre">&lt;TAG.sh&gt;</span></code> so you can use them later.</p>
 <p>This is what they look like:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">merge</span>    <span class="o">-</span><span class="n">l</span> <span class="o">-</span><span class="n">vv</span> <span class="o">-</span><span class="n">c</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">schellma</span><span class="o">/</span><span class="n">Dropbox</span><span class="o">/</span><span class="n">merge</span><span class="o">-</span><span class="n">utils</span><span class="o">/</span><span class="n">campaigns</span><span class="o">/</span><span class="n">trigprim</span><span class="o">-</span><span class="mi">2026</span><span class="o">-</span><span class="mi">03</span><span class="o">/</span><span class="n">triggerana_tree_1x2x2_simpleThr_production</span><span class="o">.</span><span class="n">yaml</span> <span class="o">--</span><span class="n">skip</span><span class="o">=</span><span class="mi">0</span> <span class="o">--</span><span class="n">limit</span><span class="o">=</span><span class="mi">2</span>  <span class="o">--</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;TEST-TRGSIM_CC_v1&quot;</span> <span class="n">dataset</span> <span class="n">fardet</span><span class="o">-</span><span class="n">hd</span><span class="p">:</span><span class="n">fardet</span><span class="o">-</span><span class="n">hd__trg_mc_2025a__detector</span><span class="o">-</span><span class="n">simulated__v10_06_00d01__detsim_dune10kt_1x2x2_notpcsigproc__prodmarley_nue_flat_cc_dune10kt_1x2x2__out1__v1_official</span> <span class="o">&gt;</span> <span class="n">TEST</span><span class="o">-</span><span class="n">TRGSIM_CC_v1_20260321T161849_0</span><span class="o">.</span><span class="n">log</span> <span class="mi">2</span><span class="o">&gt;&amp;</span><span class="mi">1</span> 
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">merge</span>  <span class="o">-</span><span class="n">l</span> <span class="o">-</span><span class="n">vv</span> <span class="o">-</span><span class="n">c</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">schellma</span><span class="o">/</span><span class="n">Dropbox</span><span class="o">/</span><span class="n">merge</span><span class="o">-</span><span class="n">utils</span><span class="o">/</span><span class="n">campaigns</span><span class="o">/</span><span class="n">trigprim</span><span class="o">-</span><span class="mi">2026</span><span class="o">-</span><span class="mi">03</span><span class="o">/</span><span class="n">triggerana_tree_1x2x2_simpleThr_production</span><span class="o">.</span><span class="n">yaml</span> <span class="o">--</span><span class="n">skip</span><span class="o">=</span><span class="mi">0</span> <span class="o">--</span><span class="n">limit</span><span class="o">=</span><span class="mi">2</span>  <span class="o">--</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;TEST-TRGSIM_CC_v1&quot;</span> <span class="n">dataset</span> <span class="n">fardet</span><span class="o">-</span><span class="n">hd</span><span class="p">:</span><span class="n">fardet</span><span class="o">-</span><span class="n">hd__trg_mc_2025a__detector</span><span class="o">-</span><span class="n">simulated__v10_06_00d01__detsim_dune10kt_1x2x2_notpcsigproc__prodmarley_nue_flat_cc_dune10kt_1x2x2__out1__v1_official</span> <span class="o">&gt;</span> <span class="n">TEST</span><span class="o">-</span><span class="n">TRGSIM_CC_v1_20260321T161849_0</span><span class="o">.</span><span class="n">log</span> <span class="mi">2</span><span class="o">&gt;&amp;</span><span class="mi">1</span> 
 </pre></div>
 </div>
 <ul class="simple">
@@ -120,7 +133,13 @@ cd &lt;campaign_name&gt;
 <li><p>run some of those merge scripts.</p></li>
 </ol>
 <p>the merge scripts will check your metadata for validity and set up jobscripts to run locally or through justIn.</p>
-<p>The last 2-3 lines of the merge scripts have the actual submission commands.</p>
+<p>The last 2-3 lines of the merge scripts have the actual submission commands which look like:</p>
+<ul class="simple">
+<li><p>interactive
+‘/exp/dune/data/users/schellma/prod/merge-utils/tmp/TEST_hd_atmos_l000002_20260408T235613/run.sh’</p></li>
+<li><p>batch
+‘/exp/dune/data/users/schellma/prod/merge-utils/tmp/TEST_hd_atmos_20260409T015128/submit.sh’</p></li>
+</ul>
 </section>
 </section>
 
@@ -135,11 +154,12 @@ cd &lt;campaign_name&gt;
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">Campaigns</a><ul>
+<li><a class="reference internal" href="#setup">Setup</a></li>
 <li><a class="reference internal" href="#production-scripts">production scripts</a><ul>
 <li><a class="reference internal" href="#utilities">utilities</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#sequence-of-actions">sequence of actions</a></li>
+<li><a class="reference internal" href="#more-detailed-sequence-of-actions">More detailed sequence of actions</a></li>
 </ul>
 </li>
 </ul>
