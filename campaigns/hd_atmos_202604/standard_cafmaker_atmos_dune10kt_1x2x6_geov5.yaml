@@ -8,7 +8,7 @@ output:
     mode: merge
     name: "{dune_mc.gen_fcl_filename}__{dune.config_file}__{core.application.version}__{DUNESW_VERSION}__{merge.cfg}"
     namespace: "usertests"
-    out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test/triggerAna"
+    out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test/{dune.campaign}"
     batch:                # Settings for batch merging
         lifetime: 1000 
     scratch:                # Settings for scratch merging

@@ -17,9 +17,10 @@ if __name__ == '__main__':
     from get_tasks import get_tasks
 
     if len(os.getenv("CAMPAIGN")) < 1:
-        print ("Please set CAMPAIGN environment variable")
+        print ("Please set CAMPAIGN environment variable using the setup_campaign.sh script")
         sys.exit(1)
 
+    
     retry = " "
     local = " "
     if len(sys.argv)>2:
@@ -47,6 +48,15 @@ if __name__ == '__main__':
             local="-l"
 
     batch = int(tasks[task].get("BATCH",2000))
+    version = os.getenv("DUNE_VERSION", "unknown")
+    dunesw = tasks[task].get("DUNESW", "unknown")
+    if version == "unknown":
+        print ("Quitting: DUNE_VERSION environment variable not set, you need to set DUNE_VERSION and then set up larsoft and merging again.")
+        sys.exit(1)
+    if version != dunesw:
+        print (f"Quitting: DUNE_VERSION environment variable ({version}) does not match the required DUNESW version for the task ({dunesw})")
+        print (f"Unfortunately this means you have to start a new session, set DUNE_VERSION and then rerun setup_fnal.sh")
+        sys.exit(1)
 
     config = tasks[task]['CONFIG']
     campaign = tasks[task]["CAMPAIGN"]
