@@ -1,2 +1,3 @@
 ﻿TAG,DUNESW,FCL,CONFIG,CAMPAIGN,NAMESPACE,BATCH,DATASET
-TEST_hd_atmos,v10_20_03d01,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.yaml,hd_atmos_202604,usertests,1000,usertests:fardet-hd-reco-ritm2749296_15220-fnal-w15220s1p1
+TEST_hd_atmos,v10_20_03d01,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.yaml,hd_atmos_202604,usertests,100,usertests:fardet-hd-reco-ritm2749296_15220-fnal-w15220s1p1
+TEST_hd_atmos_v2,v10_20_03d01,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.yaml,hd_atmos_202604,usertests,100,usertests:fardet-hd-reco-ritm2749296_15370-fnal-w15370s1p1
