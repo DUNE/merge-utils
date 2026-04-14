@@ -189,14 +189,14 @@ class MergeMetaUnion:
 class MergeMetaUnique:
     """Merge metadata by taking the unique values."""
     def __init__(self, value=None):
-        self.value = value
+        self.value = copy.deepcopy(value)
         self._valid = True
         self.warn = False
 
     def add(self, value):
         """Add a new value to the metadata."""
         if self.value is None:
-            self.value = value
+            self.value = copy.deepcopy(value)
         elif self.value != value:
             self._valid = False
             self.warn = True
@@ -232,12 +232,12 @@ class MergeMetaAll:
 class MergeMetaSubset:
     """Merge metadata by taking the subset of consistent values."""
     def __init__(self, value=None):
-        self.value = value
+        self.value = copy.deepcopy(value)
 
     def add(self, value):
         """Add a new value to the metadata."""
         if self.value is None:
-            self.value = value
+            self.value = copy.deepcopy(value)
         else:
             for k, v in value.items():
                 if k in self.value and self.value[k] != v:
@@ -259,7 +259,7 @@ class MergeMetaOverride:
     warn = False
 
     def __init__(self, value=None):
-        self.value = value
+        self.value = copy.deepcopy(value)
 
     def add(self, value):
         """Add a new value to the metadata."""
@@ -318,6 +318,7 @@ def add_origin(metadata: dict, app: str) -> None:
     name = metadata.get('core.application.name')
     ver = metadata.get('core.application.version')
     cfg = metadata.get('dune.config_file') #TODO: make sure this is correct for all applications
+    logger.info("Current application: %s (%s): %s", name, ver, cfg)
 
     # If missing, should be raw data
     if name is None:
@@ -335,8 +336,12 @@ def add_origin(metadata: dict, app: str) -> None:
         metadata['origin.applications.config_files'] = {}
 
     # Add current application information
-    metadata['core.application'] = app
-    metadata['core.application.family'], metadata['core.application.name'] = app.split('.', 1)
+    if '.' in app:
+        metadata['core.application'] = app
+        metadata['core.application.family'], metadata['core.application.name'] = app.split('.', 1)
+    else:
+        metadata['core.application.name'] = app
+        metadata['core.application'] = f"{metadata['core.application.family']}.{app}"
     metadata['core.application.version'] = str(config.method.environment.dunesw_version)
     if not config.method.cfg:
         io_utils.log_print("Running a transform job without a config file!", logging.WARNING)
@@ -348,10 +353,8 @@ def add_origin(metadata: dict, app: str) -> None:
 
     # Increment stage until we find a unique name
     names = set(metadata.get('origin.applications.names', []))
-    if 'origin.applications.versions' in metadata:
-        names.update(metadata['origin.applications.versions'].keys())
-    if 'origin.applications.config_files' in metadata:
-        names.update(metadata['origin.applications.config_files'].keys())
+    names.update(metadata.get('origin.applications.versions', {}).keys())
+    names.update(metadata.get('origin.applications.config_files', {}).keys())
     if name in names:
         stage = 2
         if '_stage' in name:
@@ -362,18 +365,21 @@ def add_origin(metadata: dict, app: str) -> None:
         name = f"{name}_stage{stage}"
 
     # Add origin information
-    if 'origin.applications.names' in metadata:
-        metadata['origin.applications.names'].append(name)
+    key = 'origin.applications.names'
+    if key in metadata:
+        metadata[key].append(name)
     else:
-        metadata['origin.applications.names'] = [name]
-    if 'origin.applications.versions' in metadata:
-        metadata['origin.applications.versions'][name] = ver
+        metadata[key] = [name]
+    key = 'origin.applications.versions'
+    if key in metadata:
+        metadata[key][name] = ver
     else:
-        metadata['origin.applications.versions'] = {name: ver}
-    if 'origin.applications.config_files' in metadata:
-        metadata['origin.applications.config_files'][name] = cfg
+        metadata[key] = {name: ver}
+    key = 'origin.applications.config_files'
+    if key in metadata:
+        metadata[key][name] = cfg
     else:
-        metadata['origin.applications.config_files'] = {name: cfg}
+        metadata[key] = {name: cfg}
 
 def merged_keys(files: list, warn: bool = False) -> dict:
     """
