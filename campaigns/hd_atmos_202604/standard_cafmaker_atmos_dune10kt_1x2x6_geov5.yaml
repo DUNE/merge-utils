@@ -40,7 +40,7 @@ validation:
 
 method:
     method_name: "lar"
-    transform: "{core.application.family}.cafmaker"
+    transform: "art.cafmaker"
     cmd: "lar -c {cfg} -n -1 {inputs} -T {output} -o /dev/null"
     cfg: "standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl"
     outputs:
