@@ -31,18 +31,26 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
         basedataset = row['DATASET']
         config = row['CONFIG']
         fcl = row['FCL']
+        campaign = row['CAMPAIGN']
+
         # check the config for fcl and lar, and if it has lar, make sure it also has fcl
         hasfcl = False
         haslar = False
+        hascampaign = False
         lines = open(config,'r').readlines()
         for line in lines:
-            if "lar " in line: 
+            if campaign in line:
+                hascampaign = True
+            if "lar " in line:
                 haslar = True
             if fcl in line:
                 hasfcl = True
-                break
+
         if haslar and not hasfcl:
             print (f"lar config file {config} does not contain {fcl} - please fix this" )
+            sys.exit(1)
+        if not hascampaign:
+            print (f"config file {config} does not contain dune.campaign:{campaign} - please fix this" )
             sys.exit(1)
         if DEBUG: print(row["TAG"],  row['DATASET'])
         newrow = row.copy()

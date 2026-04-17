@@ -45,7 +45,7 @@ method:
     cfg: "standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl"
     outputs:
       - name: "{NAME}__{UUID}__caf.root"
-        metadata: {"core.file_format": "root", "core.data_tier":"root-tuple"}
+        metadata: {"core.file_format": "root", "core.data_tier":"root-tuple","dune.campaign":"fdhd_he_2026a_caf"}
     
 sites:
     site_distances:                       # Distance offsets for merging sites
