@@ -59,11 +59,11 @@ cd &lt;campaign_name&gt;
 <p>In that directory you need to make a csv file with the same name as the directory. <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN.csv</span></code> that stores tagged rows for each dataset you want to run over.</p>
 <p><code class="docutils literal notranslate"><span class="pre">TAG,FCL,CONFIG,CAMPAIGN,NAMESPACE,BATCH,DATASET</span></code></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">TAG</span></code> is a unique tag for this run - if you put <code class="docutils literal notranslate"><span class="pre">TEST</span></code> in the tag, jobs will run interactively.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TAG</span></code> is a unique tag for this run of the merger - if you put <code class="docutils literal notranslate"><span class="pre">TEST</span></code> in the tag, jobs will be set up to run interactively.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">FCL</span></code> is the name of the fcl file you want to use.  A single campaign can have differenc fcls.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">CONFIG</span></code> is the merge yaml or json override of defaults. Should have the same name as the fcl file if using lar.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CONFIG</span></code> is the merge yaml or json override of defaults. Should have the same name as the fcl file if using lar. You may have to edit it to make certain that the <code class="docutils literal notranslate"><span class="pre">cfg</span></code> option points to  the correct fcl and the <code class="docutils literal notranslate"><span class="pre">metadata</span></code> field contains the correc <code class="docutils literal notranslate"><span class="pre">dune.campaign</span></code> field.  The <code class="docutils literal notranslate"><span class="pre">build_jobs</span></code> script will complain if these are not set consistently.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">CAMPAIGN</span></code> is the campaign - same as directory and cvs vfile</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">NAMESPACE</span></code> is the output namespace (default is ‘usertests’)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NAMESPACE</span></code> is the output namespace (default is ‘usertests’, for production you need to change it to the right namespace.)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">BATCH</span></code> is how many input files are sent to the merger at once - for large production batches of 2000-5000 are good.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">DATASET</span></code> the metacat dataset you want to run over. Generally should be official</p></li>
 </ul>
@@ -73,7 +73,7 @@ cd &lt;campaign_name&gt;
 <p>The production scripts are in <code class="docutils literal notranslate"><span class="pre">src/prod_utils</span></code></p>
 <p>when you run the <code class="docutils literal notranslate"><span class="pre">setup_campaign.sh</span></code> script it should be added to your path.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">build_jobs.py</span></code> this takes the original csv file, figures out how many files you will be running over and produces <code class="docutils literal notranslate"><span class="pre">&lt;jobs</span> <span class="pre">csv&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">build_jobs.py</span></code> this takes the original csv file, figures out how many files you will be running over and produces <code class="docutils literal notranslate"><span class="pre">&lt;jobs</span> <span class="pre">csv&gt;</span></code>.  It checks that you are set up with the right larsoft version, campaign name and that your config files contain the right fcl file names.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">make_pass1.py</span> <span class="pre">&lt;tag&gt;</span></code> makes a script that submits the pass1 jobs for <code class="docutils literal notranslate"><span class="pre">&lt;tag&gt;</span></code>
 If you run it without a tag, it lists the available tags.</p></li>
 </ul>

@@ -30,11 +30,11 @@ In that directory you need to make a csv file with the same name as the director
 
 `TAG,FCL,CONFIG,CAMPAIGN,NAMESPACE,BATCH,DATASET`
 
-- `TAG` is a unique tag for this run - if you put `TEST` in the tag, jobs will run interactively. 
+- `TAG` is a unique tag for this run of the merger - if you put `TEST` in the tag, jobs will be set up to run interactively. 
 - `FCL` is the name of the fcl file you want to use.  A single campaign can have differenc fcls.
-- `CONFIG` is the merge yaml or json override of defaults. Should have the same name as the fcl file if using lar.
+- `CONFIG` is the merge yaml or json override of defaults. Should have the same name as the fcl file if using lar. You may have to edit it to make certain that the `cfg` option points to  the correct fcl and the `metadata` field contains the correc `dune.campaign` field.  The `build_jobs` script will complain if these are not set consistently.
 - `CAMPAIGN` is the campaign - same as directory and cvs vfile
-- `NAMESPACE` is the output namespace (default is 'usertests')
+- `NAMESPACE` is the output namespace (default is 'usertests', for production you need to change it to the right namespace.)
 - `BATCH` is how many input files are sent to the merger at once - for large production batches of 2000-5000 are good. 
 - `DATASET` the metacat dataset you want to run over. Generally should be official 
 
@@ -44,7 +44,7 @@ The production scripts are in `src/prod_utils`
 
 when you run the `setup_campaign.sh` script it should be added to your path.
 
-- `build_jobs.py` this takes the original csv file, figures out how many files you will be running over and produces `<jobs csv>`
+- `build_jobs.py` this takes the original csv file, figures out how many files you will be running over and produces `<jobs csv>`.  It checks that you are set up with the right larsoft version, campaign name and that your config files contain the right fcl file names.
 
 - `make_pass1.py <tag>` makes a script that submits the pass1 jobs for `<tag>`
   If you run it without a tag, it lists the available tags.
@@ -62,6 +62,7 @@ when you run the `setup_campaign.sh` script it should be added to your path.
 - `make_safe_query.py`
 
 ## More detailed sequence of actions
+
 
 0. Make your campaign directory
 
