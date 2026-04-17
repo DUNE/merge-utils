@@ -60,7 +60,10 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
     
         query = "files from " + basedataset + " where dune.output_status=confirmed"
         if DEBUG: print(query)
-        result, = mc_client.query(query=query,summary="count")
+        try:
+            result, = mc_client.query(query=query,summary="count")
+        except:
+            result = mc_client.query(query=query,summary="count")
         info = result
         # for item in result:
         #     if DEBUG: print("   ",item)

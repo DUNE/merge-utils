@@ -44,13 +44,13 @@ if __name__ == '__main__':
             sys.exit(1)
     else:
         if "TEST" in task:
-            tasks[task]["NFILES"]=50
             local="-l"
 
     batch = int(tasks[task].get("BATCH",2000))
     print ("batch",batch)
     version = os.getenv("DUNE_VERSION", "unknown")
     dunesw = tasks[task].get("DUNESW", "unknown")
+    total = tasks[task].get("TOTAL", 100000)
     if version == "unknown":
         print ("Quitting: DUNE_VERSION environment variable not set, you need to set DUNE_VERSION and then set up larsoft and merging again.")
         sys.exit(1)
@@ -68,16 +68,20 @@ if __name__ == '__main__':
     skip = 0
     query = f"files where merge.tag={task} and dune.output_status=confirmed and namespace=%s"%(tasks[task]["NAMESPACE"]) 
     print ("query",query)
-    check, = mc_client.query(query=query,summary="count")
-    count = check["count"]
+    try:
+        check, = mc_client.query(query=query,summary="count")
+    except:
+        check = mc_client.query(query=query,summary="count")
+    dupcount = check["count"]
 
-    print ("count",count)
-    if count > 0:
+    print ("dupcount",dupcount)
+    if dupcount > 0:
         retry = "--retry"
-        print (f"Found {count} existing files for task {task}, will use {retry} option")
+        print (f"Found {dupcount} existing files for task {task}, will use {retry} option")
 
     if nfiles < batch:  
-        if count > 0:
+        print ("less than batch")
+        if dupcount > 0:
             retry = "--retry"
         command = f"merge {retry} {local} -vv -c {config} --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
         print(command)
@@ -86,11 +90,15 @@ if __name__ == '__main__':
         step = batch
         
         while skip < nfiles:
+            print ("next",skip,step)
             saveretry = retry
             query = f"files where merge.tag={task} and dune.output_status=confirmed and namespace=%s and merge.skip={skip} and merge.limit={step}"%(tasks[task]["NAMESPACE"]) 
-            check, = mc_client.query(query=query,summary="count")
-            localcount = check["count"]
-            if localcount > 0:
+            try:
+                check, = mc_client.query(query=query,summary="count")
+            except:
+                check = mc_client.query(query=query,summary="count")
+            dupcount = check["count"]
+            if dupcount > 0:
                 retry = "--retry"
             command = f"merge  {retry} {local} -vv -c {campaign_dir}/{config} --skip={skip} --limit={step}  --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
             print(command)
