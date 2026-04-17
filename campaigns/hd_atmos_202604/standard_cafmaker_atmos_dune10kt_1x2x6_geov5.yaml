@@ -1,6 +1,6 @@
 version: "1.0.0"
-# this is for trigger primitive tuple generation
-# March 22, 2026 HMS
+# this is for atmospheric caf production 
+# April 17, 2026 HMS
 input:
     streaming: True 
 
@@ -15,15 +15,12 @@ output:
         lifetime: 300
     grouping:
         mode: count
-        target: 50  
+        target: 50  # how many output files per input file
         equalize: False
 
 
 validation:
-    #handling:
-     #   default: "skip" #WHAT DOES THIS MEAN?????
-      #  unreachable: "skip"
-       # already_done: "gap" #### WHAT IS THIS?
+    
     handling:             # How to handle files with errors
         default: skip    # <opt(quit,skip,gap)>         # Default handling mode
         duplicate: skip  # <opt(default,quit,skip,gap)> # Duplicated files
@@ -41,7 +38,7 @@ validation:
 method:
     method_name: "lar"
     transform: "art.cafmaker"
-    cmd: "lar -c {cfg} -n -1 {inputs} -T {output} -o /dev/null"
+    cmd: "lar -c {cfg} -n -1 {inputs} -T {output} -o /dev/null" # only does tuple output
     cfg: "standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl"
     outputs:
       - name: "{NAME}__{UUID}__caf.root"
