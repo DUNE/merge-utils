@@ -48,6 +48,7 @@ if __name__ == '__main__':
             local="-l"
 
     batch = int(tasks[task].get("BATCH",2000))
+    print ("batch",batch)
     version = os.getenv("DUNE_VERSION", "unknown")
     dunesw = tasks[task].get("DUNESW", "unknown")
     if version == "unknown":
@@ -88,8 +89,8 @@ if __name__ == '__main__':
             saveretry = retry
             query = f"files where merge.tag={task} and dune.output_status=confirmed and namespace=%s and merge.skip={skip} and merge.limit={step}"%(tasks[task]["NAMESPACE"]) 
             check, = mc_client.query(query=query,summary="count")
-            count = check["count"]
-            if count > 0:
+            localcount = check["count"]
+            if localcount > 0:
                 retry = "--retry"
             command = f"merge  {retry} {local} -vv -c {campaign_dir}/{config} --skip={skip} --limit={step}  --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
             print(command)
