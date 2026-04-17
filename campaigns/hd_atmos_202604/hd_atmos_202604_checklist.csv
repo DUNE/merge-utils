@@ -1,0 +1,4 @@
+TAG,SKIP,TIMESTAMP,PASS,WORKFLOW iD,# of jobs,status,#event/job,#files,success fraction,total # of events,volume (GB),comments,DUNESW,NFILES,SIZE_GB,BATCH,FCL,CONFIG,CAMPAIGN,NAMESPACE,DATASET
+TEST_hd_atmos,0,,pass1,,,,,,0.0,0,0.0,?,v10_20_03d01,10,12.413,500,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.yaml,fdhd_he_2026a_caf,usertests,usertests:fardet-hd-reco-ritm2749296_15220-fnal-w15220s1p1
+TEST_hd_atmos_v3,0,,pass1,,,,,,0.0,0,0.0,?,v10_20_03d01,980,1213.689,500,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.yaml,fdhd_he_2026a_caf,usertests,usertests:fardet-hd-reco-ritm2749296_15370-fnal-w15370s1p1
+TEST_hd_atmos_v3,500,,pass1,,,,,,0.0,0,0.0,?,v10_20_03d01,980,1213.689,500,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl,standard_cafmaker_atmos_dune10kt_1x2x6_geov5.yaml,fdhd_he_2026a_caf,usertests,usertests:fardet-hd-reco-ritm2749296_15370-fnal-w15370s1p1
