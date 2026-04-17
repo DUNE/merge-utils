@@ -15,7 +15,7 @@ output:
         lifetime: 300
     grouping:
         mode: count
-        target: 10
+        target: 50  
         equalize: False
 
 
