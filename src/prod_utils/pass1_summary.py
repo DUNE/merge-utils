@@ -32,7 +32,7 @@ for task in tasks.keys():
     config = tasks[task]['FCL']
     parent_dataset = tasks[task]['DATASET']
     namespace = tasks[task]['NAMESPACE']
-    campaign = os.getenv("CAMPAIGN")
+    campaign = tasks[task]['CAMPAIGN']
     query = f"files where merge.tag={task} and namespace={namespace} and dune.output_status=confirmed and dune.campaign={campaign} and merge.dataset='{parent_dataset}' and merge.cfg='{config}'"
     print (query)
     files = mc_client.query(query=query,with_metadata=True, with_provenance=True)
