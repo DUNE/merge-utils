@@ -68,7 +68,7 @@ with open(joblist,encoding='utf-8-sig') as csvfile:
         # for item in result:
         #     if DEBUG: print("   ",item)
         #     info = item
-        print ("Result for tag",row["TAG"],":",info )
+        print ("Result for tag",row["TAG"],": #files=%d total size=%8.3f GB"%(info['count'],info['total_size']/1e9))
         newrow['NFILES'] = info['count']
         newrow['SIZE_GB'] = round(info['total_size']/1e9,3)
 

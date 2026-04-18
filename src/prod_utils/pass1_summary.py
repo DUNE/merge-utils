@@ -10,9 +10,11 @@ from get_tasks import get_tasks
 data_tier = 'root-tuple'
 
 if len(sys.argv)<1:
+    
     print ("Usage: python pass1_summary.py [data_tier]")
     sys.exit(1)
 
+print ("Summary of pass1 for all tags")
 
 large = ["CENTRAL_prod","LATERAL_prod"]
 tasklist = os.path.join(os.getenv("CAMPAIGN_DIR"),os.getenv("CAMPAIGN")+"_jobs.csv")
@@ -20,13 +22,13 @@ tasklist = os.path.join(os.getenv("CAMPAIGN_DIR"),os.getenv("CAMPAIGN")+"_jobs.c
 
 f = open(tasklist.replace("jobs.csv","Pass1Summary.csv"),"w")
 tasks = get_tasks(tasklist)
-print (tasks.keys())
+
 f.write("TASK, NFILES, CHECK, NFILES_OUTPUT, QUERY\n")
 
 mc_client = MetaCatClient(os.environ["METACAT_SERVER_URL"])
 
 for task in tasks.keys():
-
+    print (f"-------------------------- {task} --------------------------")
     nfiles = int(tasks[task]['NFILES'])
     print ("nfiles",nfiles)
     config = tasks[task]['FCL']
@@ -53,7 +55,7 @@ for task in tasks.keys():
         #print (nfid, count)
 
     avesize = float(avesize/filecount) if filecount>0 else 0
-    print ("Average file size for pass1 files: ",avesize," GB")
+    print ("Average file size for pass1 files: %8.3f GB"%avesize)
     print ("this query had ",fid,"parents and ",event_count,"events, spread across ", filecount," pass1 files")
 
     if fid != nfiles:
