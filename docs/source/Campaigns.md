@@ -8,9 +8,14 @@ There is a shift operation procedure defined after the main setup and explanatio
 
 There is also an example of this procedure in
 
-`/exp/dune/app/home/duneproshift/merge/hd_atmos_202604`
+`/exp/dune/data/users/schellma/merge/hd_atmos_202604`
 
 ## Setup
+
+To log in as a production role
+
+`ssh -l duneproshift@dunegpvmXX@fnal.gov`
+
 
 We suggest that for each campaign you make a subdirectory:
 
@@ -23,19 +28,24 @@ Get into an apptainer:
 /cvmfs/singularity.opensciencegrid.org/fermilab/fnal-dev-sl7:latest
 ~~~
 
+Make an area that you use for merging projects - you can put several campaigns there. 
 
 You need to set the `CAMPAIGN` environmentals to set up a unique campaign directory 
 
 ~~~
-export $CAMPAIGN=<campaign_name>
-mkdir /exp/dune/app/home/duneproshift/merge/$CAMPAIGN
-cd /exp/dune/app/home/duneproshift/merge/$CAMPAIGN
+export TOP_MERGE_DIR=<where you want your merge stuff to go>
+export CAMPAIGN=<campaign_name>
+~~~
+
+~~~
+mkdir $TOP_MERGE_DIR/$CAMPAIGN
+cd $TOP_MERGE_DIR/$CAMPAIGN
 git clone https://github.com/dune/merge-utils.git
 ~~~
 
 Then make a script called `setup.sh`, make certain it has the code version you want and put it in 
 
-`/exp/dune/app/home/duneproshift/merge/$CAMPAIGN`
+`$TOP_MERGE_DIR/$CAMPAIGN`
 
 Text of `setup.sh`
 
@@ -45,8 +55,8 @@ export RUCIO_ACCOUNT=justin_readonly # need this to access rucio
 export CAMPAIGN=<campaign name>
 export DUNE_VERSION=<version>
 export DUNE_QUALIFIER=<qualifier>
-cd /exp/dune/app/home/duneproshift/merge/$CAMPAIGN/merge-utils
-source setup_fnal.sh
+cd $TOP_MERGE_DIR/$CAMPAIGN/merge-utils
+source setup_prod.sh
 cd campaigns
 mkdir -p $CAMPAIGN
 source setup_campaign.sh $CAMPAIGN
@@ -55,11 +65,16 @@ cd $CAMPAIGN
 
 You need to run this script every time you log in. 
 
-ie, after the apptainer command:
+ie, after the apptainer command
 
-source $HOME/merge/$CAMPAIGN/setup.sh
+~~~
+export TOP_MERGE_DIR=$HOME/merge # change to the location you want 
+source $TOP_MERGE_DIR/$CAMPAIGN/setup.sh
+~~~
 
-the full directory path to your $CAMPAIGN configuration will be in `$CAMPAIGN_DIR`
+this will set up merge-utils and put you into the subdirectory where you can configure your campaign.
+
+The full directory path to your $CAMPAIGN configuration will be in `$CAMPAIGN_DIR`
 
 In that directory you need to make a csv file with the same name as the directory. `$CAMPAIGN.csv` that stores tagged rows for each dataset you want to run over.
 
@@ -96,9 +111,9 @@ When you are ready to run some jobs:
 
 0. Make your campaign directory 
 
-Run the setup procedure described in detail above. 
+Run the setup procedure described in detail above and setup up a campaign directory under merge-utils/campaigns
 
-Once that is done, every time you login, get an apptainer, got to `$HOME/merge/$CAMPAIGN` and run `setup.sh` and you should be ready to go. 
+Once that is done, every time you login, get an apptainer, set `TOP_MERGE_DIR`, go to `$TOP_MERGE_DIR/$CAMPAIGN` and run `setup.sh` and you should be ready to go. 
 
 1. Set up your base csv file `$CAMPAIGN.csv`.  Each row represents a sub-campaign which can have different fcl, yaml and datasets but not different code versions.
 Each sub-campaign needs a unique tag.  The yaml file needs to contain the correct fcl file. Rows can share yaml files if you are running the same config on different datasets. 
@@ -241,4 +256,4 @@ justin restart-workflow workflow-id=<workflow-id>
 
 The scripts have a --retry option that will ignore files that are already processed.
 
-- if all else fails, you can increment the tag version and rerun the whole sub-campaign again.  
+- if all else fails, you can increment the tag version and rerun the whole sub-campaign again.  Generally it is a better idea to copy the relevant lines in the jobs and checklist files and increment the version rather than replace the tag.
