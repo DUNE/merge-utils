@@ -1,10 +1,14 @@
 # Campaigns
 
-You can set up and run campaigns with multiple datasets/configurations using the `campaign` folders
+You can set up and run campaigns with multiple datasets/configurations with one setup per campaign. 
 
 Each campaign may have sub-campaigns that run different fcls over different datasets.
 
 There is a shift operation procedure defined after the main setup and explanations. 
+
+There is also an example of this procedure in
+
+`/exp/dune/app/home/duneproshift/merge/hd_atmos_202604`
 
 ## Setup
 
