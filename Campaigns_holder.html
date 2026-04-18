@@ -49,9 +49,11 @@
 <p>Each campaign may have sub-campaigns that run different fcls over different datasets.</p>
 <p>There is a shift operation procedure defined after the main setup and explanations.</p>
 <p>There is also an example of this procedure in</p>
-<p><code class="docutils literal notranslate"><span class="pre">/exp/dune/app/home/duneproshift/merge/hd_atmos_202604</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">/exp/dune/data/users/schellma/merge/hd_atmos_202604</span></code></p>
 <section id="setup">
 <h2>Setup<a class="headerlink" href="#setup" title="Link to this heading">¶</a></h2>
+<p>To log in as a production role</p>
+<p><code class="docutils literal notranslate"><span class="pre">ssh</span> <span class="pre">-l</span> <span class="pre">duneproshift&#64;dunegpvmXX&#64;fnal.gov</span></code></p>
 <p>We suggest that for each campaign you make a subdirectory:</p>
 <p>for example in production when you first log in.</p>
 <p>Get into an apptainer:</p>
@@ -60,23 +62,27 @@
 <span class="o">/</span><span class="n">cvmfs</span><span class="o">/</span><span class="n">singularity</span><span class="o">.</span><span class="n">opensciencegrid</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">fermilab</span><span class="o">/</span><span class="n">fnal</span><span class="o">-</span><span class="n">dev</span><span class="o">-</span><span class="n">sl7</span><span class="p">:</span><span class="n">latest</span>
 </pre></div>
 </div>
+<p>Make an area that you use for merging projects - you can put several campaigns there.</p>
 <p>You need to set the <code class="docutils literal notranslate"><span class="pre">CAMPAIGN</span></code> environmentals to set up a unique campaign directory</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export $CAMPAIGN=&lt;campaign_name&gt;
-mkdir /exp/dune/app/home/duneproshift/merge/$CAMPAIGN
-cd /exp/dune/app/home/duneproshift/merge/$CAMPAIGN
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">TOP_MERGE_DIR</span><span class="o">=&lt;</span><span class="n">where</span> <span class="n">you</span> <span class="n">want</span> <span class="n">your</span> <span class="n">merge</span> <span class="n">stuff</span> <span class="n">to</span> <span class="n">go</span><span class="o">&gt;</span>
+<span class="n">export</span> <span class="n">CAMPAIGN</span><span class="o">=&lt;</span><span class="n">campaign_name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mkdir $TOP_MERGE_DIR/$CAMPAIGN
+cd $TOP_MERGE_DIR/$CAMPAIGN
 git clone https://github.com/dune/merge-utils.git
 </pre></div>
 </div>
 <p>Then make a script called <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code>, make certain it has the code version you want and put it in</p>
-<p><code class="docutils literal notranslate"><span class="pre">/exp/dune/app/home/duneproshift/merge/$CAMPAIGN</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">$TOP_MERGE_DIR/$CAMPAIGN</span></code></p>
 <p>Text of <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>echo &quot;this is setup.sh for $CAMPAIGN&quot;
 export RUCIO_ACCOUNT=justin_readonly # need this to access rucio
 export CAMPAIGN=&lt;campaign name&gt;
 export DUNE_VERSION=&lt;version&gt;
 export DUNE_QUALIFIER=&lt;qualifier&gt;
-cd /exp/dune/app/home/duneproshift/merge/$CAMPAIGN/merge-utils
-source setup_fnal.sh
+cd $TOP_MERGE_DIR/$CAMPAIGN/merge-utils
+source setup_prod.sh
 cd campaigns
 mkdir -p $CAMPAIGN
 source setup_campaign.sh $CAMPAIGN
@@ -84,9 +90,13 @@ cd $CAMPAIGN
 </pre></div>
 </div>
 <p>You need to run this script every time you log in.</p>
-<p>ie, after the apptainer command:</p>
-<p>source $HOME/merge/$CAMPAIGN/setup.sh</p>
-<p>the full directory path to your $CAMPAIGN configuration will be in <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_DIR</span></code></p>
+<p>ie, after the apptainer command</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export TOP_MERGE_DIR=$HOME/merge # change to the location you want
+source $TOP_MERGE_DIR/$CAMPAIGN/setup.sh
+</pre></div>
+</div>
+<p>this will set up merge-utils and put you into the subdirectory where you can configure your campaign.</p>
+<p>The full directory path to your $CAMPAIGN configuration will be in <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_DIR</span></code></p>
 <p>In that directory you need to make a csv file with the same name as the directory. <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN.csv</span></code> that stores tagged rows for each dataset you want to run over.</p>
 <p><code class="docutils literal notranslate"><span class="pre">TAG,FCL,CONFIG,CAMPAIGN,NAMESPACE,BATCH,DATASET</span></code></p>
 <ul class="simple">
@@ -119,8 +129,8 @@ If you run it without a tag, it lists the available tags.</p></li>
 <ol class="arabic simple" start="0">
 <li><p>Make your campaign directory</p></li>
 </ol>
-<p>Run the setup procedure described in detail above.</p>
-<p>Once that is done, every time you login, get an apptainer, got to <code class="docutils literal notranslate"><span class="pre">$HOME/merge/$CAMPAIGN</span></code> and run <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code> and you should be ready to go.</p>
+<p>Run the setup procedure described in detail above and setup up a campaign directory under merge-utils/campaigns</p>
+<p>Once that is done, every time you login, get an apptainer, set <code class="docutils literal notranslate"><span class="pre">TOP_MERGE_DIR</span></code>, go to <code class="docutils literal notranslate"><span class="pre">$TOP_MERGE_DIR/$CAMPAIGN</span></code> and run <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code> and you should be ready to go.</p>
 <ol class="arabic simple">
 <li><p>Set up your base csv file <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN.csv</span></code>.  Each row represents a sub-campaign which can have different fcl, yaml and datasets but not different code versions.
 Each sub-campaign needs a unique tag.  The yaml file needs to contain the correct fcl file. Rows can share yaml files if you are running the same config on different datasets.</p></li>
@@ -314,7 +324,7 @@ Each sub-campaign needs a unique tag.  The yaml file needs to contain the correc
 </ul>
 <p>The scripts have a –retry option that will ignore files that are already processed.</p>
 <ul class="simple">
-<li><p>if all else fails, you can increment the tag version and rerun the whole sub-campaign again.</p></li>
+<li><p>if all else fails, you can increment the tag version and rerun the whole sub-campaign again.  Generally it is a better idea to copy the relevant lines in the jobs and checklist files and increment the version rather than replace the tag.</p></li>
 </ul>
 </section>
 </section>
