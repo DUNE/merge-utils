@@ -105,11 +105,11 @@ with open(newlist,'w') as csvfile:
 
 
 with open(checklist,'w') as csvfile:
-    fieldnames = ['TAG','SKIP','TIMESTAMP','PASS','WORKFLOW iD',
+    fieldnames = ['NAMESPACE','TAG','SKIP','TIMESTAMP','PASS','WORKFLOW iD',
             "# of jobs","status","#event/job","#files","success fraction",
             "total # of events","volume (GB)",
             "comments",'DUNESW','NFILES','SIZE_GB','BATCH',
-                  'FCL','CONFIG', 'CAMPAIGN','NAMESPACE', 'DATASET' ] 
+                  'FCL','CONFIG', 'CAMPAIGN', 'DATASET' ] 
     #fieldnames = reader.fieldnames + ['NFILES','SIZE_GB','NAMESPACE','CONFIG']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()

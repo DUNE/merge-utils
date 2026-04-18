@@ -4,29 +4,58 @@ You can set up and run campaigns with multiple datasets/configurations using the
 
 Each campaign may have sub-campaigns that run different fcls over different datasets.
 
+There is a shift operation procedure defined after the main setup and explanations. 
+
 ## Setup
 
-You need to set the `DUNE_VERSION` environmental to the code version you want to run.
+We suggest that for each campaign you make a subdirectory:
 
-Then get the merge-utils and set it up.
+for example in production when you first log in. 
+
+Get into an apptainer:
+~~~
+/cvmfs/oasis.opensciencegrid.org/mis/apptainer/current/bin/apptainer shell --shell=/bin/bash \
+-B /cvmfs,/exp,/nashome,/pnfs/dune,/opt,/run/user,/etc/hostname,/etc/krb5.conf --ipc --pid \
+/cvmfs/singularity.opensciencegrid.org/fermilab/fnal-dev-sl7:latest
+~~~
+
+
+You need to set the `CAMPAIGN` environmentals to set up a unique campaign directory 
 
 ~~~
-export `DUNE_VERSION`
-git clone https://github.com/merge-utils
+export $CAMPAIGN=<campaign_name>
+mkdir /exp/dune/app/home/duneproshift/merge/$CAMPAIGN
+cd /exp/dune/app/home/duneproshift/merge/$CAMPAIGN
+git clone https://github.com/dune/merge-utils.git
+~~~
+
+Then make a script called `setup.sh`, make certain it has the code version you want and put it in 
+
+`/exp/dune/app/home/duneproshift/merge/$CAMPAIGN`
+
+Text of `setup.sh`
+
+~~~
+echo "this is setup.sh for $CAMPAIGN"
+export RUCIO_ACCOUNT=justin_readonly # need this to access rucio
+export CAMPAIGN=<campaign name>
+export DUNE_VERSION=<version>
+export DUNE_QUALIFIER=<qualifier>
+cd /exp/dune/app/home/duneproshift/merge/$CAMPAIGN/merge-utils
 source setup_fnal.sh
-~~~
-
-Then you can set up a campaign
-
-~~~
-cd $MERGE_UTILS_DIR
 cd campaigns
-mkdir <campaign_name>
-source setup_campaign.sh <campaign_name>
-cd <campaign_name>
+mkdir -p $CAMPAIGN
+source setup_campaign.sh $CAMPAIGN
+cd $CAMPAIGN
 ~~~
 
-the directory name will be stored in `$CAMPAIGN` and the full directory path will be in `$CAMPAIGN_DIR`
+You need to run this script every time you log in. 
+
+ie, after the apptainer command:
+
+source $HOME/merge/$CAMPAIGN/setup.sh
+
+the full directory path to your $CAMPAIGN configuration will be in `$CAMPAIGN_DIR`
 
 In that directory you need to make a csv file with the same name as the directory. `$CAMPAIGN.csv` that stores tagged rows for each dataset you want to run over.
 
@@ -44,55 +73,33 @@ In that directory you need to make a csv file with the same name as the director
 
 The production scripts are in `src/prod_utils`
 
-when you run the `setup_campaign.sh` script it should be added to your path.
+when you run the `setup_campaign.sh` script (called in the overall setup script) it should be added to your path.
 
-- `build_jobs.py` this takes the original csv file, figures out how many files you will be running over for each sub-campaign and produces `$CAMPAIGN_jobs.csv` and `$CAMPAIGN_checklist.csv`.  It checks that you are set up with the right larsoft version, campaign name and that your config files contain the right fcl file names.
+- `build_jobs.py` this takes the original csv file, figures out how many files you will be running over for each sub-campaign and produces `$CAMPAIGN_jobs.csv` and `$CAMPAIGN_checklist.csv`.  It checks that you are set up with the right larsoft version, campaign name and that your config files contain the right fcl file names. 
 
 You generally only have to do this once but if you have to rerun a sub-campaign you may decided to redo it.  
 
 You copy the `$CAMPAIGN_checklist.csv` into a google doc and use it to keep track of your submissions. 
 
+When you are ready to run some jobs:
+
 - `make_pass1.py <tag>` makes a script that submits the pass1 jobs for `<tag>`
   If you run it without a tag, it lists the available tags.
 
-### utilities
 
-- `get_tasks.py` internal utility that scripts use to match tag with tasks
-
-- `pass1_check.py`
-
-- `pass1_summary.py`
-
-- `workflow_check.py`
-
-- `make_safe_query.py`
-
-## More detailed sequence of actions
+## Shifter instructions
 
 
 0. Make your campaign directory 
 
-Initial setup
+Run the setup procedure described in detail above. 
 
-~~~
-cd $MERGE_UTILS_DIR
-cd campaigns
-export CAMPAIGN=<newcampaign>
-mkdir $CAMPAIGN
-source setup_campaign.sh $CAMPAIGN
-cd $CAMPAIGN
-~~~
-
-internally `setup_campaign` adds the production utils to your path
-
-~~~
-export PYTHONPATH=$MERGE_UTILS_DIR/src/prod_utils:$PYTHONPATH
-~~~
+Once that is done, every time you login, get an apptainer, got to `$HOME/merge/$CAMPAIGN` and run `setup.sh` and you should be ready to go. 
 
 1. Set up your base csv file `$CAMPAIGN.csv`.  Each row represents a sub-campaign which can have different fcl, yaml and datasets but not different code versions.
 Each sub-campaign needs a unique tag.  The yaml file needs to contain the correct fcl file. Rows can share yaml files if you are running the same config on different datasets. 
 
-Each campaign directory should have a unique csv with the same suffix as the directory name. 
+Each campaign directory should containe a unique `$CAMPAIGN.csv` with the same suffix as the directory name. 
 
 Reminder from above - fields are:
 
@@ -199,3 +206,35 @@ TEST_hd_atmos_v4_s000500_l000500_*20260417T174145*/submit.sh
 - 	CAMPAIGN - already filled
 - 	NAMESPACE - already filled
 - 	DATASET - already filled
+
+6. What if I made a mistake or things went very badly.
+
+You can track your jobs at [the justin workflow page](https://dunejustin.fnal.gov/dashboard/?method=list-workflows)
+
+You can check pass1 by using:
+
+~~~
+python -m pass1_check <tag>
+~~~
+
+You should see something like this if you check midway. 
+
+~~~
+python -m pass1_check TEST_hd_atmos_v3
+nfiles 980
+pass1 this tag had  600 parents and  63500 events, spread across 62 pass1 files
+600 980
+ERROR: final number of files 600 is not = the input 980
+~~~
+
+- if a workflow got paused, you can 
+
+~~~
+justin restart-workflow workflow-id=<workflow-id>
+~~~
+
+- if it still doesn't complete properly, wait a few hours and do a rerun of `make_pass1` for the workflows that did not finish. 
+
+The scripts have a --retry option that will ignore files that are already processed.
+
+- if all else fails, you can increment the tag version and rerun the whole sub-campaign again.  
