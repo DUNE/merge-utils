@@ -1,8 +1,9 @@
-version: "1.0.0"
+version: "1.0.1"
 # this is for atmospheric caf production 
 # April 17, 2026 HMS
 input:
-    streaming: True 
+    streaming: True
+    campaign: "fdhd_he_2026a_caf"
 
 output:
     mode: merge
@@ -33,8 +34,6 @@ validation:
         inconsistent: quit #<opt(default,quit,skip,gap)> # Metadata inconsistent with other files
         already_done: skip # <opt(include,quit,skip,gap)> # Files that have been merged in a previous job
 
-
-
 method:
     method_name: "lar"
     transform: "art.cafmaker"
@@ -42,7 +41,8 @@ method:
     cfg: "standard_cafmaker_atmos_dune10kt_1x2x6_geov5.fcl"
     outputs:
       - name: "{NAME}__{UUID}__caf.root"
-        metadata: {"core.file_format": "root", "core.data_tier":"root-tuple","dune.campaign":"fdhd_he_2026a_caf"}
+        metadata: {"core.file_format": "root", "core.data_tier":"root-tuple"}
+        pass2: hadd
     
 sites:
     site_distances:                       # Distance offsets for merging sites

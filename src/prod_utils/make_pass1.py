@@ -1,7 +1,8 @@
 import os,sys,csv
 
 '''
-Script to create pass1 merge commands for a given task'''
+Script to create pass1 merge commands for a given task
+'''
 
 import csv
 from metacat.webapi import MetaCatClient
@@ -39,9 +40,9 @@ if __name__ == '__main__':
 
 
     if task not in tasks:
-            print(f"Task {task} not found")
-            print("Available tasks:", ', '.join(tasks.keys()))
-            sys.exit(1)
+        print(f"Task {task} not found")
+        print("Available tasks:", ', '.join(tasks.keys()))
+        sys.exit(1)
     else:
         if "TEST" in task:
             local="-l"
@@ -83,7 +84,7 @@ if __name__ == '__main__':
         print ("less than batch")
         if dupcount > 0:
             retry = "--retry"
-        command = f"merge {retry} {local} -vv -c {config} --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
+        command = f"merge {retry} {local} -vv -c {config} --campaign=\"{campaign}\" --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
         print(command)
         f.write(command + '\n')
     else:
@@ -100,7 +101,7 @@ if __name__ == '__main__':
             dupcount = check["count"]
             if dupcount > 0:
                 retry = "--retry"
-            command = f"merge  {retry} {local} -vv -c {campaign_dir}/{config} --skip={skip} --limit={step}  --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
+            command = f"merge  {retry} {local} -vv -c {campaign_dir}/{config} --skip={skip} --limit={step} --campaign=\"{campaign}\"  --tag=\"{task}\" dataset {tasks[task]['DATASET']} > {task}_{timestamp}_{skip}.log 2>&1 "
             print(command)
             f.write(command + '\n')
             skip += step
