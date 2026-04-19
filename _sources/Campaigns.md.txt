@@ -34,7 +34,7 @@ You need to set the `CAMPAIGN` environmentals to set up a unique campaign direct
 
 ~~~
 export TOP_MERGE_DIR=<where you want your merge stuff to go>
-export CAMPAIGN=<campaign_name>
+export CAMPAIGN=<campaign_name for a particular campaign>
 ~~~
 
 ~~~
@@ -63,7 +63,7 @@ source setup_campaign.sh $CAMPAIGN
 cd $CAMPAIGN
 ~~~
 
-You need to run this script every time you log in. 
+You need to run `setup.sh` every time you log in. 
 
 ie, after the apptainer command
 
@@ -96,7 +96,7 @@ when you run the `setup_campaign.sh` script (called in the overall setup script)
 
 - `build_jobs.py` this takes the original csv file, figures out how many files you will be running over for each sub-campaign and produces `$CAMPAIGN_jobs.csv` and `$CAMPAIGN_checklist.csv`.  It checks that you are set up with the right larsoft version, campaign name and that your config files contain the right fcl file names. 
 
-You generally only have to do this once but if you have to rerun a sub-campaign you may decided to redo it.  
+You generally only have to do this once if you don't change the `$CAMPAIGN.csv` but if you have to rerun a sub-campaign you may decided to redo it.  
 
 You copy the `$CAMPAIGN_checklist.csv` into a google doc and use it to keep track of your submissions. 
 

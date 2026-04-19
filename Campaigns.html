@@ -57,7 +57,7 @@
 <p>Make an area that you use for merging projects - you can put several campaigns there.</p>
 <p>You need to set the <code class="docutils literal notranslate"><span class="pre">CAMPAIGN</span></code> environmentals to set up a unique campaign directory</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">TOP_MERGE_DIR</span><span class="o">=&lt;</span><span class="n">where</span> <span class="n">you</span> <span class="n">want</span> <span class="n">your</span> <span class="n">merge</span> <span class="n">stuff</span> <span class="n">to</span> <span class="n">go</span><span class="o">&gt;</span>
-<span class="n">export</span> <span class="n">CAMPAIGN</span><span class="o">=&lt;</span><span class="n">campaign_name</span><span class="o">&gt;</span>
+<span class="n">export</span> <span class="n">CAMPAIGN</span><span class="o">=&lt;</span><span class="n">campaign_name</span> <span class="k">for</span> <span class="n">a</span> <span class="n">particular</span> <span class="n">campaign</span><span class="o">&gt;</span>
 </pre></div>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mkdir $TOP_MERGE_DIR/$CAMPAIGN
@@ -81,7 +81,7 @@ source setup_campaign.sh $CAMPAIGN
 cd $CAMPAIGN
 </pre></div>
 </div>
-<p>You need to run this script every time you log in.</p>
+<p>You need to run <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code> every time you log in.</p>
 <p>ie, after the apptainer command</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export TOP_MERGE_DIR=$HOME/merge # change to the location you want 
 source $TOP_MERGE_DIR/$CAMPAIGN/setup.sh
@@ -108,7 +108,7 @@ source $TOP_MERGE_DIR/$CAMPAIGN/setup.sh
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">build_jobs.py</span></code> this takes the original csv file, figures out how many files you will be running over for each sub-campaign and produces <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_jobs.csv</span></code> and <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_checklist.csv</span></code>.  It checks that you are set up with the right larsoft version, campaign name and that your config files contain the right fcl file names.</p></li>
 </ul>
-<p>You generally only have to do this once but if you have to rerun a sub-campaign you may decided to redo it.</p>
+<p>You generally only have to do this once if you don’t change the <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN.csv</span></code> but if you have to rerun a sub-campaign you may decided to redo it.</p>
 <p>You copy the <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_checklist.csv</span></code> into a google doc and use it to keep track of your submissions.</p>
 <p>When you are ready to run some jobs:</p>
 <ul class="simple">
