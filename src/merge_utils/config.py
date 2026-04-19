@@ -28,6 +28,8 @@ def __getattr__(name: str) -> Any:
 
 def get_key(name: str) -> ConfigKey:
     """Get a config key by name"""
+    if not name:
+        return cfg_dict
     remaining = f".{name}"
     obj = cfg_dict
     while remaining:
