@@ -6,7 +6,7 @@ input:
 
 output:
     mode: merge
-    name: "{dune_mc.gen_fcl_filename}__{dune.config_file}__{core.application.version}__{DUNESW_VERSION}__{merge.cfg}"
+    name: "{dune_mc.gen_fcl_filename}__reco2_atmos_dune10kt_1x2x6_geov5_reprocess__{DUNESW_VERSION}__{merge.cfg}"
     namespace: "usertests"
     out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test/{dune.campaign}"
     batch:                # Settings for batch merging
