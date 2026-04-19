@@ -2,7 +2,7 @@
 # Angle brackets indicate the expected type of each setting, and will be ignored in user configs
 # See https://dune.github.io/merge-utils/configuration.html for details on the type checking
 
-version: "1.0.0" # Specify the merge-utils package version
+version: "1.0.1" # Specify the merge-utils package version
 
 input:
     mode: <opt(dids, files, dataset, query)>
@@ -13,6 +13,7 @@ input:
     limit: <int>            # Limit the number of input files, overridden by '--limit #'
     tag: <str>              # Specify a tag to identify outputs, overridden by '--tag TAG'
     comment: <str>          # Add a comment to output metadata, overridden by '--comment COMMENT'
+    campaign: <str>         # Alias of metadata.overrides['dune.campaign'], set by '--campaign'
     streaming: True         # Stream files from remote sites instead of making a local copy
 
 output:

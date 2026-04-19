@@ -21,6 +21,23 @@ Note that the package versin number is defined in `src/merge_utils/__init__.py`
 
 - 
 
+## [1.0.1] - 2026-04-19
+
+### Added
+
+- Command line option '--campaign' and 'input.campaign' config key to easily update production campaign names.  These are equivilant to setting 'metadata.overrides['dune.campaign']'
+- Option to omit application family from 'method.transform', in which case it inherits the application family from the input metadata
+- Checks to ensure jobs with multiple outputs or which change 'core.data_tier' are properly marked as transform jobs
+
+### Changed
+
+- Name substitution now pulls from merged input file metadata but WITHOUT applying the transform or any user metadata overrides.  Altered values should still be available via 'CFG.metadata.overrides' instead
+
+### Fixed
+
+- Transform jobs incorrectly deleting exising origin information from input metadata
+- Overrides to metadata keys with mutable values also affecting the metadata of the first input file, resulting in inconsistent or dropped metadata keys
+
 ## [1.0.0] - 2026-03-31
 
 ## [0.7.4] - 2025-11-21

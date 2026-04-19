@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "input": {
     "mode": "<opt(dids, files, dataset, query)>",
     "inputs": [],
@@ -9,6 +9,7 @@
     "limit": "<int>",
     "tag": "<str>",
     "comment": "<str>",
+    "campaign": "<str>",
     "streaming": true
   },
   "output": {

@@ -1,6 +1,6 @@
 # Example config for merging ROOT files with hadd
 
-version: "1.0.0"        # Specify the merge-utils package version
+version: "1.0.1"        # Specify the merge-utils package version
 
 input:
     streaming: True     # Stream files from remote sites instead of making a local copy
