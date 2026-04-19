@@ -217,7 +217,7 @@ def print_metadata(metadata, mode):
         io_utils.log_print("All input and output metadata passed validation!")
         return
     # In metadata mode, also print the combined output metadata
-    merged_metadata = meta.merged_keys(good_files, True)
+    merged_metadata = meta.merged_keys(good_files, warn = True)
     io_utils.log_print(f"Combined metadata:\n{json.dumps(merged_metadata, indent=2)}")
     for idx, output in enumerate(config.method.outputs):
         if not output.metadata:

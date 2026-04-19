@@ -755,7 +755,7 @@ class MergeChunk:
     @property
     def metadata(self) -> dict:
         """Get the metadata for the chunk"""
-        md = meta.merged_keys(self.files)
+        md = meta.merged_keys(self.files, warn = False)
         md['merge.pass'] = self.tier + 1
         if self.skip is not None:
             md['merge.skip'] = self.skip

@@ -381,45 +381,46 @@ def add_origin(metadata: dict, app: str) -> None:
     else:
         metadata[key] = {name: cfg}
 
-def merged_keys(files: list, warn: bool = False) -> dict:
+def merged_keys(files: list, transform: bool = True, warn: bool = True) -> dict:
     """
     Merge metadata from multiple files into a single dictionary.
 
     :param files: list of files to merge
+    :param transform: whether to apply transform and user overrides
     :param warn: whether to warn about inconsistent metadata
     :return: merged metadata
     """
     metadata = collections.defaultdict(
         MERGE_META_CLASSES[str(config.metadata.merging['default'])]
     )
+    # Set standard merging behavior
     for key, mode in config.metadata.merging.items():
         if key == 'default':
             continue
-        merge_class = MERGE_META_CLASSES.get(str(mode), None)
-        if merge_class is not None:
-            metadata[key] = merge_class()
-        else:
-            metadata[key] = MergeMetaOverride()
-    for key, value in config.metadata.overrides.items():
-        metadata[key] = MergeMetaOverride(value._value)  # pylint: disable=protected-access
-    for key, value in merge_cfg_keys().items():
-        metadata[f"merge.{key}"] = MergeMetaOverride(str(value))
-    if config.input.campaign:
-        metadata['dune.campaign'] = MergeMetaOverride(str(config.input.campaign))
-
+        merge_class = MERGE_META_CLASSES.get(str(mode), MergeMetaOverride)
+        metadata[key] = merge_class()
+    # Set user metadata overrides
+    if transform:
+        for key, value in config.metadata.overrides.items():
+            metadata[key] = MergeMetaOverride(value._value)  # pylint: disable=protected-access
+        for key, value in merge_cfg_keys().items():
+            metadata[f"merge.{key}"] = MergeMetaOverride(str(value))
+        if config.input.campaign:
+            metadata['dune.campaign'] = MergeMetaOverride(str(config.input.campaign))
+    # Merge input file metadata
     for file in files:
         for key, value in file.metadata.items():
             metadata[key].add(value)
-
+    # Warn about inconsistencies during merging
     if warn:
         io_utils.log_list("Omitting {n} inconsistent metadata key{s} from output:",
             [k for k, v in metadata.items() if v.warn]
         )
     metadata = {k: v.value for k, v in metadata.items() if v.valid}
-
-    if config.method.transform:
+    # Update application and origin info for transform jobs
+    if transform and config.method.transform:
         add_origin(metadata, str(config.method.transform))
-
+    # Make sure merged metadata is still valid
     if not validate("output", metadata, requirements=False):
         logger.critical("Merged metadata is invalid, cannot continue!")
         raise ValueError("Merged metadata is invalid")
@@ -640,6 +641,16 @@ def check_method(files: list) -> None:
             logger.critical("Output %d must specify a merging method for stage-2 merges!", idx)
             sys.exit(1)
 
+    # Try to check for jobs that should be transforms but aren't
+    if not config.method.transform:
+        if len(config.method.outputs) > 1:
+            logger.critical("Non-transform jobs cannot have multiple outputs!")
+            sys.exit(1)
+        for key in ['core.data_tier']:
+            if key in config.metadata.overrides:
+                logger.critical("Non-transform jobs should not alter %s in the metadata!", key)
+                sys.exit(1)
+
     # Convert dependencies set back to a list and store in config
     config.method.dependencies = list(deps)
 
@@ -653,14 +664,13 @@ def make_names(files: list):
     :param files: list of files to merge
     """
     check_method(files)
-    metadata = merged_keys(files, warn=True) # recalculate with correct method settings
     # Set output namespaces if they are not given
     if not config.output.namespace:
         config.output.namespace = files[0].namespace
     if not config.output.scratch.namespace:
         config.output.scratch.namespace = config.output.namespace
     # Format output file names
-    formatter = naming.Formatter(metadata)
+    formatter = naming.Formatter(merged_keys(files, transform=False, warn=False))
     if '{UUID}' in config.output.name:
         logger.critical("File {UUID} should go in merging.method.outputs, not output.name")
         sys.exit(1)
@@ -695,6 +705,7 @@ def make_names(files: list):
             continue
         formatter.format(key)
     # Check output file metadata for validity
+    metadata = merged_keys(files, transform=True, warn=False) # base output metadata
     for idx, output in enumerate(config.method.outputs):
         if not output.metadata:
             logger.debug("Skipping output %d metadata validation (no metadata)", idx)
