@@ -271,6 +271,7 @@ def set_cmd_opts(args: dict) -> None:
     # Job settings
     override(args, "tag", cfg_dict.input.tag)
     override(args, "comment", cfg_dict.input.comment)
+    override(args, "campaign", cfg_dict.input.campaign)
     skip = args.pop("skip", None)
     if skip is not None:
         if skip <= 0:

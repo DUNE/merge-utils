@@ -10,10 +10,11 @@ input:
     inputs: []              # List of inputs
     search_dirs: <set>      # List of directories to search for metadata files
     namespace: <str>        # Namespace override for local input files without metadata
-    skip: <int>             # Skip a number of input files, overridden by '--skip #'
-    limit: <int>            # Limit the number of input files, overridden by '--limit #'
-    tag: <str>              # Specify a tag to identify outputs, overridden by '--tag TAG'
-    comment: <str>          # Add a comment to output metadata, overridden by '--comment COMMENT'
+    skip: <int>             # Skip a number of input files, set by '--skip #'
+    limit: <int>            # Limit the number of input files, set by '--limit #'
+    tag: <str>              # Specify a tag to identify outputs, set by '--tag TAG'
+    comment: <str>          # Add a comment to output metadata, set by '--comment COMMENT'
+    campaign: <str>         # Alias of metadata.overrides['dune.campaign'], set by '--campaign'
     streaming: True         # Stream files from remote sites instead of making a local copy
 
 output:

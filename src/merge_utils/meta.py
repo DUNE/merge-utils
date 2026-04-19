@@ -404,6 +404,8 @@ def merged_keys(files: list, warn: bool = False) -> dict:
         metadata[key] = MergeMetaOverride(value._value)  # pylint: disable=protected-access
     for key, value in merge_cfg_keys().items():
         metadata[f"merge.{key}"] = MergeMetaOverride(str(value))
+    if config.input.campaign:
+        metadata['dune.campaign'] = MergeMetaOverride(str(config.input.campaign))
 
     for file in files:
         for key, value in file.metadata.items():
