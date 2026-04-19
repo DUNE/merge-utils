@@ -15,7 +15,7 @@ output:
         lifetime: 300
     grouping:
         mode: count
-        target: 50  # how many output files per input file
+        target: 20  # how many output files per input file
         equalize: False
 
 
