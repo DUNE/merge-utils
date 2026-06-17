@@ -34,8 +34,7 @@ Configuration
 
 .. toctree::
 
-    configuration   
-    configuration   
+    configuration  
 
 command line API
 ----------------

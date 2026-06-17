@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Campaigns &#8212; merge-utils 0.8 documentation</title>
+    <title>Campaigns &#8212; merge-utils 1.0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css?v=0f882399" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
-    <script src="_static/documentation_options.js?v=a0e24af7"></script>
+    <script src="_static/documentation_options.js?v=292eb321"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="canonical" href="https://dune.github.io/merge-utils/Campaigns_holder.html" />
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="scripts.html" title="merge"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.8 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 1.0.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Campaigns</a></li> 
       </ul>
     </div>  
@@ -54,6 +54,7 @@
 <h2>Setup<a class="headerlink" href="#setup" title="Link to this heading">¶</a></h2>
 <p>To log in as a production role</p>
 <p><code class="docutils literal notranslate"><span class="pre">ssh</span> <span class="pre">-l</span> <span class="pre">duneproshift&#64;dunegpvmXX&#64;fnal.gov</span></code></p>
+<p>(general users can also run merge-utils but are restricted to writing output to usertests or a personal scope)</p>
 <p>We suggest that for each campaign you make a subdirectory:</p>
 <p>for example in production when you first log in.</p>
 <p>Get into an apptainer:</p>
@@ -64,6 +65,7 @@
 </div>
 <p>Make an area that you use for merging projects - you can put several campaigns there.</p>
 <p>You need to set the <code class="docutils literal notranslate"><span class="pre">CAMPAIGN</span></code> environmentals to set up a unique campaign directory</p>
+<p><code class="docutils literal notranslate"><span class="pre">TOP_MERGE_DIR</span></code> is the place you use for any merging work. It could be <code class="docutils literal notranslate"><span class="pre">/exp/dune/data/user/$USER/merging</span></code>.  You then have subdirectories for particular projects named <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">TOP_MERGE_DIR</span><span class="o">=&lt;</span><span class="n">where</span> <span class="n">you</span> <span class="n">want</span> <span class="n">your</span> <span class="n">merge</span> <span class="n">stuff</span> <span class="n">to</span> <span class="n">go</span><span class="o">&gt;</span>
 <span class="n">export</span> <span class="n">CAMPAIGN</span><span class="o">=&lt;</span><span class="n">campaign_name</span> <span class="k">for</span> <span class="n">a</span> <span class="n">particular</span> <span class="n">campaign</span><span class="o">&gt;</span>
 </pre></div>
@@ -105,7 +107,7 @@ source $TOP_MERGE_DIR/$CAMPAIGN/setup.sh
 <li><p><code class="docutils literal notranslate"><span class="pre">CONFIG</span></code> is the merge yaml or json override of defaults. Should have the same name as the fcl file if using lar. You may have to edit it to make certain that the <code class="docutils literal notranslate"><span class="pre">cfg</span></code> option points to  the correct fcl and the <code class="docutils literal notranslate"><span class="pre">metadata</span></code> field contains the correc <code class="docutils literal notranslate"><span class="pre">dune.campaign</span></code> field.  The <code class="docutils literal notranslate"><span class="pre">build_jobs</span></code> script will complain if these are not set consistently.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">CAMPAIGN</span></code> is the campaign - same as directory and cvs vfile</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">NAMESPACE</span></code> is the output namespace (default is ‘usertests’, for production you need to change it to the right namespace.)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">BATCH</span></code> is how many input files are sent to the merger at once - for large production batches of 2000-5000 are good.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BATCH</span></code> is how many input files are sent to the merger at once - for large production batches of 2000-5000 are good. It generally corresponds to a justin workflow</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">DATASET</span></code> the metacat dataset you want to run over. Generally should be official</p></li>
 </ul>
 </section>
@@ -123,6 +125,32 @@ source $TOP_MERGE_DIR/$CAMPAIGN/setup.sh
 <li><p><code class="docutils literal notranslate"><span class="pre">make_pass1.py</span> <span class="pre">&lt;tag&gt;</span></code> makes a script that submits the pass1 jobs for <code class="docutils literal notranslate"><span class="pre">&lt;tag&gt;</span></code>
 If you run it without a tag, it lists the available tags.</p></li>
 </ul>
+</section>
+<section id="directory-structure-for-campaign1">
+<h2>Directory structure for ‘campaign1’<a class="headerlink" href="#directory-structure-for-campaign1" title="Link to this heading">¶</a></h2>
+<p>‘’’
+top_merge_dir
+|____campaign1
+|    |____merge-utils
+|    |    |____config
+|    |    |    |____misc
+|    |    |    |____hdf5
+|    |    |    |____defaults
+|    |    |    |____examples
+|    |    |    |____lar
+|    |    |    |____trg_mc_2025a
+|    |    |____tests
+|    |    |____docs
+|    |    |    |____source
+|    |    |____logs
+|    |    |____campaigns
+|    |    |    |____test_campaign
+|    |    |    |____campaign1
+|    |    |____src
+|    |    |    |____prod_utils
+|    |    |    |____merge_utils
+|    |    |    |____runners
+‘’’</p>
 </section>
 <section id="shifter-instructions">
 <h2>Shifter instructions<a class="headerlink" href="#shifter-instructions" title="Link to this heading">¶</a></h2>
@@ -155,7 +183,7 @@ Each sub-campaign needs a unique tag.  The yaml file needs to contain the correc
 <p>will make a long list of potential merge submissions, each of which has length <code class="docutils literal notranslate"><span class="pre">--limit</span></code> and skips by <code class="docutils literal notranslate"><span class="pre">--skip</span></code></p>
 <p>those merge submission commands are stored in <code class="docutils literal notranslate"><span class="pre">&lt;TAG.sh&gt;</span></code> so you can use them later.</p>
 <p>This is what they look like:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">merge</span>  <span class="o">-</span><span class="n">l</span> <span class="o">-</span><span class="n">vv</span> <span class="o">-</span><span class="n">c</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">schellma</span><span class="o">/</span><span class="n">Dropbox</span><span class="o">/</span><span class="n">merge</span><span class="o">-</span><span class="n">utils</span><span class="o">/</span><span class="n">campaigns</span><span class="o">/</span><span class="n">trigprim</span><span class="o">-</span><span class="mi">2026</span><span class="o">-</span><span class="mi">03</span><span class="o">/</span><span class="n">triggerana_tree_1x2x2_simpleThr_production</span><span class="o">.</span><span class="n">yaml</span> <span class="o">--</span><span class="n">skip</span><span class="o">=</span><span class="mi">0</span> <span class="o">--</span><span class="n">limit</span><span class="o">=</span><span class="mi">2</span>  <span class="o">--</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;TEST-TRGSIM_CC_v1&quot;</span> <span class="n">dataset</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">merge</span>  <span class="o">-</span><span class="n">vv</span> <span class="o">-</span><span class="n">c</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">schellma</span><span class="o">/</span><span class="n">Dropbox</span><span class="o">/</span><span class="n">merge</span><span class="o">-</span><span class="n">utils</span><span class="o">/</span><span class="n">campaigns</span><span class="o">/</span><span class="n">trigprim</span><span class="o">-</span><span class="mi">2026</span><span class="o">-</span><span class="mi">03</span><span class="o">/</span><span class="n">triggerana_tree_1x2x2_simpleThr_production</span><span class="o">.</span><span class="n">yaml</span> <span class="o">--</span><span class="n">skip</span><span class="o">=</span><span class="mi">0</span> <span class="o">--</span><span class="n">limit</span><span class="o">=</span><span class="mi">2</span>  <span class="o">--</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;TEST-TRGSIM_CC_v1&quot;</span> <span class="n">dataset</span>
 </pre></div>
 </div>
 <p>produces:</p>
@@ -342,6 +370,7 @@ Each sub-campaign needs a unique tag.  The yaml file needs to contain the correc
 <li><a class="reference internal" href="#">Campaigns</a><ul>
 <li><a class="reference internal" href="#setup">Setup</a></li>
 <li><a class="reference internal" href="#production-scripts">production scripts</a></li>
+<li><a class="reference internal" href="#directory-structure-for-campaign1">Directory structure for ‘campaign1’</a></li>
 <li><a class="reference internal" href="#shifter-instructions">Shifter instructions</a></li>
 </ul>
 </li>
@@ -394,7 +423,7 @@ Each sub-campaign needs a unique tag.  The yaml file needs to contain the correc
         <li class="right" >
           <a href="scripts.html" title="merge"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.8 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 1.0.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Campaigns</a></li> 
       </ul>
     </div>

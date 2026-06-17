@@ -16,6 +16,7 @@ To log in as a production role
 
 `ssh -l duneproshift@dunegpvmXX@fnal.gov`
 
+(general users can also run merge-utils but are restricted to writing output to usertests or a personal scope)
 
 We suggest that for each campaign you make a subdirectory:
 
@@ -31,6 +32,8 @@ Get into an apptainer:
 Make an area that you use for merging projects - you can put several campaigns there. 
 
 You need to set the `CAMPAIGN` environmentals to set up a unique campaign directory 
+
+`TOP_MERGE_DIR` is the place you use for any merging work. It could be `/exp/dune/data/user/$USER/merging`.  You then have subdirectories for particular projects named `$CAMPAIGN`
 
 ~~~
 export TOP_MERGE_DIR=<where you want your merge stuff to go>
@@ -85,7 +88,7 @@ In that directory you need to make a csv file with the same name as the director
 - `CONFIG` is the merge yaml or json override of defaults. Should have the same name as the fcl file if using lar. You may have to edit it to make certain that the `cfg` option points to  the correct fcl and the `metadata` field contains the correc `dune.campaign` field.  The `build_jobs` script will complain if these are not set consistently.
 - `CAMPAIGN` is the campaign - same as directory and cvs vfile
 - `NAMESPACE` is the output namespace (default is 'usertests', for production you need to change it to the right namespace.)
-- `BATCH` is how many input files are sent to the merger at once - for large production batches of 2000-5000 are good. 
+- `BATCH` is how many input files are sent to the merger at once - for large production batches of 2000-5000 are good. It generally corresponds to a justin workflow 
 - `DATASET` the metacat dataset you want to run over. Generally should be official 
 
 ## production scripts
@@ -105,6 +108,31 @@ When you are ready to run some jobs:
 - `make_pass1.py <tag>` makes a script that submits the pass1 jobs for `<tag>`
   If you run it without a tag, it lists the available tags.
 
+## Directory structure for 'campaign1'
+
+'''
+top_merge_dir
+|____campaign1
+|    |____merge-utils
+|    |    |____config
+|    |    |    |____misc
+|    |    |    |____hdf5
+|    |    |    |____defaults
+|    |    |    |____examples
+|    |    |    |____lar
+|    |    |    |____trg_mc_2025a
+|    |    |____tests
+|    |    |____docs
+|    |    |    |____source
+|    |    |____logs
+|    |    |____campaigns
+|    |    |    |____test_campaign
+|    |    |    |____campaign1
+|    |    |____src
+|    |    |    |____prod_utils
+|    |    |    |____merge_utils
+|    |    |    |____runners
+'''
 
 ## Shifter instructions
 
@@ -148,7 +176,7 @@ those merge submission commands are stored in `<TAG.sh>` so you can use them lat
 This is what they look like:
 
 ~~~
-merge  -l -vv -c /Users/schellma/Dropbox/merge-utils/campaigns/trigprim-2026-03/triggerana_tree_1x2x2_simpleThr_production.yaml --skip=0 --limit=2  --tag="TEST-TRGSIM_CC_v1" dataset 
+merge  -vv -c /Users/schellma/Dropbox/merge-utils/campaigns/trigprim-2026-03/triggerana_tree_1x2x2_simpleThr_production.yaml --skip=0 --limit=2  --tag="TEST-TRGSIM_CC_v1" dataset 
 ~~~
 produces:
 ~~~

@@ -5,18 +5,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>replicas &#8212; merge-utils 0.8 documentation</title>
+    <title>replicas &#8212; merge-utils 1.0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/nature.css?v=0f882399" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
-    <script src="_static/documentation_options.js?v=a0e24af7"></script>
+    <script src="_static/documentation_options.js?v=292eb321"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="canonical" href="https://dune.github.io/merge-utils/replicas.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="retriever" href="retriever.html" />
-    <link rel="prev" title="config_keys" href="naming.html" /> 
+    <link rel="prev" title="naming" href="naming.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
@@ -31,9 +31,9 @@
           <a href="retriever.html" title="retriever"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="naming.html" title="config_keys"
+          <a href="naming.html" title="naming"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.8 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 1.0.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">replicas</a></li> 
       </ul>
     </div>  
@@ -126,6 +126,12 @@
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="replicas.BaseRSE.checksum_adler32">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">checksum_adler32</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8192</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/replicas.html#BaseRSE.checksum_adler32"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#replicas.BaseRSE.checksum_adler32" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the Adler-32 checksum of a file, working in chunks</p>
 </dd></dl>
 
 <dl class="py method">
@@ -621,6 +627,7 @@ RucioFinder if no data files or search directories were provided</p>
 <li><a class="reference internal" href="#replicas.BaseRSE.check_cache"><code class="docutils literal notranslate"><span class="pre">BaseRSE.check_cache()</span></code></a></li>
 <li><a class="reference internal" href="#replicas.BaseRSE.check_local"><code class="docutils literal notranslate"><span class="pre">BaseRSE.check_local()</span></code></a></li>
 <li><a class="reference internal" href="#replicas.BaseRSE.check_xrootd"><code class="docutils literal notranslate"><span class="pre">BaseRSE.check_xrootd()</span></code></a></li>
+<li><a class="reference internal" href="#replicas.BaseRSE.checksum_adler32"><code class="docutils literal notranslate"><span class="pre">BaseRSE.checksum_adler32()</span></code></a></li>
 <li><a class="reference internal" href="#replicas.BaseRSE.checksum_local"><code class="docutils literal notranslate"><span class="pre">BaseRSE.checksum_local()</span></code></a></li>
 <li><a class="reference internal" href="#replicas.BaseRSE.checksum_xrootd"><code class="docutils literal notranslate"><span class="pre">BaseRSE.checksum_xrootd()</span></code></a></li>
 <li><a class="reference internal" href="#replicas.BaseRSE.ping"><code class="docutils literal notranslate"><span class="pre">BaseRSE.ping()</span></code></a></li>
@@ -687,7 +694,7 @@ RucioFinder if no data files or search directories were provided</p>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="naming.html"
-                          title="previous chapter">config_keys</a></p>
+                          title="previous chapter">naming</a></p>
   </div>
   <div>
     <h4>Next topic</h4>
@@ -728,9 +735,9 @@ RucioFinder if no data files or search directories were provided</p>
           <a href="retriever.html" title="retriever"
              >next</a> |</li>
         <li class="right" >
-          <a href="naming.html" title="config_keys"
+          <a href="naming.html" title="naming"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 0.8 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">merge-utils 1.0.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">replicas</a></li> 
       </ul>
     </div>

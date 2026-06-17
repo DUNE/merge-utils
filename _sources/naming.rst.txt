@@ -1,7 +1,7 @@
-.. _config_keys:
+.. _naming:
 
-config_keys
------------
+naming
+++++++
 
-.. automodule:: config_keys
+.. automodule:: merge_utils.naming
     :members:

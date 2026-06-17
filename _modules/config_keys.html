@@ -4,11 +4,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>config_keys &#8212; merge-utils 0.8 documentation</title>
+    <title>config_keys &#8212; merge-utils 1.0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/nature.css?v=0f882399" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
-    <script src="../_static/documentation_options.js?v=a0e24af7"></script>
+    <script src="../_static/documentation_options.js?v=292eb321"></script>
     <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="canonical" href="https://dune.github.io/merge-utils/_modules/config_keys.html" />
@@ -24,7 +24,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 1.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">config_keys</a></li> 
       </ul>
@@ -51,7 +51,7 @@
 <span class="n">string_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
 
 <div class="viewcode-block" id="ConfigKey">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigKey">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigKey">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigKey</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for configuration keys&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span> <span class="c1"># Type of the config key</span>
@@ -132,7 +132,7 @@
 
 
 <div class="viewcode-block" id="ConfigValue">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigValue">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigValue">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigValue</span><span class="p">(</span><span class="n">ConfigKey</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for individual configuration values&quot;&quot;&quot;</span>
 
@@ -154,14 +154,14 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
 
 <div class="viewcode-block" id="ConfigValue.val">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigValue.val">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigValue.val">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">val</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the value of the key, or a default if not set&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default</span></div>
 
 
 <div class="viewcode-block" id="ConfigValue.set">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigValue.set">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigValue.set">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the value of the key&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
@@ -169,7 +169,7 @@
 
 
 <div class="viewcode-block" id="ConfigString">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigString">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigString">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigString</span><span class="p">(</span><span class="n">ConfigValue</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration string&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;str&#39;</span>
@@ -193,7 +193,7 @@
         <span class="k">return</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
 
 <div class="viewcode-block" id="ConfigString.format">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigString.format">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigString.format">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Format the string value with the given arguments&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -203,7 +203,7 @@
 
 
 <div class="viewcode-block" id="ConfigPath">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigPath">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigPath">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigPath</span><span class="p">(</span><span class="n">ConfigString</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration file path&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;path&#39;</span>
@@ -211,7 +211,7 @@
 
 
 <div class="viewcode-block" id="ConfigCondition">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigCondition">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigCondition">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigCondition</span><span class="p">(</span><span class="n">ConfigKey</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration condition expression&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;cond&#39;</span>
@@ -240,7 +240,7 @@
 
 
 <div class="viewcode-block" id="ConfigBool">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigBool">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigBool">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigBool</span><span class="p">(</span><span class="n">ConfigValue</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration boolean option&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;bool&#39;</span>
@@ -267,7 +267,7 @@
 
 
 <div class="viewcode-block" id="ConfigNum">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigNum">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigNum">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigNum</span><span class="p">(</span><span class="n">ConfigValue</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration number&quot;&quot;&quot;</span>
 
@@ -334,7 +334,7 @@
 
 
 <div class="viewcode-block" id="ConfigInt">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigInt">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigInt">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigInt</span><span class="p">(</span><span class="n">ConfigNum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration integer&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;int&#39;</span>
@@ -353,7 +353,7 @@
 
 
 <div class="viewcode-block" id="ConfigFloat">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigFloat">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigFloat">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigFloat</span><span class="p">(</span><span class="n">ConfigNum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration float&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;float&#39;</span>
@@ -372,7 +372,7 @@
 
 
 <div class="viewcode-block" id="ConfigOption">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigOption">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigOption">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigOption</span><span class="p">(</span><span class="n">ConfigKey</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration option with predefined choices&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;opt&#39;</span>
@@ -426,7 +426,7 @@
 
 
 <div class="viewcode-block" id="ConfigSizeSpec">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigSizeSpec">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigSizeSpec">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigSizeSpec</span><span class="p">(</span><span class="n">ConfigKey</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration size prediction specification&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;size&#39;</span>
@@ -440,7 +440,7 @@
     <span class="p">]</span>
 
 <div class="viewcode-block" id="ConfigSizeSpec.parse_term">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigSizeSpec.parse_term">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigSizeSpec.parse_term">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">parse_term</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">term</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse a term of the form &#39;number*param&#39; or &#39;number param&#39;&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="s1">&#39;*&#39;</span> <span class="ow">in</span> <span class="n">term</span><span class="p">:</span>
@@ -470,7 +470,7 @@
 
 
 <div class="viewcode-block" id="ConfigSizeSpec.parse_spec">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigSizeSpec.parse_spec">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigSizeSpec.parse_spec">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">parse_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse size specification consisting of a sum of terms of the form</span>
@@ -584,7 +584,7 @@
 
 
 <div class="viewcode-block" id="ConfigTuple">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigTuple">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigTuple">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigTuple</span><span class="p">(</span><span class="n">ConfigValue</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration tuple&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;tuple&#39;</span>
@@ -611,7 +611,7 @@
 
 
 <div class="viewcode-block" id="ConfigCollection">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigCollection">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigCollection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigCollection</span><span class="p">(</span><span class="n">ConfigKey</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for configuration collections&quot;&quot;&quot;</span>
 
@@ -646,7 +646,7 @@
 
 
 <div class="viewcode-block" id="ConfigSet">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigSet">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigSet">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigSet</span><span class="p">(</span><span class="n">ConfigCollection</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration set (of strings)&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;set&#39;</span>
@@ -688,7 +688,7 @@
         <span class="k">return</span> <span class="bp">self</span>
 
 <div class="viewcode-block" id="ConfigSet.extend">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigSet.extend">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigSet.extend">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">extend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extend the set with another set or list&quot;&quot;&quot;</span>
         <span class="bp">self</span> <span class="o">|=</span> <span class="n">other</span></div>
@@ -696,7 +696,7 @@
 
 
 <div class="viewcode-block" id="ConfigMap">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigMap">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigMap">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigMap</span><span class="p">(</span><span class="n">ConfigCollection</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration map&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;map&#39;</span>
@@ -782,28 +782,28 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="c1"># pylint: disable=protected-access</span>
 
 <div class="viewcode-block" id="ConfigMap.keys">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigMap.keys">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigMap.keys">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the keys in the config map&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="ConfigMap.values">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigMap.values">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigMap.values">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the values in the config map&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">values</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="ConfigMap.items">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigMap.items">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigMap.items">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the items in the config map&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">items</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="ConfigMap.get">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigMap.get">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigMap.get">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a value from the config map, returning default if not found&quot;&quot;&quot;</span>
         <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -815,7 +815,7 @@
 
 
 <div class="viewcode-block" id="ConfigMap.update">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigMap.update">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigMap.update">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the config map with another dictionary or ConfigMap&quot;&quot;&quot;</span>
         <span class="n">errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
@@ -828,7 +828,7 @@
 
 
 <div class="viewcode-block" id="ConfigList">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigList">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigList">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigList</span><span class="p">(</span><span class="n">ConfigCollection</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration list&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;list&#39;</span>
@@ -863,7 +863,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="c1"># pylint: disable=protected-access</span>
 
 <div class="viewcode-block" id="ConfigList.append">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigList.append">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigList.append">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Append a new item to the list&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -877,7 +877,7 @@
 
 
 <div class="viewcode-block" id="ConfigList.extend">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigList.extend">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigList.extend">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">extend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extend the list with new items&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">items</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -892,7 +892,7 @@
 
 
 <div class="viewcode-block" id="ConfigDict">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigDict">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigDict">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConfigDict</span><span class="p">(</span><span class="n">ConfigKey</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to manage a configuration dictionary&quot;&quot;&quot;</span>
     <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;dict&#39;</span>
@@ -955,7 +955,7 @@
         <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span><span class="o">.</span><span class="n">_json</span><span class="p">()</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span> <span class="c1"># pylint: disable=protected-access</span>
 
 <div class="viewcode-block" id="ConfigDict.items">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigDict.items">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigDict.items">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the items in the config dict&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">items</span><span class="p">()</span></div>
@@ -986,7 +986,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ConfigDict.get">
-<a class="viewcode-back" href="../naming.html#config_keys.ConfigDict.get">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.ConfigDict.get">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a value from the config dict, returning default if not found&quot;&quot;&quot;</span>
         <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -1000,7 +1000,7 @@
 
 
 <div class="viewcode-block" id="parse_type">
-<a class="viewcode-back" href="../naming.html#config_keys.parse_type">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.parse_type">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parse a type string into a list of type components.</span>
@@ -1032,7 +1032,7 @@
 
 
 <div class="viewcode-block" id="check_condition">
-<a class="viewcode-back" href="../naming.html#config_keys.check_condition">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.check_condition">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check that a condition expression is valid.</span>
@@ -1078,7 +1078,7 @@
 <span class="p">}</span>
 
 <div class="viewcode-block" id="make_cfg_key">
-<a class="viewcode-back" href="../naming.html#config_keys.make_cfg_key">[docs]</a>
+<a class="viewcode-back" href="../config_keys.html#config_keys.make_cfg_key">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">make_cfg_key</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Factory function to create appropriate ConfigKey subclass based on type name.&quot;&quot;&quot;</span>
     <span class="n">type_name</span><span class="p">,</span> <span class="n">sub_type</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">parse_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
@@ -1136,7 +1136,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 0.8 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">merge-utils 1.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">config_keys</a></li> 
       </ul>
