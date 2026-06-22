@@ -516,12 +516,13 @@ class GenericRSE(BaseRSE):
         super().__init__()
         # If we have a name, check config for info about the RSE
         if name:
+            name = str(name)
             if name in config.sites.dcache:
-                url = config.sites.dcache[name]['url']
+                url = str(config.sites.dcache[name]['url'])
                 self.staging = float(config.sites.dcache[name]['staging'])
             if not url:
                 raise ValueError(f"No URL found for RSE {name} in config")
-        elif url is None:
+        elif not url:
             raise ValueError("Must provide either a name or url for the RSE")
         # Otherwise, use URL host name for the RSE
         host = get_host(url)

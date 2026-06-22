@@ -441,7 +441,7 @@ class JustinScheduler(JobScheduler):
                 child = chunk.make_child(subchunk)
                 self.assign_site(child, site=site)
         # Use default site for parent chunk
-        chunk.site = config.sites.default
+        chunk.site = str(config.sites.default)
 
     def upload_cfg(self) -> None:
         """
