@@ -405,6 +405,7 @@ class JustinScheduler(JobScheduler):
             best_site = sorted(dists.items(), key=lambda p: p[1])[0][0]
             best_sites[best_site].append(file)
         best_sites = sorted(best_sites.items(), key=lambda x: len(x[1]), reverse=True)
+        logger.info("Best sites: %s", ", ".join([f"{s[0]} ({len(s[1])})" for s in best_sites]))
         # If all files are at the same site, just assign the chunk there and split if needed
         if len(best_sites) == 1:
             self.assign_site(chunk, site=best_sites[0][0])
@@ -414,6 +415,7 @@ class JustinScheduler(JobScheduler):
                     chunk.make_child(subchunk)
             return
         # Try to remove sites with small groups of files
+        best_sites = [list(s) for s in best_sites]
         for idx in range(len(best_sites)-1, 0, -1):
             files = best_sites[idx][1]
             if len(files) >= config.method.chunks.min_count:
