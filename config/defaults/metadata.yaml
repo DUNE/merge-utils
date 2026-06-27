@@ -208,6 +208,7 @@ metadata:
         "retention.status":         "active"
 
 naming:  # Settings for generating name components from metadata
+    max_length: 242 # Maximum length of generated file names
     extensions:     # Automatically remove these extensions from all keys
       - "fcl"
       - "json"
