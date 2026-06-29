@@ -21,6 +21,23 @@ Note that the package versin number is defined in `src/merge_utils/__init__.py`
 
 - 
 
+## [1.0.2] - 2026-06-29
+
+### Added
+
+- New 'provenance' command line entry point that traces the origin of an input file
+- New 'validate' command line entry point that checks input metadata only.  Use the existing 'merge --validate' command to check both inputs and merged output metadata
+- Maximum length checks for generated file names, set by 'naming.max_length' cfg key.  Currently set to 242 characters (255 - 13 for 'rucio upload ')
+
+### Changed
+
+- Included 'caf' as a valid option for 'core.data_tier'
+- Config file version checking now only warns about different patch versions instead of quitting.  Any breaking changes should be minor version increases at the least
+
+### Fixed
+
+- Crashes related to scheduling merge jobs for files scattered across different sites
+
 ## [1.0.1] - 2026-04-19
 
 ### Added
