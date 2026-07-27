@@ -7,8 +7,6 @@ authors = [
   { name="Heidi Schellman", email="heidi.schellman@oregonstate.edu" },
 ]
 dependencies = [
-  #"metacat",
-  #"rucio>=35.4.1",
   "pyyaml",
   "tomli",
 ]
@@ -22,7 +20,22 @@ classifiers = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
+standalone = [
+  "metacat-client",
+  "rucio-clients",
+  "htgettoken",
+  "h5py",
+]
 test = ["pytest"]
+
+[dependency-groups]
+dev = [
+  "pytest",
+  "metacat-client",
+  "rucio-clients",
+  "htgettoken",
+  "h5py",
+]
 
 [project.urls]
 "Homepage" = "https://DUNE.github.io/merge-utils"
