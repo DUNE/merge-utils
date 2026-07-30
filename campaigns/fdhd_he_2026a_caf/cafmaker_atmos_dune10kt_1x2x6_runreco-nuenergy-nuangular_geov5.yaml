@@ -1,0 +1,68 @@
+version: "1.0.1"
+# this is for atmospheric caf production 
+# April 17, 2026 HMS
+input:
+    streaming: True
+    campaign: "fdhd_he_2026a_caf"
+output:
+    mode: merge
+    #name: "{dune_mc.gen_fcl_filename}__{core.application.version}__{dune.config_file}__{DUNESW_VERSION}__{CFG.method.cfg}"
+    #name: "{dune_mc.gen_fcl_filename}_{dune.campaign}_{core.application.name}_{DUNESW_VERSION}_{CFG.method.cfg}"
+    name: "{dune_mc.gen_fcl_filename}_{dune.campaign}_{DUNESW_VERSION}_{CFG.method.cfg}"
+    #namespace: "usertests"
+    namespace: "fardet-hd"
+    out_dir: "/pnfs/dune/scratch/users/{$USER}/merge_test/{dune.campaign}"
+    batch:                # Settings for batch merging
+        lifetime: 1000
+    scratch:                # Settings for scratch merging
+        lifetime: 300
+    grouping:
+        mode: count
+        target: 1000 
+        equalize: False
+method:
+    method_name: cafmaker                     # Custom settings fo cafmaker
+    transform: "cafmaker"                     # Set the application name to cafmaker?
+    cmd: "lar -c {cfg} -n -1 {inputs}"        # Run lar with default output file names
+    cfg: "cafmaker_atmos_dune10kt_1x2x6_runreco-nuenergy-nuangular_geov5.fcl" # Use the standard cafmaker fcl
+    outputs:
+      - name: "{NAME}_{UUID}_caf.root"        # The caf output file
+        rename: "caf.root"                    # Rename the default caf.root output from lar
+        pass2: hadd                           # Merge caf files with hadd in pass 2, if needed
+        metadata:                             # Set the correct metadata for a caf file
+            core.file_format: "root"
+            core.data_tier: "caf"             # "root-tuple" 
+            core.format_variant: "caf"        # regular caf variant
+
+      - name: "{NAME}_{UUID}_flatcaf.root"    # The flatcaf output file
+        rename: "flatcaf.root"                # Rename the default flatcaf.root output from lar        
+        pass2: hadd                           # Merge flatcaf files with hadd in pass 2, if needed
+        metadata:                             # Set the correct metadata for a flatcaf file
+            core.file_format: "root"
+            core.data_tier: "caf"             # "root-tuple"      
+            core.format_variant: "flat"       # flat caf variant
+
+    chunks:                       # Limits on merging individual chunks
+        max_count: 50             # Maximum number of files to merge at once
+        min_count: 10             # Minimum number of files to merge at once
+
+validation:
+    
+    handling:             # How to handle files with errors
+        default: skip    # <opt(quit,skip,gap)>         # Default handling mode
+        duplicate: skip  # <opt(default,quit,skip,gap)> # Duplicated files
+        no_metadata: quit #<opt(default,quit,skip,gap)> # Files without metadata
+        undeclared: quit  #<opt(default,quit,skip,gap)> # Files without a MetaCat record
+        retired: skip    # <opt(default,quit,skip,gap)> # Retired files
+        invalid: quit   # <opt(default,quit,skip,gap)> # Metadata failed validation
+        no_replicas: skip #<opt(default,quit,skip,gap)> # Files without any replicas
+        unreachable: skip #<opt(default,quit,skip,gap)> # Replicas exist but exceed max distance
+        inconsistent: quit #<opt(default,quit,skip,gap)> # Metadata inconsistent with other files
+        already_done: skip # <opt(include,quit,skip,gap)> # Files that have been merged in a previous job
+
+    
+sites:
+    site_distances:                       # Distance offsets for merging sites
+        default: .inf                     # Do not allow merging except at specified sites
+        "US_FNAL-FermiGrid": -5.0         # Increase priority
+        "CERN": 0.0
