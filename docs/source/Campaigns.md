@@ -1,5 +1,8 @@
 # Campaigns
 
+*NOTE: you don't have to do all of this to run a simple merge - this sequence is 
+intended for large productions where you want to carefully track  what you are doing.*
+
 You can set up and run campaigns with multiple datasets/configurations with one setup per campaign. 
 
 Each campaign may have sub-campaigns that run different fcls over different datasets.
@@ -8,7 +11,7 @@ There is a shift operation procedure defined after the main setup and explanatio
 
 There is also an example of this procedure in
 
-`/exp/dune/data/users/schellma/merge/hd_atmos_202604`
+`/exp/dune/data/users/schellma/merge/fdhd_he_2026a_caf`
 
 ## Setup
 
@@ -16,39 +19,41 @@ To log in as a production role
 
 `ssh -l duneproshift@dunegpvmXX@fnal.gov`
 
-(general users can also run merge-utils but are restricted to writing output to usertests or a personal scope)
+(general users can also run merge-utils but are restricted to writing output to usertests or a physics group scope.)
 
 We suggest that for each campaign you make a subdirectory:
 
 for example in production when you first log in. 
 
-Get into an apptainer:
+- Get into an apptainer:
 ~~~
 /cvmfs/oasis.opensciencegrid.org/mis/apptainer/current/bin/apptainer shell --shell=/bin/bash \
 -B /cvmfs,/exp,/nashome,/pnfs/dune,/opt,/run/user,/etc/hostname,/etc/krb5.conf --ipc --pid \
 /cvmfs/singularity.opensciencegrid.org/fermilab/fnal-dev-sl7:latest
 ~~~
 
-Make an area that you use for merging projects - you can put several campaigns there. 
+- Make a top level area that you use for merging projects - you can put several campaigns/versions there. 
 
-You need to set the `CAMPAIGN` environmentals to set up a unique campaign directory 
 
-`TOP_MERGE_DIR` is the place you use for any merging work. It could be `/exp/dune/data/user/$USER/merging`.  You then have subdirectories for particular projects named `$CAMPAIGN`
+`TOP_MERGE_DIR` is the place you use for any merging work. It could be `/exp/dune/data/user/$USER/merging`.  You then have subdirectories for particular projects named `$TOP_MERGE_DIR/${CAMPAIGN}`
 
 ~~~
 export TOP_MERGE_DIR=<where you want your merge stuff to go>
 export CAMPAIGN=<campaign_name for a particular campaign>
 ~~~
 
+- get the code for merge-utils
+
 ~~~
 mkdir $TOP_MERGE_DIR/$CAMPAIGN
-cd $TOP_MERGE_DIR/$CAMPAIGN
+export CAMPAIGN_TOP=$TOP_MERGE_DIR/${CAMPAIGN} 
+cd ${CAMPAIGN_TOP}
 git clone https://github.com/dune/merge-utils.git
 ~~~
 
-Then make a script called `setup.sh`, make certain it has the code version you want and put it in 
+- Then make a script called `setup.sh`, make certain it has the code version you want and put it in 
 
-`$TOP_MERGE_DIR/$CAMPAIGN`
+`$TOP_MERGE_DIR/${CAMPAIGN}_TOP`
 
 Text of `setup.sh`
 
@@ -58,28 +63,30 @@ export RUCIO_ACCOUNT=justin_readonly # need this to access rucio
 export CAMPAIGN=<campaign name>
 export DUNE_VERSION=<version>
 export DUNE_QUALIFIER=<qualifier>
-cd $TOP_MERGE_DIR/$CAMPAIGN/merge-utils
+cd $TOP_MERGE_DIR/${CAMPAIGN}/merge-utils
 source setup_prod.sh
 cd campaigns
-mkdir -p $CAMPAIGN
+mkdir -p $CAMPAIGN # this makes a subdir for your campaign if it is not already tehere
 source setup_campaign.sh $CAMPAIGN
-cd $CAMPAIGN
+cd $CAMPAIGN_DIR
 ~~~
 
-You need to run `setup.sh` every time you log in. 
+- You need to run `setup.sh` every time you log in. 
 
-ie, after the apptainer command
+ie, after the apptainer command do this every time you log in 
 
 ~~~
 export TOP_MERGE_DIR=$HOME/merge # change to the location you want 
-source $TOP_MERGE_DIR/$CAMPAIGN/setup.sh
+source $TOP_MERGE_DIR/${CAMPAIGN}/setup.sh
 ~~~
 
 this will set up merge-utils and put you into the subdirectory where you can configure your campaign.
 
-The full directory path to your $CAMPAIGN configuration will be in `$CAMPAIGN_DIR`
+The full directory path to your `$CAMPAIGN` configuration will be in `$CAMPAIGN_DIR`
 
-In that directory you need to make a csv file with the same name as the directory. `$CAMPAIGN.csv` that stores tagged rows for each dataset you want to run over.
+###  configure individual workflows by adding them to a master csv file
+
+- In that directory you need to make a csv file with the same name as the directory. `$CAMPAIGN.csv` that stores tagged rows for each dataset you want to run over.
 
 `TAG,FCL,CONFIG,CAMPAIGN,NAMESPACE,BATCH,DATASET`
 
@@ -101,7 +108,7 @@ when you run the `setup_campaign.sh` script (called in the overall setup script)
 
 You generally only have to do this once if you don't change the `$CAMPAIGN.csv` but if you have to rerun a sub-campaign you may decided to redo it.  
 
-You copy the `$CAMPAIGN_checklist.csv` into a google doc and use it to keep track of your submissions. 
+You can copy the `$CAMPAIGN_checklist.csv` into a google doc and use it to keep track of your submissions. 
 
 When you are ready to run some jobs:
 
@@ -110,7 +117,7 @@ When you are ready to run some jobs:
 
 ## Directory structure for 'campaign1'
 
-'''
+```
 top_merge_dir
 |____campaign1
 |    |____merge-utils
@@ -127,12 +134,12 @@ top_merge_dir
 |    |    |____logs
 |    |    |____campaigns
 |    |    |    |____test_campaign
-|    |    |    |____campaign1
+|    |    |    |____campaign1 # this is the one you are using
 |    |    |____src
 |    |    |    |____prod_utils
 |    |    |    |____merge_utils
 |    |    |    |____runners
-'''
+```
 
 ## Shifter instructions
 
@@ -141,7 +148,7 @@ top_merge_dir
 
 Run the setup procedure described in detail above and setup up a campaign directory under merge-utils/campaigns
 
-Once that is done, every time you login, get an apptainer, set `TOP_MERGE_DIR`, go to `$TOP_MERGE_DIR/$CAMPAIGN` and run `setup.sh` and you should be ready to go. 
+Once that is done, every time you login, get an apptainer, set `TOP_MERGE_DIR`, go to `$TOP_MERGE_DIR/${CAMPAIGN}` and run `setup.sh` and you should be ready to go in `$CAMPAIGN_DIR` which is $TOP_MERGE_DIR/${CAMPAIGN}/merge-utils/campaigns/${CAMPAIGN}`
 
 1. Set up your base csv file `$CAMPAIGN.csv`.  Each row represents a sub-campaign which can have different fcl, yaml and datasets but not different code versions.
 Each sub-campaign needs a unique tag.  The yaml file needs to contain the correct fcl file. Rows can share yaml files if you are running the same config on different datasets. 
@@ -176,11 +183,15 @@ those merge submission commands are stored in `<TAG.sh>` so you can use them lat
 This is what they look like:
 
 ~~~
-merge  -vv -c /Users/schellma/Dropbox/merge-utils/campaigns/trigprim-2026-03/triggerana_tree_1x2x2_simpleThr_production.yaml --skip=0 --limit=2  --tag="TEST-TRGSIM_CC_v1" dataset 
+merge  -vv -c /Users/schellma/Dropbox/merge-utils/campaigns/\
+trigprim-2026-03/triggerana_tree_1x2x2_simpleThr_production.yaml\
+ --skip=0 --limit=2  --tag="TEST-TRGSIM_CC_v1" dataset 
 ~~~
 produces:
 ~~~
-fardet-hd:fardet-hd__trg_mc_2025a__detector-simulated__v10_06_00d01__detsim_dune10kt_1x2x2_notpcsigproc__prodmarley_nue_flat_cc_dune10kt_1x2x2__out1__v1_official > TEST-TRGSIM_CC_v1_20260321T161849_0.log 2>&1 
+fardet-hd:fardet-hd__trg_mc_2025a__detector-simulated__v10_06_00d01__detsim_\
+dune10kt_1x2x2_notpcsigproc__prodmarley_nue_flat_cc_dune10kt_1x2x2__out1__v1_official\
+  > TEST-TRGSIM_CC_v1_20260321T161849_0.log 2>&1 
 ~~~
 
 - `-l` means run locally (remove to run as batch)
@@ -209,9 +220,12 @@ The last 2-3 lines of the merge scripts have the actual submission commands whic
     '/exp/dune/data/users/schellma/prod/merge-utils/tmp/TEST_hd_atmos_l000002_20260408T235613/run.sh'
 
 - batch
-  `/exp/dune/data/users/schellma/prod/merge-utils/tmp/TEST_hd_atmos_v4_l000500_20260417T174112/submit.sh`
 
-  `/exp/dune/data/users/schellma/prod/merge-utils/tmp/TEST_hd_atmos_v4_s000500_l000500_20260417T174145/submit.sh`
+  ```
+  /exp/dune/data/users/schellma/prod/merge-utils/tmp/TEST_hd_atmos_v4_l000500_20260417T174112/submit.sh
+
+  /exp/dune/data/users/schellma/prod/merge-utils/tmp/TEST_hd_atmos_v4_s000500_l000500_20260417T174145/submit.sh
+  ```
 
 note the timestamp `20260417T174145`, you will need to use it.
 
@@ -229,7 +243,7 @@ upload the partially filled spreadsheet into google sheets.  It should have a li
 
 Fill in 
 
-- 	TAG - the sub-campaign, already filled
+- 	TAG - the sub-campaign, already filled  
 - 	SKIP - already filled, index within the group of sub-campaigns - you can get it from the submit command:
 `TEST_hd_atmos_v4_`*s000500*`_l000500_20260417T174145/submit.sh`
 - 	TIMESTAMP - the timestamp for the sumbit commands - from the submit command:
@@ -282,6 +296,6 @@ justin restart-workflow workflow-id=<workflow-id>
 
 - if it still doesn't complete properly, wait a few hours and do a rerun of `make_pass1` for the workflows that did not finish. 
 
-The scripts have a --retry option that will ignore files that are already processed.
+The scripts have a `--retry` option that will ignore files that are already processed.
 
 - if all else fails, you can increment the tag version and rerun the whole sub-campaign again.  Generally it is a better idea to copy the relevant lines in the jobs and checklist files and increment the version rather than replace the tag.
