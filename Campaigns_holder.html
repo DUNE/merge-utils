@@ -45,61 +45,78 @@
             
   <section id="campaigns">
 <span id="campaigns"></span><h1>Campaigns<a class="headerlink" href="#campaigns" title="Link to this heading">¶</a></h1>
+<p><em>NOTE: you don’t have to do all of this to run a simple merge - this sequence is
+intended for large productions where you want to carefully track  what you are doing.</em></p>
 <p>You can set up and run campaigns with multiple datasets/configurations with one setup per campaign.</p>
 <p>Each campaign may have sub-campaigns that run different fcls over different datasets.</p>
 <p>There is a shift operation procedure defined after the main setup and explanations.</p>
 <p>There is also an example of this procedure in</p>
-<p><code class="docutils literal notranslate"><span class="pre">/exp/dune/data/users/schellma/merge/hd_atmos_202604</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">/exp/dune/data/users/schellma/merge/fdhd_he_2026a_caf</span></code></p>
 <section id="setup">
 <h2>Setup<a class="headerlink" href="#setup" title="Link to this heading">¶</a></h2>
 <p>To log in as a production role</p>
 <p><code class="docutils literal notranslate"><span class="pre">ssh</span> <span class="pre">-l</span> <span class="pre">duneproshift&#64;dunegpvmXX&#64;fnal.gov</span></code></p>
-<p>(general users can also run merge-utils but are restricted to writing output to usertests or a personal scope)</p>
+<p>(general users can also run merge-utils but are restricted to writing output to usertests or a physics group scope.)</p>
 <p>We suggest that for each campaign you make a subdirectory:</p>
 <p>for example in production when you first log in.</p>
-<p>Get into an apptainer:</p>
+<ul class="simple">
+<li><p>Get into an apptainer:</p></li>
+</ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">cvmfs</span><span class="o">/</span><span class="n">oasis</span><span class="o">.</span><span class="n">opensciencegrid</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">mis</span><span class="o">/</span><span class="n">apptainer</span><span class="o">/</span><span class="n">current</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">apptainer</span> <span class="n">shell</span> <span class="o">--</span><span class="n">shell</span><span class="o">=/</span><span class="nb">bin</span><span class="o">/</span><span class="n">bash</span> \
 <span class="o">-</span><span class="n">B</span> <span class="o">/</span><span class="n">cvmfs</span><span class="p">,</span><span class="o">/</span><span class="n">exp</span><span class="p">,</span><span class="o">/</span><span class="n">nashome</span><span class="p">,</span><span class="o">/</span><span class="n">pnfs</span><span class="o">/</span><span class="n">dune</span><span class="p">,</span><span class="o">/</span><span class="n">opt</span><span class="p">,</span><span class="o">/</span><span class="n">run</span><span class="o">/</span><span class="n">user</span><span class="p">,</span><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">hostname</span><span class="p">,</span><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">krb5</span><span class="o">.</span><span class="n">conf</span> <span class="o">--</span><span class="n">ipc</span> <span class="o">--</span><span class="n">pid</span> \
 <span class="o">/</span><span class="n">cvmfs</span><span class="o">/</span><span class="n">singularity</span><span class="o">.</span><span class="n">opensciencegrid</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">fermilab</span><span class="o">/</span><span class="n">fnal</span><span class="o">-</span><span class="n">dev</span><span class="o">-</span><span class="n">sl7</span><span class="p">:</span><span class="n">latest</span>
 </pre></div>
 </div>
-<p>Make an area that you use for merging projects - you can put several campaigns there.</p>
-<p>You need to set the <code class="docutils literal notranslate"><span class="pre">CAMPAIGN</span></code> environmentals to set up a unique campaign directory</p>
-<p><code class="docutils literal notranslate"><span class="pre">TOP_MERGE_DIR</span></code> is the place you use for any merging work. It could be <code class="docutils literal notranslate"><span class="pre">/exp/dune/data/user/$USER/merging</span></code>.  You then have subdirectories for particular projects named <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN</span></code></p>
+<ul class="simple">
+<li><p>Make a top level area that you use for merging projects - you can put several campaigns/versions there.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">TOP_MERGE_DIR</span></code> is the place you use for any merging work. It could be <code class="docutils literal notranslate"><span class="pre">/exp/dune/data/user/$USER/merging</span></code>.  You then have subdirectories for particular projects named <code class="docutils literal notranslate"><span class="pre">$TOP_MERGE_DIR/${CAMPAIGN}</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">TOP_MERGE_DIR</span><span class="o">=&lt;</span><span class="n">where</span> <span class="n">you</span> <span class="n">want</span> <span class="n">your</span> <span class="n">merge</span> <span class="n">stuff</span> <span class="n">to</span> <span class="n">go</span><span class="o">&gt;</span>
 <span class="n">export</span> <span class="n">CAMPAIGN</span><span class="o">=&lt;</span><span class="n">campaign_name</span> <span class="k">for</span> <span class="n">a</span> <span class="n">particular</span> <span class="n">campaign</span><span class="o">&gt;</span>
 </pre></div>
 </div>
+<ul class="simple">
+<li><p>get the code for merge-utils</p></li>
+</ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mkdir $TOP_MERGE_DIR/$CAMPAIGN
-cd $TOP_MERGE_DIR/$CAMPAIGN
+export CAMPAIGN_TOP=$TOP_MERGE_DIR/${CAMPAIGN}
+cd ${CAMPAIGN_TOP}
 git clone https://github.com/dune/merge-utils.git
 </pre></div>
 </div>
-<p>Then make a script called <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code>, make certain it has the code version you want and put it in</p>
-<p><code class="docutils literal notranslate"><span class="pre">$TOP_MERGE_DIR/$CAMPAIGN</span></code></p>
+<ul class="simple">
+<li><p>Then make a script called <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code>, make certain it has the code version you want and put it in</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">$TOP_MERGE_DIR/${CAMPAIGN}_TOP</span></code></p>
 <p>Text of <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>echo &quot;this is setup.sh for $CAMPAIGN&quot;
 export RUCIO_ACCOUNT=justin_readonly # need this to access rucio
 export CAMPAIGN=&lt;campaign name&gt;
 export DUNE_VERSION=&lt;version&gt;
 export DUNE_QUALIFIER=&lt;qualifier&gt;
-cd $TOP_MERGE_DIR/$CAMPAIGN/merge-utils
+cd $TOP_MERGE_DIR/${CAMPAIGN}/merge-utils
 source setup_prod.sh
 cd campaigns
-mkdir -p $CAMPAIGN
+mkdir -p $CAMPAIGN # this makes a subdir for your campaign if it is not already tehere
 source setup_campaign.sh $CAMPAIGN
-cd $CAMPAIGN
+cd $CAMPAIGN_DIR
 </pre></div>
 </div>
-<p>You need to run <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code> every time you log in.</p>
-<p>ie, after the apptainer command</p>
+<ul class="simple">
+<li><p>You need to run <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code> every time you log in.</p></li>
+</ul>
+<p>ie, after the apptainer command do this every time you log in</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>export TOP_MERGE_DIR=$HOME/merge # change to the location you want
-source $TOP_MERGE_DIR/$CAMPAIGN/setup.sh
+source $TOP_MERGE_DIR/${CAMPAIGN}/setup.sh
 </pre></div>
 </div>
 <p>this will set up merge-utils and put you into the subdirectory where you can configure your campaign.</p>
-<p>The full directory path to your $CAMPAIGN configuration will be in <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_DIR</span></code></p>
-<p>In that directory you need to make a csv file with the same name as the directory. <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN.csv</span></code> that stores tagged rows for each dataset you want to run over.</p>
+<p>The full directory path to your <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN</span></code> configuration will be in <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_DIR</span></code></p>
+<section id="configure-individual-workflows-by-adding-them-to-a-master-csv-file">
+<h3>configure individual workflows by adding them to a master csv file<a class="headerlink" href="#configure-individual-workflows-by-adding-them-to-a-master-csv-file" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>In that directory you need to make a csv file with the same name as the directory. <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN.csv</span></code> that stores tagged rows for each dataset you want to run over.</p></li>
+</ul>
 <p><code class="docutils literal notranslate"><span class="pre">TAG,FCL,CONFIG,CAMPAIGN,NAMESPACE,BATCH,DATASET</span></code></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">TAG</span></code> is a unique tag for this run of the merger - if you put <code class="docutils literal notranslate"><span class="pre">TEST</span></code> in the tag, jobs will be set up to run interactively.</p></li>
@@ -111,6 +128,7 @@ source $TOP_MERGE_DIR/$CAMPAIGN/setup.sh
 <li><p><code class="docutils literal notranslate"><span class="pre">DATASET</span></code> the metacat dataset you want to run over. Generally should be official</p></li>
 </ul>
 </section>
+</section>
 <section id="production-scripts">
 <h2>production scripts<a class="headerlink" href="#production-scripts" title="Link to this heading">¶</a></h2>
 <p>The production scripts are in <code class="docutils literal notranslate"><span class="pre">src/prod_utils</span></code></p>
@@ -119,7 +137,7 @@ source $TOP_MERGE_DIR/$CAMPAIGN/setup.sh
 <li><p><code class="docutils literal notranslate"><span class="pre">build_jobs.py</span></code> this takes the original csv file, figures out how many files you will be running over for each sub-campaign and produces <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_jobs.csv</span></code> and <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_checklist.csv</span></code>.  It checks that you are set up with the right larsoft version, campaign name and that your config files contain the right fcl file names.</p></li>
 </ul>
 <p>You generally only have to do this once if you don’t change the <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN.csv</span></code> but if you have to rerun a sub-campaign you may decided to redo it.</p>
-<p>You copy the <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_checklist.csv</span></code> into a google doc and use it to keep track of your submissions.</p>
+<p>You can copy the <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_checklist.csv</span></code> into a google doc and use it to keep track of your submissions.</p>
 <p>When you are ready to run some jobs:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">make_pass1.py</span> <span class="pre">&lt;tag&gt;</span></code> makes a script that submits the pass1 jobs for <code class="docutils literal notranslate"><span class="pre">&lt;tag&gt;</span></code>
@@ -128,29 +146,29 @@ If you run it without a tag, it lists the available tags.</p></li>
 </section>
 <section id="directory-structure-for-campaign1">
 <h2>Directory structure for ‘campaign1’<a class="headerlink" href="#directory-structure-for-campaign1" title="Link to this heading">¶</a></h2>
-<p>‘’’
-top_merge_dir
-|____campaign1
-|    |____merge-utils
-|    |    |____config
-|    |    |    |____misc
-|    |    |    |____hdf5
-|    |    |    |____defaults
-|    |    |    |____examples
-|    |    |    |____lar
-|    |    |    |____trg_mc_2025a
-|    |    |____tests
-|    |    |____docs
-|    |    |    |____source
-|    |    |____logs
-|    |    |____campaigns
-|    |    |    |____test_campaign
-|    |    |    |____campaign1
-|    |    |____src
-|    |    |    |____prod_utils
-|    |    |    |____merge_utils
-|    |    |    |____runners
-‘’’</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">top_merge_dir</span>
+<span class="o">|</span><span class="n">____campaign1</span>
+<span class="o">|</span>    <span class="o">|</span><span class="n">____merge</span><span class="o">-</span><span class="n">utils</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____config</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____misc</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____hdf5</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____defaults</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____examples</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____lar</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____trg_mc_2025a</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____tests</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____docs</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____source</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____logs</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____campaigns</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____test_campaign</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____campaign1</span> <span class="c1"># this is the one you are using</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____src</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____prod_utils</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____merge_utils</span>
+<span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span>    <span class="o">|</span><span class="n">____runners</span>
+</pre></div>
+</div>
 </section>
 <section id="shifter-instructions">
 <h2>Shifter instructions<a class="headerlink" href="#shifter-instructions" title="Link to this heading">¶</a></h2>
@@ -158,7 +176,7 @@ top_merge_dir
 <li><p>Make your campaign directory</p></li>
 </ol>
 <p>Run the setup procedure described in detail above and setup up a campaign directory under merge-utils/campaigns</p>
-<p>Once that is done, every time you login, get an apptainer, set <code class="docutils literal notranslate"><span class="pre">TOP_MERGE_DIR</span></code>, go to <code class="docutils literal notranslate"><span class="pre">$TOP_MERGE_DIR/$CAMPAIGN</span></code> and run <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code> and you should be ready to go.</p>
+<p>Once that is done, every time you login, get an apptainer, set <code class="docutils literal notranslate"><span class="pre">TOP_MERGE_DIR</span></code>, go to <code class="docutils literal notranslate"><span class="pre">$TOP_MERGE_DIR/${CAMPAIGN}</span></code> and run <code class="docutils literal notranslate"><span class="pre">setup.sh</span></code> and you should be ready to go in <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN_DIR</span></code> which is $TOP_MERGE_DIR/${CAMPAIGN}/merge-utils/campaigns/${CAMPAIGN}`</p>
 <ol class="arabic simple">
 <li><p>Set up your base csv file <code class="docutils literal notranslate"><span class="pre">$CAMPAIGN.csv</span></code>.  Each row represents a sub-campaign which can have different fcl, yaml and datasets but not different code versions.
 Each sub-campaign needs a unique tag.  The yaml file needs to contain the correct fcl file. Rows can share yaml files if you are running the same config on different datasets.</p></li>
@@ -183,11 +201,15 @@ Each sub-campaign needs a unique tag.  The yaml file needs to contain the correc
 <p>will make a long list of potential merge submissions, each of which has length <code class="docutils literal notranslate"><span class="pre">--limit</span></code> and skips by <code class="docutils literal notranslate"><span class="pre">--skip</span></code></p>
 <p>those merge submission commands are stored in <code class="docutils literal notranslate"><span class="pre">&lt;TAG.sh&gt;</span></code> so you can use them later.</p>
 <p>This is what they look like:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">merge</span>  <span class="o">-</span><span class="n">vv</span> <span class="o">-</span><span class="n">c</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">schellma</span><span class="o">/</span><span class="n">Dropbox</span><span class="o">/</span><span class="n">merge</span><span class="o">-</span><span class="n">utils</span><span class="o">/</span><span class="n">campaigns</span><span class="o">/</span><span class="n">trigprim</span><span class="o">-</span><span class="mi">2026</span><span class="o">-</span><span class="mi">03</span><span class="o">/</span><span class="n">triggerana_tree_1x2x2_simpleThr_production</span><span class="o">.</span><span class="n">yaml</span> <span class="o">--</span><span class="n">skip</span><span class="o">=</span><span class="mi">0</span> <span class="o">--</span><span class="n">limit</span><span class="o">=</span><span class="mi">2</span>  <span class="o">--</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;TEST-TRGSIM_CC_v1&quot;</span> <span class="n">dataset</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">merge</span>  <span class="o">-</span><span class="n">vv</span> <span class="o">-</span><span class="n">c</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">schellma</span><span class="o">/</span><span class="n">Dropbox</span><span class="o">/</span><span class="n">merge</span><span class="o">-</span><span class="n">utils</span><span class="o">/</span><span class="n">campaigns</span><span class="o">/</span>\
+<span class="n">trigprim</span><span class="o">-</span><span class="mi">2026</span><span class="o">-</span><span class="mi">03</span><span class="o">/</span><span class="n">triggerana_tree_1x2x2_simpleThr_production</span><span class="o">.</span><span class="n">yaml</span>\
+ <span class="o">--</span><span class="n">skip</span><span class="o">=</span><span class="mi">0</span> <span class="o">--</span><span class="n">limit</span><span class="o">=</span><span class="mi">2</span>  <span class="o">--</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;TEST-TRGSIM_CC_v1&quot;</span> <span class="n">dataset</span>
 </pre></div>
 </div>
 <p>produces:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fardet</span><span class="o">-</span><span class="n">hd</span><span class="p">:</span><span class="n">fardet</span><span class="o">-</span><span class="n">hd__trg_mc_2025a__detector</span><span class="o">-</span><span class="n">simulated__v10_06_00d01__detsim_dune10kt_1x2x2_notpcsigproc__prodmarley_nue_flat_cc_dune10kt_1x2x2__out1__v1_official</span> <span class="o">&gt;</span> <span class="n">TEST</span><span class="o">-</span><span class="n">TRGSIM_CC_v1_20260321T161849_0</span><span class="o">.</span><span class="n">log</span> <span class="mi">2</span><span class="o">&gt;&amp;</span><span class="mi">1</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fardet</span><span class="o">-</span><span class="n">hd</span><span class="p">:</span><span class="n">fardet</span><span class="o">-</span><span class="n">hd__trg_mc_2025a__detector</span><span class="o">-</span><span class="n">simulated__v10_06_00d01__detsim_</span>\
+<span class="n">dune10kt_1x2x2_notpcsigproc__prodmarley_nue_flat_cc_dune10kt_1x2x2__out1__v1_official</span>\
+  <span class="o">&gt;</span> <span class="n">TEST</span><span class="o">-</span><span class="n">TRGSIM_CC_v1_20260321T161849_0</span><span class="o">.</span><span class="n">log</span> <span class="mi">2</span><span class="o">&gt;&amp;</span><span class="mi">1</span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -213,9 +235,12 @@ Each sub-campaign needs a unique tag.  The yaml file needs to contain the correc
 <ul>
 <li><p>interactive
 ‘/exp/dune/data/users/schellma/prod/merge-utils/tmp/TEST_hd_atmos_l000002_20260408T235613/run.sh’</p></li>
-<li><p>batch
-<code class="docutils literal notranslate"><span class="pre">/exp/dune/data/users/schellma/prod/merge-utils/tmp/TEST_hd_atmos_v4_l000500_20260417T174112/submit.sh</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">/exp/dune/data/users/schellma/prod/merge-utils/tmp/TEST_hd_atmos_v4_s000500_l000500_20260417T174145/submit.sh</span></code></p>
+<li><p>batch</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">exp</span><span class="o">/</span><span class="n">dune</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">users</span><span class="o">/</span><span class="n">schellma</span><span class="o">/</span><span class="n">prod</span><span class="o">/</span><span class="n">merge</span><span class="o">-</span><span class="n">utils</span><span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">TEST_hd_atmos_v4_l000500_20260417T174112</span><span class="o">/</span><span class="n">submit</span><span class="o">.</span><span class="n">sh</span>
+
+<span class="o">/</span><span class="n">exp</span><span class="o">/</span><span class="n">dune</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">users</span><span class="o">/</span><span class="n">schellma</span><span class="o">/</span><span class="n">prod</span><span class="o">/</span><span class="n">merge</span><span class="o">-</span><span class="n">utils</span><span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">TEST_hd_atmos_v4_s000500_l000500_20260417T174145</span><span class="o">/</span><span class="n">submit</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
 </li>
 </ul>
 <p>note the timestamp <code class="docutils literal notranslate"><span class="pre">20260417T174145</span></code>, you will need to use it.</p>
@@ -350,7 +375,7 @@ Each sub-campaign needs a unique tag.  The yaml file needs to contain the correc
 <ul class="simple">
 <li><p>if it still doesn’t complete properly, wait a few hours and do a rerun of <code class="docutils literal notranslate"><span class="pre">make_pass1</span></code> for the workflows that did not finish.</p></li>
 </ul>
-<p>The scripts have a –retry option that will ignore files that are already processed.</p>
+<p>The scripts have a <code class="docutils literal notranslate"><span class="pre">--retry</span></code> option that will ignore files that are already processed.</p>
 <ul class="simple">
 <li><p>if all else fails, you can increment the tag version and rerun the whole sub-campaign again.  Generally it is a better idea to copy the relevant lines in the jobs and checklist files and increment the version rather than replace the tag.</p></li>
 </ul>
@@ -368,7 +393,10 @@ Each sub-campaign needs a unique tag.  The yaml file needs to contain the correc
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">Campaigns</a><ul>
-<li><a class="reference internal" href="#setup">Setup</a></li>
+<li><a class="reference internal" href="#setup">Setup</a><ul>
+<li><a class="reference internal" href="#configure-individual-workflows-by-adding-them-to-a-master-csv-file">configure individual workflows by adding them to a master csv file</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#production-scripts">production scripts</a></li>
 <li><a class="reference internal" href="#directory-structure-for-campaign1">Directory structure for ‘campaign1’</a></li>
 <li><a class="reference internal" href="#shifter-instructions">Shifter instructions</a></li>
