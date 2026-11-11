@@ -675,6 +675,9 @@ def make_names(files: list):
         logger.critical("File {UUID} should go in merging.method.outputs, not output.name")
         sys.exit(1)
     formatter.format(config.output.name)
+    # Max length, accounting for unexpanded {UUID}
+    max_length = config.naming.max_length - len(config.uuid(1,1,[1])) + 6
+    # Check each output stream file name
     for idx, output in enumerate(config.method.outputs):
         logger.debug("Formatting output %d name: %s", idx, output.name)
         missing_field = False
@@ -685,6 +688,12 @@ def make_names(files: list):
         if missing_field:
             sys.exit(1)
         formatter.format(output.name, defer_uuid=True)
+        name = str(output.name)
+        if len(name) <= max_length:
+            continue
+        logger.critical("Output %d name is %d characters long, exceeding the maximum of %d:\n  %s",
+                        idx, len(name), max_length, name)
+        sys.exit(1)
     io_utils.log_list(
         "Output file name{s}:",
         [output.name for output in config.method.outputs],

@@ -5,9 +5,9 @@ export MERGE_UTILS_DIR="$(dirname `realpath "${BASH_SOURCE[0]}"`)"
 echo "Setting MERGE_UTILS_DIR to $MERGE_UTILS_DIR"
 
 # Set up rucio configuration file
-mkdir -p $MERGE_UTILS_DIR/config/misc/
-export RUCIO_CONFIG=$MERGE_UTILS_DIR/config/misc/rucio.cfg
-sed "s/<username>/$USER/g" $MERGE_UTILS_DIR/config/misc/rucio_template.cfg > $RUCIO_CONFIG
+mkdir -p $MERGE_UTILS_DIR/config/rucio/
+export RUCIO_CONFIG=$MERGE_UTILS_DIR/config/rucio/rucio.cfg
+sed "s/<username>/$USER/g" $MERGE_UTILS_DIR/config/rucio/template_fnal.cfg > $RUCIO_CONFIG
 
 release=`lsb_release -i | cut -f 2`
 if [[ "$release" == "AlmaLinux" ]]; then

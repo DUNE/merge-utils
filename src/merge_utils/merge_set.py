@@ -682,7 +682,12 @@ class MergeChunk:
 
     def make_name(self, name: str, chunk: list[int]) -> str:
         """Get the name for a chunk output"""
-        return name.format(UUID=config.uuid(self.skip, self.limit, chunk))
+        output = name.format(UUID=config.uuid(self.skip, self.limit, chunk))
+        if len(output) <= config.naming.max_length:
+            return output
+        logger.critical("Output name is %d characters long, exceeding the maximum of %d:\n  %s",
+                        len(output), config.naming.max_length, output)
+        sys.exit(1)
 
     def inputs(self, output_id = None) -> list[str]:
         """
