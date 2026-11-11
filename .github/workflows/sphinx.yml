@@ -1,4 +1,4 @@
-name: Sphinx build
+name: documentation - stolen from metacat
 
 on: push
 permissions:
@@ -7,6 +7,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
     - name: Checkout 
       # uses: actions/checkout@v4 SHA for 4.3.1 below
